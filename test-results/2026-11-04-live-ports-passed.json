@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-04T20:02:30.566219+00:00",
+  "box": "ports-check-b997e0b409",
+  "checks": {
+    "unmapped_port_blocked": true,
+    "live_add_http_localhost_only_and_selected_firewall_port": true,
+    "add_preserves_existing_tcp_connection": true,
+    "conflict_rolls_back_without_losing_existing_connection": true,
+    "removing_one_alias_preserves_remaining_mapping": true,
+    "live_removal_reblocks_port_without_guest_restart": true,
+    "start_repairs_failed_helper_without_guest_restart": true,
+    "stopped_changes_and_restart_restore_mappings": true,
+    "existing_boxes_kept_running": true,
+    "main_pf_and_nat_rules_preserved": true
+  },
+  "success": true,
+  "existing_running_before": {
+    "mybox-document-player-box": "2026-11-04T18:45:46Z"
+  },
+  "cleanup": {
+    "stop_box": true,
+    "delete_box": true,
+    "delete_network": true,
+    "remove_port_settings": true
+  }
+}

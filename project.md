@@ -10,7 +10,7 @@ The normal command is now `mybox`. The dedicated firewall program is
 handlers. The firewall manager contains no box creation, shell, import, or export
 commands. The programs share only common support code and network-policy data.
 
-`make build` produces `.build/mybox` and `.build/mybox-firewall-manager`.
+`make build` produces `.build/mybox`, `.build/mybox-firewall-manager`, and `.build/mybox-port-forwarder`.
 The development launcher and PATH link are named `mybox`.
 `mybox setup-network` installs the dedicated manager under
 `/Library/PrivilegedHelperTools/mybox-firewall-manager`. It updates the existing
@@ -18,11 +18,119 @@ Mac startup job and removes the old combined executable after successful setup.
 Saved firewall policy and box data remain in place. Replacing the protected
 installed executable requires administrator authentication.
 
-Both programs compile. The current offline suite contains 61 tests.
+All three programs compile. The live-port work adds command, firewall, and TCP relay tests.
 The protected startup sequence also uses the automatic refresh implementation described below.
 The user completed `mybox setup-network` on 4 November 2026.
 The installed firewall manager reports version 0.1.0.
 The older dated sections retain the previous `box` command name as history.
+
+## Live port changes: 4 November 2026
+
+`mybox ports add <name> --inside-port N --outside-port N` adds a TCP mapping to an existing box.
+`mybox ports remove <name> --outside-port N` removes a MyBox mapping.
+`mybox ports list <name>` reports the mapping owner and its active or saved state.
+Changes to a running box do not restart its VM or Linux processes.
+Changes to a stopped box remain saved until its next start.
+
+New boxes use the same MyBox helper for mappings supplied during creation.
+The CLI no longer passes these mappings to Apple's `--publish` option.
+Original Apple mappings remain in the policy and listing. Their removal is unsupported.
+The CLI rejects removal of an Apple mapping without changing the box.
+
+The Swift helper runs on the Mac as the normal user, with one process per mapped box.
+Network.framework listeners bind only to `127.0.0.1` and forward to the inspected box IPv4 address.
+Each listener permits at most 128 concurrent connections. Each direction waits for its send callback before reading another 64 KiB.
+The helper preserves buffered data when a connection state change arrives before its final receive callback.
+It supports TCP half-close and retains existing connections while new listeners bind.
+
+Settings and helper status live in `~/.config/mybox/ports/<container-id>/` with private directory permissions.
+The creation timestamp prevents settings from applying to a different box that reuses a name.
+A process lock prevents duplicate helpers. Atomic files and a recovery journal cover interrupted CLI changes.
+The helper checks the current creation time, boot time, state, network, and IP every second.
+Inspection has a three-second timeout. A failed check closes forwarding.
+MyBox closes the helper before stopping the box and restores it through all normal startup paths.
+After a helper failure, `mybox start <name>` restores forwarding without restarting a running box.
+
+Firewall protocol 3 adds `update-ports`. It permits only a port-list change to an existing active network policy.
+Adding a port preserves connection states. Removing the last mapping for an inside port clears Mac-to-box states for that box.
+macOS `pfctl` provides source/destination state removal without a port selector.
+Other incoming clients may need to reconnect. The box's outgoing connections remain in place.
+Pending state cleanup is persistent, so the watcher retries it after a failure.
+Run `mybox setup-network` once to install the updated manager.
+
+`make ports-test` checks live add/remove, HTTP access, loopback binding, conflicts, connection preservation, helper recovery, and restart persistence.
+It creates a disposable box and installs no Linux packages.
+It records results in `test-results/ports-latest.json` and checks existing boxes and the main PF/NAT rules.
+All 82 automated tests passed, including the real TCP relay tests on Mac loopback.
+The complete run took 95.707 seconds.
+The test now labels the expected conflict and saves each completed check immediately.
+Cleanup errors no longer hide the original failure or prevent the final report.
+Three additional test-runner checks passed.
+
+After the firewall protocol 3 update, all 10 live checks passed on 4 November 2026.
+Live add/remove, occupied-port recovery, helper recovery, and restoration after a box restart passed.
+Adding a mapping and rejecting an occupied port preserved an existing TCP connection.
+Removing one of two mappings for the same inside port preserved the remaining connection.
+The document-player box retained its original start time. The main PF and NAT rules remained unchanged.
+Cleanup removed the disposable box, its network, and its port settings.
+See [the accepted live report](test-results/2026-11-04-live-ports-passed.json).
+
+## Box copies: 4 November 2026
+
+`mybox copy <source-name> <new-name>` copies the complete Linux filesystem through
+Apple `container commit`. The source keeps its running or stopped state.
+The new box remains stopped and retains the source's CPU and memory limits.
+It receives a separate network and hostname. It does not inherit port mappings.
+Normal `start` and `enter` commands still require the trusted helper and firewall checks.
+
+Copies include installed tools, home folders, project files, symlinks, and saved credentials.
+They do not include running processes or unsaved memory.
+The local snapshot image remains the copy's base. Apple creates its writable disk on first start.
+The trusted firewall helper continues to use the original Debian image.
+Validation rejects existing destination names and unsupported source configurations.
+A failed copy attempts to remove its unused image and newly created network.
+
+Seven copy checks passed. All 101 tests passed across the initial run and targeted reruns.
+The initial sandbox blocked eight terminal and local-socket tests. Those eight passed outside the sandbox.
+The requested live copy from `document-player-box` to `photo-box` succeeded.
+The source retained its original start time, and the copy remained stopped.
+The comparison covered 20,013 filesystem entries. All contents and permissions matched except two active Codex log files.
+This check inspected the snapshot image. It did not start the copied box.
+See [the copy report](test-results/2026-11-04-copy-photo-box.json).
+
+## Automatic loopback forwarding: 4 November 2026
+
+MyBox mappings now support IPv4 TCP servers on `127.0.0.1`, `0.0.0.0`, and the box's network address.
+The Mac listener remains restricted to `127.0.0.1`.
+The helper first attempts a direct connection to the box's network address.
+A connection error or a 300 ms connection timeout starts the loopback path.
+MyBox checks the box's creation time, start time, network, and IP again before that connection.
+It selects the path before sending request bytes and never retries after connecting to a server.
+
+The loopback path runs a Perl relay through `container exec --interactive` without a terminal.
+It uses the existing Debian tools and opens no extra guest listener.
+Each connection gets its own relay. Framed binary input and output preserve TCP half-close in both directions.
+Actual stdin EOF cancels the guest relay, including after a TCP half-close.
+Nonblocking Mac pipes and bounded buffers keep a slow client from blocking other mappings or identity checks.
+Closing a mapping closes its connections and cancels its relays.
+
+Forwarding status now includes protocol version 2. CLI operations that restore forwarding replace older helpers automatically.
+The CLI temporarily removes the forwarding target and waits for the old helper to release its lock.
+It then restores the target and starts the new helper. It does not signal a PID from an old status file.
+This update closes existing forwarded connections once. It preserves Linux processes and saved port mappings.
+The privileged firewall manager does not need an update for this feature.
+
+Live tests use temporary servers in an existing running box and a temporary Mac helper.
+They change no saved mapping, firewall rule, or application configuration.
+HTTP, WebSockets, large binary transfers, and half-close passed with both server bindings.
+The existing photo app still used a direct network connection.
+All 119 regression tests passed. All 13 live checks passed, including guest relay cancellation after helper shutdown.
+See [the live report](test-results/2026-11-04-loopback-passed.json).
+
+The photo app was then switched back to `127.0.0.1:8080` and retained that setting in its development command.
+The mapped page, Vite client, and app script returned HTTP 200 through `http://localhost:8767/`.
+A browser reload displayed the photo interface. Direct access to the box's network address on port 8080 failed, confirming use of the loopback path.
+The box retained its original start time. See [the photo app check](test-results/2026-11-04-photo-loopback.json).
 
 ## Current implementation: trusted helper and PF
 
@@ -347,10 +455,13 @@ Start with a CLI that manages one box per project.
 | `mybox export <name> <box-path> <new-host-path>` | Recursively copy a file or whole folder to a new macOS path |
 | `mybox start <name>` | Start an existing box |
 | `mybox stop <name>` | Stop a box without losing its project files |
+| `mybox ports add <name> --inside-port N --outside-port N` | Add a saved mapping without restarting the box |
+| `mybox ports remove <name> --outside-port N` | Remove a MyBox mapping without restarting the box |
+| `mybox ports list <name>` | List mappings, owners, and status |
 | `mybox list` | List boxes and their state |
 
 Run package installation, development commands, and project tools inside the box.
-The CLI supports explicit localhost TCP port forwarding at creation time.
+The CLI supports explicit localhost TCP port forwarding during creation and through the `ports` commands.
 `--inside-port` names the server port inside Linux; `--outside-port` names the
 localhost port on the Mac, which always binds to `127.0.0.1`. Specify both flags
 for each mapping. Repeated flags are paired by their occurrence order.

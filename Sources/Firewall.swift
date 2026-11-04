@@ -47,6 +47,7 @@ struct FirewallStore: Codable {
     var policies: [NetworkPolicy] = []
     var boot = ""
     var token = ""
+    var pendingHostCleanup: [NetworkPolicy]?
 }
 
 func rootDirectory(_ path: String, permissions: Int = 0o700) throws {
@@ -121,10 +122,10 @@ func firewallMain(_ arguments: [String]) throws {
         return
     }
     #endif
-    guard ["install", "apply", "verify", "remove", "restore", "refresh", "status"].contains(action) else {
+    guard ["install", "apply", "update-ports", "verify", "remove", "restore", "refresh", "status"].contains(action) else {
         throw BoxError("Unknown firewall operation: \(action).")
     }
-    let policyAction = ["apply", "verify", "remove"].contains(action)
+    let policyAction = ["apply", "update-ports", "verify", "remove"].contains(action)
     guard arguments.count == (policyAction ? 2 : 1) else { throw BoxError("Invalid firewall arguments.") }
     try requireFirewallAdministrator()
     try rootDirectory(firewallDirectory)
@@ -160,6 +161,20 @@ func firewallMain(_ arguments: [String]) throws {
         }
         if action != "remove" { _ = try policy.bridge(in: hostInterfaces()) }
         requested = policy
+        if action == "update-ports" {
+            guard let previous = store.policies.first(where: { $0.key == policy.key }), previous.active else {
+                throw BoxError("The box needs an active firewall policy before a live port change.")
+            }
+            var expected = previous
+            expected.ports = policy.ports
+            guard policy == expected else { throw BoxError("A live port change cannot change the box's network identity.") }
+            if !Set(previous.ports).subtracting(policy.ports).isEmpty {
+                // macOS pfctl supports source/destination state removal, but no
+                // port selector. Close Mac-to-box states, preserving outbound
+                // box connections such as Codex sessions.
+                store.pendingHostCleanup = (store.pendingHostCleanup ?? []).filter { $0.key != previous.key } + [previous]
+            }
+        }
         if action == "verify" {
             guard store.policies.contains(policy) else { throw BoxError("This box has no matching active firewall policy.") }
         } else {

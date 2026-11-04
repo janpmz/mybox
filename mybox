@@ -10,7 +10,7 @@ while [ -L "$launcher_path" ]; do
     esac
 done
 project_dir=$(CDPATH= cd -- "$(dirname -- "$launcher_path")" && pwd -P)
-if ! make -q -C "$project_dir" .build/mybox .build/mybox-firewall-manager; then
+if ! make -q -C "$project_dir" .build/mybox .build/mybox-firewall-manager .build/mybox-port-forwarder; then
     make -s -C "$project_dir" build
 fi
 exec "$project_dir/.build/mybox" "$@"

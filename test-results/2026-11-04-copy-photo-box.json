@@ -1,0 +1,25 @@
+{
+  "source": "mybox-document-player-box",
+  "copy": "mybox-photo-box",
+  "checks": {
+    "source_still_running_without_restart": true,
+    "copy_remains_stopped": true,
+    "cpu_and_memory_match": true,
+    "copy_has_separate_network": true,
+    "copy_has_new_hostname": true,
+    "copy_has_no_published_ports": true,
+    "all_other_snapshot_contents_and_permissions_match_source": true,
+    "filesystem_entry_counts_match": true
+  },
+  "source_entries": 20013,
+  "copy_entries": 20013,
+  "verification_method": "Compare source export with the copy's single-layer OCI image. The copy was not started.",
+  "different_paths": [
+    "root/.codex/logs_2.sqlite-shm",
+    "root/.codex/logs_2.sqlite-wal"
+  ],
+  "image": "docker.io/library/mybox-copy-5c67110f-95af-4c81-b2f6-b318e8dbb798:snapshot",
+  "success": true,
+  "comparison_note": "The source remained running. Two active Codex log files differ between the snapshot and the later source export. All other entries match in content, type, permissions, ownership, and link targets.",
+  "matching_entries": 20011
+}

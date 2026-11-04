@@ -143,6 +143,7 @@ func resourceSize(_ bytes: UInt64) -> String {
 struct BoxRecord {
     let id: String
     let configuration: [String: Any]
+    let status: [String: Any]
     let state: String
 
     init(_ object: [String: Any]) throws {
@@ -154,6 +155,7 @@ struct BoxRecord {
         }
         self.id = id
         self.configuration = configuration
+        self.status = status
         self.state = state
     }
 
@@ -259,12 +261,12 @@ struct CreateOptions {
         guard insidePorts.count == outsidePorts.count else {
             throw BoxError("Provide both --inside-port and --outside-port for each port mapping.")
         }
+        guard insidePorts.count <= 64 else { throw BoxError("A box supports at most 64 MyBox port mappings.") }
         ports = zip(insidePorts, outsidePorts).map { inside, outside in "127.0.0.1:\(outside):\(inside)" }
     }
 }
 
-func create(_ options: CreateOptions, backend: Backend) throws {
-    try installedFirewall()
+func createStoppedBox(_ options: CreateOptions, backend: Backend, image: String = trustedImage) throws {
     let id = try containerID(options.name)
     let network = "mybox-net-" + options.name
     // A qualified alias avoids changing Apple's global DNS domain or the
@@ -272,19 +274,73 @@ func create(_ options: CreateOptions, backend: Backend) throws {
     var arguments = ["create", "--name", id, "--label", "\(managedLabel)=true", "--label", "\(networkLabel)=\(network)",
                      "--cpus", options.cpus, "--memory", options.memory,
                      "--dns", "1.1.1.1", "--dns", "1.0.0.1", "--network", "\(network),alias=\(options.name).box.test"]
-    for port in options.ports { arguments += ["--publish", port] }
-    arguments += ["--entrypoint", "/bin/sh", "docker.io/library/debian:trixie-slim", "-c", "mkdir -p /workspace && exec sleep infinity"]
+    arguments += ["--entrypoint", "/bin/sh", image, "-c", "mkdir -p /workspace && exec sleep infinity"]
     note("Creating the box network...")
     _ = try backend.run(["network", "create", "--label", "\(managedLabel)=true", network], capture: true)
     do {
-        note("Creating the Linux disk...")
+        note("Creating the Linux box...")
         _ = try backend.run(arguments, capture: true)
     }
     catch {
         _ = try? backend.run(["network", "delete", network], capture: true)
         throw error
     }
+}
+
+func copyBox(_ arguments: [String], backend: Backend) throws {
+    guard arguments.count == 2 else { throw BoxError("Usage: mybox copy <source-name> <new-name>") }
+    let sourceID = try containerID(arguments[0])
+    var options = try CreateOptions([arguments[1]])
+    let destinationID = try containerID(options.name)
+    guard sourceID != destinationID else { throw BoxError("Use a different name for the copy.") }
+    guard try !backend.records(["list", "--all", "--format", "json"]).contains(where: { $0.id == destinationID }) else {
+        throw BoxError("A container named \(destinationID) already exists. Use a new name for the copy.")
+    }
+    let source = try backend.managed(arguments[0])
+    guard ["running", "stopped"].contains(source.state) else {
+        throw BoxError("The source box is \(source.state). Wait for its current operation to finish.")
+    }
+    guard let resources = source.configuration["resources"] as? [String: Any],
+          let cpus = resources["cpus"] as? Int, cpus > 0,
+          let memory = resources["memoryInBytes"] as? UInt64, memory > 0, memory % (1 << 20) == 0 else {
+        throw BoxError("Cannot read the source box's CPU and memory limits.")
+    }
+    options.cpus = String(cpus)
+    options.memory = "\(memory / (1 << 20))m"
+    // Keep the image as the new container's base. Never use it for the trusted helper.
+    let image = "mybox-copy-\(UUID().uuidString.lowercased()):snapshot"
+    note("Copying the Linux filesystem, including installed tools and saved credentials...")
     do {
+        _ = try backend.run(["commit", source.id, image], capture: true)
+        try createStoppedBox(options, backend: backend, image: image)
+    } catch {
+        // Keep the image if a failed backend request might still have created the box.
+        if let records = try? backend.records(["list", "--all", "--format", "json"]),
+           !records.contains(where: { $0.id == destinationID }) {
+            do { _ = try backend.run(["image", "delete", "--force", image], capture: true) }
+            catch { note("Could not remove the unused copy image: \(image)") }
+        } else {
+            note("The copy image remains available: \(image)")
+        }
+        throw error
+    }
+    print("Copied \(arguments[0]) to \(options.name). The new box is stopped.")
+    print("Port mappings were not copied. Use mybox ports add to select new outside ports.")
+    print("Enter with: mybox enter \(options.name)")
+}
+
+func create(_ options: CreateOptions, backend: Backend) throws {
+    try installedFirewall()
+    try createStoppedBox(options, backend: backend)
+    do {
+        if !options.ports.isEmpty {
+            let record = try backend.managed(options.name)
+            let mappings = options.ports.map { value -> PortMapping in
+                let parts = value.split(separator: ":")
+                return PortMapping(inside: Int(parts[2])!, outside: Int(parts[1])!)
+            }
+            try savePortConfiguration(record.freshPortConfiguration(mappings))
+        }
         _ = try backend.ready(options.name, progress: note)
     } catch {
         note("The box was created. After resolving the error, retry with: mybox start \(options.name)")
@@ -433,6 +489,10 @@ Usage: mybox <command>
                          List matches and stop if the partial name is ambiguous.
   enter <name> -- <command> [arguments...]
                          Run a Linux command; piped input is supported.
+  copy <source-name> <new-name>
+                         Copy installed tools, settings, and files into a stopped box.
+                         Include saved credentials. Keep the source's CPU and memory limits.
+                         Use a separate network. Do not copy port mappings or running processes.
   import <name> <host-path>
                          Copy a file or whole folder to /workspace/<source-name>.
                          Never replace an existing destination.
@@ -446,6 +506,11 @@ Usage: mybox <command>
                          Relative box paths start at /workspace. Reject links.
   start <name>           Start a stopped box, keeping its files.
   stop <name>            Stop a box, keeping its files.
+  ports add <name> --inside-port N --outside-port N
+                         Add a TCP mapping without restarting a running box.
+  ports remove <name> --outside-port N
+                         Remove a MyBox mapping without restarting the box.
+  ports list <name>      Show saved mappings and forwarding status.
   list                   List boxes created by this CLI, including stopped ones.
                          Show CPU cores, memory, disk use, disk capacity, and ports.
   setup-network          Install the PF helper and automatic Mac startup setup.
@@ -482,15 +547,24 @@ func mainCommand(_ arguments: [String]) throws {
     case "create":
         let options = try CreateOptions(rest)
         try create(options, backend: Backend())
+    case "copy":
+        guard rest.count == 2 else { throw BoxError("Usage: mybox copy <source-name> <new-name>") }
+        _ = try containerID(rest[0])
+        _ = try CreateOptions([rest[1]])
+        guard rest[0] != rest[1] else { throw BoxError("Use a different name for the copy.") }
+        try copyBox(rest, backend: Backend())
+    case "ports":
+        let options = try PortOptions(rest)
+        try Backend().changePorts(options)
     case "list":
         guard rest.isEmpty else { throw BoxError("Usage: mybox list") }
         let records = try Backend().records(["list", "--all", "--format", "json"]).filter(\.isManaged).sorted { $0.id < $1.id }
         if records.isEmpty { print("No MyBox boxes yet. Create one with: mybox create demo"); return }
-        let rows = [["NAME", "STATE", "CORES", "MEMORY", "DISK USED", "DISK MAX", "PORTS"]] + records.map { record in
+        let rows = [["NAME", "STATE", "CORES", "MEMORY", "DISK USED", "DISK MAX", "PORTS"]] + (try records.map { record in
             let disk = record.diskDescriptions
             return [String(record.id.dropFirst(namePrefix.count)), record.state, record.coreDescription,
-                    record.memoryDescription, disk.used, disk.capacity, record.ports.isEmpty ? "-" : record.portDescription]
-        }
+                    record.memoryDescription, disk.used, disk.capacity, try record.allPortDescription()]
+        })
         let widths = rows[0].indices.map { column in rows.map { $0[column].count }.max() ?? 0 }
         for row in rows {
             print(row.indices.map { column in

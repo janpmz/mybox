@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-04T21:07:28.712809+00:00",
+  "box": "photo-box",
+  "checks": {
+    "127.0.0.1_http": true,
+    "127.0.0.1_websocket_binary": true,
+    "127.0.0.1_large_binary_and_half_close": true,
+    "127.0.0.1_used_guest_relay": true,
+    "mac_listener_is_loopback_only": true,
+    "127.0.0.1_helper_shutdown_cancels_guest_relays": true,
+    "0.0.0.0_http": true,
+    "0.0.0.0_websocket_binary": true,
+    "0.0.0.0_large_binary_and_half_close": true,
+    "0.0.0.0_used_guest_relay": true,
+    "0.0.0.0_helper_shutdown_cancels_guest_relays": true,
+    "existing_network_bound_app_uses_direct_connection": true,
+    "box_states_and_start_times_unchanged": true
+  },
+  "success": true,
+  "cleanup": {
+    "helper": true,
+    "temporary_server": true
+  }
+}

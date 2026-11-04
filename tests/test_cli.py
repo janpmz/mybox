@@ -16,9 +16,13 @@ args = sys.argv[1:]
 logpath = pathlib.Path(os.environ["MYBOX_TEST_LOG"])
 with logpath.open("a") as log:
     log.write(json.dumps(args) + "\n")
+failure = json.loads(os.environ.get("MYBOX_TEST_BACKEND_FAIL", "[]"))
+if failure and args[:len(failure)] == failure:
+    sys.exit(1)
 statepath = logpath.with_suffix(".state")
 scenario = os.environ.get("MYBOX_TEST_SCENARIO", "normal")
 configuration = {
+    "creationDate": "2026-11-04T10:00:00Z",
     "labels": {"com.mybox.managed": "true", "com.mybox.network": "mybox-net-demo"}, "mounts": [], "ssh": False,
     "resources": {"cpus": 2, "memoryInBytes": 2147483648},
     "publishedSockets": [], "publishedPorts": [], "networks": [{"network": "mybox-net-demo"}]
@@ -29,13 +33,21 @@ if scenario == "mount": configuration["mounts"] = [{"source": "/Users/example"}]
 if scenario == "ssh": configuration["ssh"] = True
 if scenario == "public-port":
     configuration["publishedPorts"] = [{"hostAddress": "0.0.0.0", "proto": "tcp"}]
-state = json.loads(statepath.read_text()) if statepath.exists() else {"mybox-demo": {"id": "mybox-demo", "configuration": configuration, "status": {"state": "stopped" if scenario == "stopped" else "running"}}}
+status = {"state": "stopped" if scenario == "stopped" else "running", "startedDate": "2026-11-04T10:01:00Z",
+          "networks": [{"network": "mybox-net-demo", "ipv4Address": "192.168.65.3/24"}]}
+state = json.loads(statepath.read_text()) if statepath.exists() else {"mybox-demo": {"id": "mybox-demo", "configuration": configuration, "status": status}}
 if args[0] == "create":
     name = args[args.index("--name")+1]
     item = json.loads(json.dumps(configuration))
+    item["labels"] = dict(args[i+1].split("=", 1) for i, value in enumerate(args) if value == "--label")
+    item["networks"] = [{"network": args[args.index("--network")+1].split(",")[0]}]
+    item["publishedPorts"] = []
+    item["resources"]["cpus"] = int(args[args.index("--cpus")+1])
+    memory = args[args.index("--memory")+1]
+    item["resources"]["memoryInBytes"] = int(memory[:-1]) * (1024 ** (3 if memory[-1] == "g" else 2))
     if name.startswith("mybox-helper-"):
         item["labels"] = {"com.mybox.helper": "true"}
-    state[name] = {"id": name, "configuration": item, "status": {"state": "stopped"}}
+    state[name] = {"id": name, "configuration": item, "status": dict(status, state="stopped")}
     statepath.write_text(json.dumps(state))
 elif args[0] in ("start", "stop"):
     state[args[1]]["status"]["state"] = "running" if args[0] == "start" else "stopped"
@@ -72,7 +84,7 @@ elif args[0] == "/usr/bin/sudo":
     if os.environ.get("MYBOX_TEST_FIREWALL_FAIL") == action:
         print("Test firewall failure", file=sys.stderr)
         sys.exit(1)
-    print("mybox-firewall-manager-2-ok")
+    print("mybox-firewall-manager-3-ok")
 else:
     sys.exit(2)
 '''
@@ -95,7 +107,8 @@ class CLI(unittest.TestCase):
         self.container_root = self.directory / "containers"
         self.environment = dict(os.environ, PATH=str(self.directory) + ":/usr/bin:/bin",
                                 MYBOX_TEST_LOG=str(self.log), MYBOX_TEST_PAYLOAD=str(self.payload), MYBOX_TEST_HOST=str(host),
-                                MYBOX_TEST_CONTAINER_ROOT=str(self.container_root))
+                                MYBOX_TEST_CONTAINER_ROOT=str(self.container_root),
+                                MYBOX_TEST_PORT_ROOT=str(self.directory / "ports"), MYBOX_TEST_FAKE_FORWARDER="1")
 
     def run_box(self, *arguments, success=True):
         result = subprocess.run([BOX, *arguments], env=self.environment, text=True,
@@ -209,8 +222,9 @@ class CLI(unittest.TestCase):
                      "--cpus", "3", "--memory", "1g")
         create = next(call for call in self.calls() if call[0] == "create" and call[call.index("--name") + 1] == "mybox-demo")
         self.assertEqual(create[0], "create")
-        self.assertIn("127.0.0.1:8766:8080", create)
-        self.assertIn("127.0.0.1:8767:8081", create)
+        self.assertNotIn("--publish", create)
+        saved = json.loads((self.directory / "ports/mybox-demo/ports.json").read_text())
+        self.assertEqual(saved["mappings"], [{"inside": 8080, "outside": 8766}, {"inside": 8081, "outside": 8767}])
         self.assertEqual(create[create.index("--cpus") + 1], "3")
         self.assertEqual(create[create.index("--memory") + 1], "1g")
         self.assertEqual(create[create.index("--name") + 1], "mybox-demo")
@@ -225,7 +239,9 @@ class CLI(unittest.TestCase):
     def test_port_flags_can_come_in_either_order(self):
         self.run_box("create", "demo", "--outside-port", "8766", "--inside-port", "8080")
         create = next(call for call in self.calls() if call[0] == "create" and call[call.index("--name") + 1] == "mybox-demo")
-        self.assertEqual(create[create.index("--publish") + 1], "127.0.0.1:8766:8080")
+        self.assertNotIn("--publish", create)
+        saved = json.loads((self.directory / "ports/mybox-demo/ports.json").read_text())
+        self.assertEqual(saved["mappings"], [{"inside": 8080, "outside": 8766}])
 
     def test_create_without_ports_publishes_nothing(self):
         self.run_box("create", "demo")

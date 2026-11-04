@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-04T21:13:37.225799+00:00",
+  "box": "photo-box",
+  "inside_binding": "127.0.0.1:8080",
+  "outside_url": "http://localhost:8767/",
+  "responses": {
+    "/": 200,
+    "/@vite/client": 200,
+    "/src/main.ts": 200
+  },
+  "direct_guest_network_connection_rejected": true,
+  "saved_dev_command": "vite --host 127.0.0.1 --port 8080 --strictPort",
+  "box_start_time": "2026-11-04T20:41:34Z",
+  "success": true,
+  "browser_reload_verified": true
+}

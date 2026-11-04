@@ -139,8 +139,9 @@ def main():
             assert configuration["mounts"] == []
             assert configuration["ssh"] is False
             assert configuration["publishedSockets"] == []
-            assert configuration["publishedPorts"] == [{"containerPort": 8080, "count": 1,
-                "hostAddress": "127.0.0.1", "hostPort": port, "proto": "tcp"}]
+            assert configuration["publishedPorts"] == []
+            listing = box("ports", "list", name).decode()
+            assert str(port) in listing and "MyBox" in listing and "active" in listing
             checks["default_storage_no_mounts_or_agent_localhost_only"] = True
             alias = name + ".box.test"
             assert configuration["networks"][0]["options"]["aliases"] == [alias]

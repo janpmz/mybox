@@ -53,8 +53,9 @@ extension Backend {
               record.ports.allSatisfy({ $0["count"] as? Int == 1 && $0["containerPort"] is Int }) else {
             throw BoxError("The box does not have a supported dedicated network.")
         }
+        let saved = try record.portConfiguration()?.mappings ?? []
         let policy = NetworkPolicy(owner: getuid(), network: name, subnet4: subnet4, subnet6: subnet6,
-                                   gateway: gateway, ports: Array(Set(record.ports.compactMap { $0["containerPort"] as? Int })).sorted())
+                                   gateway: gateway, ports: Array(Set(record.ports.compactMap { $0["containerPort"] as? Int } + saved.map(\.inside))).sorted())
         try policy.validate()
         return policy
     }
@@ -84,6 +85,7 @@ extension Backend {
         let lock = try networkLock()
         defer { withExtendedLifetime(lock) {} }
         let record = try managed(name)
+        try recoverPortChange(record)
         let policy = try policy(for: record)
         guard ["stopped", "running"].contains(record.state) else { throw BoxError("The box is \(record.state). Wait for its current operation to finish.") }
         try removeAbandonedHelpers(on: policy.network)
@@ -134,6 +136,7 @@ extension Backend {
             }
         }
         _ = try run(["exec", record.id, "/bin/sh", "-c", "test -d /workspace && test ! -L /workspace"], capture: true)
+        if try record.portConfiguration() != nil { try restoreForwarder(managed(name)) }
         return record.id
     }
 
@@ -141,6 +144,7 @@ extension Backend {
         let lock = try networkLock()
         defer { withExtendedLifetime(lock) {} }
         let record = try managed(name)
+        try stopForwarder(record)
         if record.state != "stopped" { _ = try run(["stop", record.id], capture: true) }
         // Legacy boxes can still be stopped without changing their data.
         if (record.configuration["labels"] as? [String: String])?[networkLabel] != nil {

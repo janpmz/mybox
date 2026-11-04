@@ -24,6 +24,7 @@ func readFirewallStore() throws -> FirewallStore {
     let store = files.fileExists(atPath: url.path) ? try JSONDecoder().decode(FirewallStore.self, from: Data(contentsOf: url)) : FirewallStore()
     guard store.version == 1 else { throw BoxError("Unsupported saved firewall policy version.") }
     for policy in store.policies { try policy.validate() }
+    for policy in store.pendingHostCleanup ?? [] { try policy.validate() }
     return store
 }
 
@@ -131,7 +132,7 @@ func reconcileFirewall(_ store: inout FirewallStore, force: Bool = false, starti
         let expected = try? String(contentsOf: firewallURL("loaded.txt"), encoding: .utf8)
         let active = try pf(["-a", firewallAnchor, "-sr"])
         let changed = previous != snapshot || savedRules != rules || expected != active
-        guard force || changed || starting != nil else { return false }
+        guard force || changed || starting != nil || !(store.pendingHostCleanup ?? []).isEmpty else { return false }
 
         let wasBlocked = previous?.blocked == true || savedRules?.contains("mybox_suspended") == true
         if wasBlocked {
@@ -155,6 +156,15 @@ func reconcileFirewall(_ store: inout FirewallStore, force: Bool = false, starti
             }
         }
         if let starting { try clearSubnetStates(starting) }
+        for pending in store.pendingHostCleanup ?? [] {
+            if live.contains(where: { $0.key == pending.key && $0.gateway == pending.gateway && $0.subnet4 == pending.subnet4 }) {
+                _ = try pf(["-k", pending.gateway, "-k", pending.subnet4])
+            }
+        }
+        if !(store.pendingHostCleanup ?? []).isEmpty {
+            store.pendingHostCleanup = []
+            try saveStore(store)
+        }
         try JSONEncoder().encode(snapshot).write(to: firewallURL("snapshot.json"), options: .atomic)
         return changed
     } catch {

@@ -1,5 +1,8 @@
 # MyBox
 
+New boxes start with **Debian 13 (Trixie) Slim** from the image `docker.io/library/debian:trixie-slim`.
+Copies retain the source box's Linux filesystem and installed tools.
+
 ![MyBox concept: run software such as Node.js inside the box. Internet access is allowed. Direct access to Mac files and connections to the Mac and LAN are blocked.](docs/diagrams/mybox-concept-v4.png)
 
 ![MyBox firewall: allow outgoing IPv4 Internet connections, block Mac and LAN access and IPv6, and update rules after network changes.](docs/diagrams/mybox-firewall.png)
@@ -23,20 +26,21 @@ tested Mac IPv4/IPv6 listeners or the router's IPv4 TCP port. Internet/DNS conti
 Detection does not guarantee zero exposure time.
 See [the recorded results and limits](project.md#current-implementation-trusted-helper-and-pf).
 
-There are two separate programs:
+There are three separate programs:
 
 - `mybox` manages boxes, shells, and file transfers as your normal user.
 - `mybox-firewall-manager` watches network changes and manages MyBox firewall rules with administrator rights.
+- `mybox-port-forwarder` forwards TCP traffic from the Mac to a box as your normal user.
 
 The firewall manager does not contain the box-management commands.
-Run `mybox setup-network` after this update to install the background watcher.
+Run `mybox setup-network` after this update to install firewall protocol version 3 for live port changes.
 The update retains saved firewall policy and box data.
 
 ## Development setup
 
 Requires the existing Apple `container` CLI, macOS with its supported Apple
 silicon hardware, and the installed Swift compiler. Uses Foundation, Darwin,
-and SystemConfiguration. No third-party packages or Node.js installation are required.
+SystemConfiguration, and Network. No third-party packages or Node.js installation are required.
 
 The checkout and auto-building launcher below are for development. The planned
 public release will ship a precompiled executable with an installer, so users
@@ -66,10 +70,10 @@ mybox enter demo
 ```
 
 Inside Linux, the imported folder is `/workspace/website`. Edit and run your
-project there. A server listening on `0.0.0.0:8080` can be viewed on the Mac at
+project there. A server on `127.0.0.1:8080` or `0.0.0.0:8080` can be viewed on the Mac at
 `http://localhost:8766/`. `--inside-port` is the server's port inside the Linux
 box; `--outside-port` is the port you open in your Mac browser. The outside port
-binds to `127.0.0.1` only. Ports are optional and chosen when creating a box.
+binds to `127.0.0.1` only. Ports are optional. You can also add or remove them later.
 `create` starts the box.
 
 Creation prints the mapping with both sides named explicitly:
@@ -147,6 +151,111 @@ Deleting files inside the box might not immediately reduce this value.
 `DISK MAX` is the virtual disk's capacity. Disk growth needs free space on the
 Mac. A dash in a resource column means the value is unavailable.
 
+## Copy a box
+
+Run this command on the Mac:
+
+```sh
+mybox copy document-player-box photo-box
+mybox enter photo-box
+```
+
+`copy` creates a separate, stopped box with the source's installed tools, settings,
+and files. This includes `/workspace`, home folders, hidden files, symlinks, and
+saved credentials. The copy keeps the source's CPU and memory limits.
+Use full box names. The destination name must be new.
+
+The source keeps its current running or stopped state. Later changes in either
+box do not affect the other. Running processes and unsaved data in memory are
+not copied. Save your work before copying. For databases or other apps with
+active writes, stop those apps before copying if you need an application-consistent copy.
+
+The new box receives its own network and hostname, such as `photo-box.box.test`.
+The first `enter` or `start` checks firewall protection before starting Linux.
+Port mappings are not copied because both boxes cannot use the same outside port.
+Add a mapping with a free outside port when needed:
+
+```sh
+mybox ports add photo-box --inside-port 8080 --outside-port 8767
+```
+
+Copying uses Apple's [`container commit`](https://github.com/apple/container/blob/1.6.1/docs/command-reference.md#container-commit).
+It requires Apple `container` 1.6 or later. It retains a local snapshot image as
+the new box's base and does not upload it. Apple creates the writable Linux disk
+when the copy first starts. This image contains the copied files
+and credentials. The image uses additional Mac disk space and remains after
+container deletion until you delete it separately. A failed copy attempts to
+remove its unused image. The trusted firewall helper always uses the original Debian image.
+
+The live copy from `document-player-box` to `photo-box` passed on 4 November 2026.
+The check compared 20,013 filesystem entries without starting the copy.
+All contents and permissions matched except two active Codex log files.
+The source retained its original start time. See [the copy report](test-results/2026-11-04-copy-photo-box.json).
+
+## Change port mappings
+
+All 10 live port checks passed on 4 November 2026.
+The existing document-player box stayed running, and the main PF/NAT rules remained unchanged.
+See [the test report](test-results/2026-11-04-live-ports-passed.json).
+
+Run these commands on the Mac:
+
+```sh
+mybox ports add document-player-box --inside-port 8080 --outside-port 8766
+mybox ports list document-player-box
+mybox ports remove document-player-box --outside-port 8766
+```
+
+Adding or removing a mapping does not restart the box or its Linux processes.
+For a stopped box, the command saves the change without starting the box.
+Mappings supplied to `mybox create` use the same forwarding helper.
+
+The helper runs on the Mac, with one process for each box that has active MyBox mappings.
+The Mac listener binds only to `127.0.0.1`.
+Mappings support IPv4 TCP servers on the box's `127.0.0.1`, `0.0.0.0`, or network address.
+MyBox tries the network address first. If that connection cannot open, it tries the box's loopback address automatically.
+The outside URL stays the same. Users do not need to change the app's listening address.
+MyBox updates the firewall to allow only the selected inside ports.
+Adding a mapping preserves existing connections. An occupied outside port causes the change to fail and restores the previous settings.
+
+The loopback connection uses `container exec` and Debian's existing Perl tools.
+It creates one relay process inside the box for each connection that needs this path.
+It installs no packages and creates no extra Linux listening port.
+The relay supports HTTP, WebSockets, binary data, and TCP half-close.
+MyBox selects the connection path before sending request bytes. It does not replay a request after a connected server fails.
+
+An update to the forwarding helper takes effect on the next `start`, `enter`, or port change that restores forwarding.
+MyBox automatically replaces an older helper. Existing forwarded connections close once during this update.
+Linux processes continue to run. A running box does not need a restart.
+
+Removing a mapping closes its forwarded connections. If no mapping remains for
+that inside port, MyBox also closes existing Mac-to-box TCP connections for that box.
+This includes connections through other mappings or its hostname. Those clients can reconnect to ports that remain allowed.
+Linux processes and the box's outgoing Internet connections continue.
+
+Settings are saved under `~/.config/mybox/ports/`, outside the Linux box.
+`mybox stop` closes the listeners. `start`, `enter`, `import`, and `export` restore them when needed.
+The helper checks the box's identity and stops if the box stops, restarts, or disappears outside MyBox.
+These checks run every second, with a three-second timeout for the container service.
+The helper does not restart itself after a failure. Use `mybox start <name>` to restore forwarding without restarting a running box.
+
+Live checks for both listening addresses passed on 4 November 2026.
+They covered HTTP, WebSockets, large binary transfers, half-close, guest relay cleanup, and a Mac listener restricted to loopback.
+The existing photo app still used the direct connection. Both boxes retained their original start times.
+See [the loopback report](test-results/2026-11-04-loopback-passed.json).
+
+To repeat these checks on an existing running box:
+
+```sh
+python3 tests/loopback_integration.py <box-name>
+```
+
+The check creates temporary servers and a temporary Mac listener. It preserves the box's saved mappings, firewall rules, and running apps.
+
+`mybox ports list` marks original Apple-managed mappings as `Apple` and `fixed`.
+You can add MyBox mappings to these older boxes. Removing an original Apple mapping is not supported.
+The command reports that limitation and keeps the mapping in place.
+
 ## Stable hostnames
 
 On Apple `container` 1.6.1, new boxes receive a persistent alias such as
@@ -166,6 +275,8 @@ Apple's DNS returns the box's current IP address for this name after each start.
 The name does not resolve while the box is stopped. DNS caching may briefly retain an older address.
 The name addresses the **inside** port: `demo.box.test:8080` is a different path
 from `localhost:8766`. It does not change the localhost-only outside binding.
+Use the outside `localhost` URL for a server bound to the box's `127.0.0.1`.
+Direct `box.test` access still needs a server bound to the box's network address or `0.0.0.0`.
 The PF policy permits selected inside ports and blocks new connections to
 unpublished ports. The hostname itself imposes no access restrictions.
 
@@ -271,6 +382,7 @@ host credentials.
 ```sh
 make test          # CLI validation and argument handling; no containers created
 make integration   # real file/folder, restart, and localhost checks
+make ports-test    # live port changes on a disposable box; requests sudo authentication
 make network-test  # reversible PF experiment; requests sudo authentication
 make protected-test # production helper/PF checks; installs the persistent setup
 make interface-test # installs the watcher and checks live interface changes

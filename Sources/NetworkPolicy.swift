@@ -2,7 +2,7 @@ import Foundation
 import Darwin
 
 let firewallExecutable = "/Library/PrivilegedHelperTools/mybox-firewall-manager"
-let firewallVersion = 2
+let firewallVersion = 3
 
 final class FileLock {
     let descriptor: Int32

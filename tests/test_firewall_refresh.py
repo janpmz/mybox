@@ -118,6 +118,32 @@ class FirewallRefresh(unittest.TestCase):
         self.run_manager("refresh")
         self.assertFalse(any("-f" in call or "-k" in call for call in self.calls()))
 
+    def test_adding_ports_preserves_all_existing_connections(self):
+        expanded = dict(self.policy, ports=[8080, 8081])
+        self.run_manager("update-ports", json.dumps(expanded))
+        self.assertIn("port 8081", (self.root / "active.pf").read_text())
+        self.assertFalse(any("-k" in call for call in self.calls()))
+        self.run_manager("verify", json.dumps(expanded))
+
+    def test_removing_ports_clears_only_mac_to_box_connections(self):
+        self.run_manager("update-ports", json.dumps(dict(self.policy, ports=[])))
+        self.assertNotIn("pass out", (self.root / "active.pf").read_text())
+        kills = [call for call in self.calls() if "-k" in call]
+        self.assertEqual(kills, [["/sbin/pfctl", "-k", "192.168.65.1", "-k", "192.168.65.0/24"]])
+        self.assertEqual(json.loads((self.root / "state.json").read_text())["pendingHostCleanup"], [])
+
+    def test_live_port_update_cannot_change_network_identity(self):
+        changed = dict(self.policy, subnet4="192.168.66.0/24", gateway="192.168.66.1")
+        self.run_manager("update-ports", json.dumps(changed), success=False)
+        self.assertFalse(any("-f" in call or "-k" in call for call in self.calls()))
+
+    def test_failed_port_revocation_is_retried_by_the_watcher(self):
+        (self.root / "fail-once").write_text("states")
+        self.run_manager("update-ports", json.dumps(dict(self.policy, ports=[])), success=False)
+        self.assertTrue(json.loads((self.root / "state.json").read_text())["pendingHostCleanup"])
+        self.run_manager("refresh")
+        self.assertEqual(json.loads((self.root / "state.json").read_text())["pendingHostCleanup"], [])
+
     def test_helper_membership_does_not_interrupt_connections(self):
         self.change_interfaces(BASE_INTERFACES + "    member: vmenet998 flags=0\nvmenet998: flags=0\n")
         self.run_manager("refresh")
