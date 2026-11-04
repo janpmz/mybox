@@ -1,0 +1,184 @@
+{
+  "purpose": "The connection test must reject an unprotected container.",
+  "success": false,
+  "checks": {
+    "destinations_reachable_before": true,
+    "mac_address_blocked": false,
+    "mac_gateway_blocked": false,
+    "mac_ipv6_blocked": false,
+    "lan_endpoint_blocked": false,
+    "internet_and_dns_work": true,
+    "destinations_reachable_after": true,
+    "control_container_deleted": true,
+    "control_network_deleted": true
+  },
+  "cleanup": {
+    "control_container_stopped": true,
+    "control_container_deleted": true,
+    "control_network_deleted": true
+  },
+  "box_id": "reboot-unprotected-838801775b2b",
+  "control_id": "reboot-control-25fa80fc8b83",
+  "control_network": "reboot-control-net-25fa80fc8b83",
+  "scope": "TCP to Mac IPv4/IPv6 addresses and one live IPv4 LAN endpoint; IPv4 DNS and HTTP to the Internet",
+  "physical_lan_ipv6_tested": false,
+  "lan": {
+    "interface": "en0",
+    "mac_address": "192.168.178.49",
+    "subnet": "192.168.178.0/24",
+    "address": "192.168.178.1",
+    "ports": [
+      443,
+      80,
+      53
+    ]
+  },
+  "lan_selection_attempts": [
+    {
+      "host": "192.168.178.1",
+      "port": 443,
+      "family": "4",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    }
+  ],
+  "lan_endpoint": {
+    "address": "192.168.178.1",
+    "port": 443
+  },
+  "control_before": {
+    "mac_address": {
+      "host": "192.168.178.49",
+      "port": 49481,
+      "family": "4",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    },
+    "mac_gateway": {
+      "host": "192.168.66.1",
+      "port": 49481,
+      "family": "4",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    },
+    "lan_endpoint": {
+      "host": "192.168.178.1",
+      "port": 443,
+      "family": "4",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    },
+    "mac_ipv6": {
+      "host": "fe80::5c9b:a6ff:fe08:7165",
+      "port": 49483,
+      "family": "6",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    }
+  },
+  "protected_box": {
+    "mac_address": {
+      "host": "192.168.178.49",
+      "port": 49481,
+      "family": "4",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    },
+    "mac_gateway": {
+      "host": "192.168.65.1",
+      "port": 49481,
+      "family": "4",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    },
+    "lan_endpoint": {
+      "host": "192.168.178.1",
+      "port": 443,
+      "family": "4",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    },
+    "mac_ipv6": {
+      "host": "fe80::5c9b:a6ff:fe08:7164",
+      "port": 49483,
+      "family": "6",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    }
+  },
+  "internet": {
+    "connected": true,
+    "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK\n",
+    "error": "",
+    "attempts": [
+      {
+        "connected": true,
+        "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK\n",
+        "error": ""
+      }
+    ]
+  },
+  "control_after": {
+    "mac_address": {
+      "host": "192.168.178.49",
+      "port": 49481,
+      "family": "4",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    },
+    "mac_gateway": {
+      "host": "192.168.66.1",
+      "port": 49481,
+      "family": "4",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    },
+    "lan_endpoint": {
+      "host": "192.168.178.1",
+      "port": 443,
+      "family": "4",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    },
+    "mac_ipv6": {
+      "host": "fe80::5c9b:a6ff:fe08:7165",
+      "port": 49483,
+      "family": "6",
+      "outcome": "connected",
+      "exit_code": 0,
+      "output": "MYBOX_TCP connected\n",
+      "error": ""
+    }
+  },
+  "error": "RuntimeError('Connection checks failed: mac_address_blocked, mac_gateway_blocked, mac_ipv6_blocked, lan_endpoint_blocked')",
+  "unprotected_container_correctly_rejected": true,
+  "outer_cleanup": {
+    "container_stopped": true,
+    "container_deleted": true,
+    "network_deleted": true
+  }
+}

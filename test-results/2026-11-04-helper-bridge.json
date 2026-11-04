@@ -1,0 +1,103 @@
+{
+  "date": "2026-11-04T13:25:27.537962+00:00",
+  "network": "mybox-bridge-check-891a13f079",
+  "pf_modified": false,
+  "stages": {
+    "network_created": [],
+    "helper_running": [
+      {
+        "name": "bridge101",
+        "index": 25,
+        "members": [
+          "vmenet1"
+        ]
+      }
+    ],
+    "both_running": [
+      {
+        "name": "bridge101",
+        "index": 25,
+        "members": [
+          "vmenet1",
+          "vmenet2"
+        ]
+      }
+    ],
+    "helper_stopped_dev_running": [
+      {
+        "name": "bridge101",
+        "index": 25,
+        "members": [
+          "vmenet2"
+        ]
+      }
+    ],
+    "both_stopped": [],
+    "helper_restarted": [
+      {
+        "name": "bridge101",
+        "index": 25,
+        "members": [
+          "vmenet1"
+        ]
+      }
+    ],
+    "dev_restarted": [
+      {
+        "name": "bridge101",
+        "index": 25,
+        "members": [
+          "vmenet1",
+          "vmenet2"
+        ]
+      }
+    ],
+    "dev_stopped_helper_running": [
+      {
+        "name": "bridge101",
+        "index": 25,
+        "members": [
+          "vmenet1"
+        ]
+      }
+    ]
+  },
+  "cleanup": {
+    "mybox-bridge-check-891a13f079-dev": true,
+    "mybox-bridge-check-891a13f079-helper": true,
+    "mybox-bridge-check-891a13f079": true
+  },
+  "existing_running_before": [
+    "mybox-cli-check-b1e503f2"
+  ],
+  "network_configuration": {
+    "configuration": {
+      "creationDate": "2026-11-04T13:25:27Z",
+      "labels": {
+        "com.mybox.network-test": "true"
+      },
+      "mode": "nat",
+      "name": "mybox-bridge-check-891a13f079",
+      "options": {},
+      "plugin": "container-network-vmnet"
+    },
+    "id": "mybox-bridge-check-891a13f079",
+    "status": {
+      "ipv4Gateway": "192.168.65.1",
+      "ipv4Subnet": "192.168.65.0/24",
+      "ipv6Subnet": "fd85:e9d0:b9d8:1869::/64"
+    }
+  },
+  "checks": {
+    "bridge_absent_before_helper": true,
+    "helper_creates_bridge": true,
+    "dev_joins_same_bridge": true,
+    "dev_keeps_bridge_after_helper_stop": true,
+    "bridge_absent_when_both_stopped": true,
+    "helper_holds_bridge_across_dev_restart": true
+  },
+  "success": true,
+  "existing_running_after": [
+    "mybox-cli-check-b1e503f2"
+  ]
+}

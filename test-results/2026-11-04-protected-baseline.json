@@ -1,0 +1,75 @@
+{
+  "date": "2026-11-04T13:47:27.030158+00:00",
+  "baseline_only": true,
+  "checks": {
+    "baseline": {
+      "baseline_host_reachable": true,
+      "raw_socket_available": true,
+      "raw_spoof_policy": true,
+      "host_policy_after_start": true,
+      "internet_dns": true,
+      "selected_port": true,
+      "hostname_port": true,
+      "unpublished_port": true,
+      "localhost": true,
+      "dns_current": true,
+      "both_guest_servers_running": true
+    }
+  },
+  "stages": {
+    "baseline": {
+      "startup": "boot_id=fb6f3dc1-707c-4ad5-9936-7f42346e72b5\nhost_connected=1\nraw_sent=1\nraw_error=\ncomplete=1\n",
+      "guest": {
+        "hostname": "mybox-baseline-346da1d67b",
+        "ipv4Address": "192.168.65.3/24",
+        "ipv4Gateway": "192.168.65.1",
+        "ipv6Address": "fd85:e9d0:b9d8:1869:fc3b:f6ff:fe3e:185f/64",
+        "macAddress": "fe:3b:f6:3e:18:5f",
+        "mtu": 1280,
+        "network": "mybox-net-baseline-346da1d67b",
+        "variant": "reserved"
+      },
+      "raw_packets": [
+        {
+          "data": "baseline-346da1d67b",
+          "source": [
+            "198.18.0.2",
+            43123
+          ]
+        }
+      ],
+      "internet": {
+        "connected": true,
+        "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+        "error": "",
+        "attempts": [
+          {
+            "connected": true,
+            "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+            "error": ""
+          }
+        ]
+      },
+      "host_after_start": {
+        "connected": true,
+        "output": "HTTP/1.0 200 OK",
+        "error": ""
+      },
+      "selected": true,
+      "hostname": true,
+      "unpublished": true,
+      "localhost": true
+    }
+  },
+  "cleanup": {},
+  "mac_reboot_tested": false,
+  "physical_lan_tested": false,
+  "existing_running_before": [
+    "mybox-cli-check-b1e503f2"
+  ],
+  "baseline_helper": "mybox-helper-11874eb5-9f44-4668-9fe8-d2f22926dd14",
+  "success": true,
+  "existing_running_after": [
+    "mybox-cli-check-b1e503f2"
+  ]
+}

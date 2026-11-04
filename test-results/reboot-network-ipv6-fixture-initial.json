@@ -1,0 +1,35 @@
+{
+  "purpose": "The connection test must reject an unprotected container.",
+  "success": false,
+  "checks": {
+    "control_container_deleted": true,
+    "control_network_deleted": true
+  },
+  "cleanup": {
+    "control_container_stopped": true,
+    "control_container_deleted": true,
+    "control_network_deleted": true
+  },
+  "box_id": "reboot-unprotected-95906546b916",
+  "control_id": "reboot-control-bef1cd524dac",
+  "control_network": "reboot-control-net-bef1cd524dac",
+  "scope": "TCP to Mac IPv4/IPv6 addresses and one live IPv4 LAN endpoint; IPv4 DNS and HTTP to the Internet",
+  "physical_lan_ipv6_tested": false,
+  "lan": {
+    "interface": "en0",
+    "mac_address": "192.168.178.49",
+    "subnet": "192.168.178.0/24",
+    "address": "192.168.178.1",
+    "ports": [
+      443,
+      80,
+      53
+    ]
+  },
+  "error": "RuntimeError(\"Could not identify the test bridge's VM interfaces and IPv6 address:\\nbridge101: flags=8a63<UP,BROADCAST,SMART,RUNNING,ALLMULTI,SIMPLEX,MULTICAST> mtu 1500\\n\\toptions=63<RXCSUM,TXCSUM,TSO4,TSO6>\\n\\tether 5e:9b:a6:08:71:65\\n\\tinet 192.168.66.1 netmask 0xffffff00 broadcast 192.168.66.255\\n\\tinet6 fe80::5c9b:a6ff:fe08:7165%bridge101 prefixlen 64 scopeid 0x19 \\n\\tConfiguration:\\n\\t\\tid 0:0:0:0:0:0 priority 0 hellotime 0 fwddelay 0\\n\\t\\tmaxage 0 holdcnt 0 proto stp maxaddr 100 timeout 1200\\n\\t\\troot id 0:0:0:0:0:0 priority 0 ifcost 0 port 0\\n\\t\\tipfilter disabled flags 0x0\\n\\tmember: vmenet1 flags=20003<LEARNING,DISCOVER,VIRTIO>\\n\\t        ifmaxaddr 0 port 24 priority 0 path cost 0\\n\\tnd6 options=201<PERFORMNUD,DAD>\\n\\tmedia: autoselect\\n\\tstatus: active\\n\")",
+  "outer_cleanup": {
+    "container_stopped": true,
+    "container_deleted": true,
+    "network_deleted": true
+  }
+}

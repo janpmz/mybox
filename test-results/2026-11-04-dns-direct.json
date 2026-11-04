@@ -1,0 +1,59 @@
+{
+  "test_date": "2026-11-04",
+  "name": "mybox-dns-965a806eb6",
+  "alias": "dns-965a806eb6.box.test",
+  "network": "mybox-dns-965a806eb6-network",
+  "system_resolver_requested": false,
+  "service_restarted": false,
+  "checks": {
+    "first_start_A": true,
+    "first_start_AAAA": true,
+    "first_start_alias_persisted": true,
+    "stopped_record_removed": true,
+    "stopped_alias_cannot_be_claimed": true,
+    "restart_A": true,
+    "restart_AAAA": true,
+    "restart_alias_persisted": true,
+    "ip_changed": true,
+    "second_restart_A": true,
+    "second_restart_AAAA": true,
+    "second_restart_alias_persisted": true
+  },
+  "first_start": {
+    "ipv4": "192.168.65.2",
+    "ipv6": "fd85:e9d0:b9d8:1869:f034:7ff:fee5:61a",
+    "A": [
+      "192.168.65.2"
+    ],
+    "AAAA": [
+      "fd85:e9d0:b9d8:1869:f034:7ff:fee5:61a"
+    ]
+  },
+  "duplicate_error": "Error: alias(es) already exist: [\"dns-965a806eb6.box.test\"]",
+  "restart": {
+    "ipv4": "192.168.65.4",
+    "ipv6": "fd85:e9d0:b9d8:1869:f483:c9ff:fe76:5e06",
+    "A": [
+      "192.168.65.4"
+    ],
+    "AAAA": [
+      "fd85:e9d0:b9d8:1869:f483:c9ff:fe76:5e06"
+    ]
+  },
+  "second_restart": {
+    "ipv4": "192.168.65.5",
+    "ipv6": "fd85:e9d0:b9d8:1869:fccd:88ff:fea7:afd1",
+    "A": [
+      "192.168.65.5"
+    ],
+    "AAAA": [
+      "fd85:e9d0:b9d8:1869:fccd:88ff:fea7:afd1"
+    ]
+  },
+  "success": true,
+  "cleanup": {
+    "mybox-dns-965a806eb6-occupant": true,
+    "mybox-dns-965a806eb6": true,
+    "mybox-dns-965a806eb6-network": true
+  }
+}

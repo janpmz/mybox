@@ -1,0 +1,78 @@
+{
+  "boot_before": {
+    "uuid": "21365989-A9E7-4707-B3FF-B0FF875BA5C9",
+    "time": "{ sec = 1793779570, usec = 482694 } Wed Nov  4 09:06:10 2026"
+  },
+  "boot_after": {
+    "uuid": "F3510D3C-F192-48E5-8A54-C62D67E2DA90",
+    "time": "{ sec = 1793811666, usec = 177581 } Wed Nov  4 18:01:06 2026"
+  },
+  "checks": {
+    "mac_reboot_occurred": true,
+    "installed_manager_unchanged": true,
+    "startup_configuration_unchanged": true,
+    "watcher_running_automatically": true,
+    "watcher_report_is_current": true,
+    "watcher_reports_no_error": true,
+    "saved_policy_uses_current_boot": true,
+    "snapshot_uses_current_boot": true,
+    "networking_is_not_suspended": true,
+    "pf_enabled_before_box_commands": true,
+    "mybox_pf_reference_is_active": true,
+    "main_pf_rules_preserved": true,
+    "main_nat_rules_preserved": true,
+    "box_workflow_after_reboot": true,
+    "temporary_box_deleted": true
+  },
+  "success": true,
+  "first_workload_packet_tested": false,
+  "watcher_before_box_commands": {
+    "lastCheck": 1793812534.367824,
+    "lastChange": 1793811907.206184,
+    "refreshCount": 10,
+    "reason": "periodic check",
+    "duration": 0.037814974784851074,
+    "pid": 573
+  },
+  "main_rules": {
+    "before_container_service": {
+      "filter": "scrub-anchor \"com.apple/*\" all fragment reassemble\nscrub-anchor \"com.apple.internet-sharing\" all fragment reassemble\nanchor \"com.apple/*\" all\nanchor \"com.apple.internet-sharing\" all\n",
+      "nat": "nat-anchor \"com.apple/*\" all\nnat-anchor \"com.apple.internet-sharing\" all\nrdr-anchor \"com.apple/*\" all\nrdr-anchor \"com.apple.internet-sharing\" all\n"
+    },
+    "before_box_workflow": {
+      "filter": "scrub-anchor \"com.apple/*\" all fragment reassemble\nscrub-anchor \"com.apple.internet-sharing\" all fragment reassemble\nanchor \"com.apple/*\" all\nanchor \"com.apple.internet-sharing\" all\n",
+      "nat": "nat-anchor \"com.apple/*\" all\nnat-anchor \"com.apple.internet-sharing\" all\nrdr-anchor \"com.apple/*\" all\nrdr-anchor \"com.apple.internet-sharing\" all\n"
+    },
+    "after_box_workflow": {
+      "filter": "scrub-anchor \"com.apple/*\" all fragment reassemble\nscrub-anchor \"com.apple.internet-sharing\" all fragment reassemble\nanchor \"com.apple/*\" all\nanchor \"com.apple.internet-sharing\" all\n",
+      "nat": "nat-anchor \"com.apple/*\" all\nnat-anchor \"com.apple.internet-sharing\" all\nrdr-anchor \"com.apple/*\" all\nrdr-anchor \"com.apple.internet-sharing\" all\n"
+    }
+  },
+  "container_service_needed_start": false,
+  "main_rule_changes": {
+    "container_service": {
+      "filter": "",
+      "nat": ""
+    },
+    "box_workflow": {
+      "filter": "",
+      "nat": ""
+    }
+  },
+  "cli_checks": {
+    "default_storage_no_mounts_or_agent_localhost_only": true,
+    "friendly_dns_alias": true,
+    "recursive_import_includes_all_names": true,
+    "import_refuses_existing_destination": true,
+    "command_workdir_stdin_and_exit_status": true,
+    "changed_inside_linux": true,
+    "recursive_export_binary_hidden_and_spaced_paths": true,
+    "export_refuses_existing_destination": true,
+    "single_file_import_and_export": true,
+    "symlink_path_and_folder_export_rejected": true,
+    "localhost_http_before_restart": true,
+    "export_starts_stopped_box_and_persistence": true,
+    "explicit_stop_start_and_localhost_after_restart": true,
+    "friendly_dns_alias_after_restart": true
+  }
+}

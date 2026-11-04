@@ -1,0 +1,146 @@
+{
+  "test_date": "2026-11-04",
+  "box": "mybox-net-a7806ed73d48",
+  "network": "mybox-net-a7806ed73d48-network",
+  "outside_port": 53366,
+  "checks": {
+    "host_ipv4_blocked": true,
+    "host_ipv6_blocked": true,
+    "internet_and_dns_work": true,
+    "selected_localhost_port_works": true,
+    "unpublished_port_blocked": true,
+    "main_rules_unchanged": true,
+    "main_nat_unchanged": true,
+    "test_rules_removed": true,
+    "pf_enable_reference_released": true,
+    "host_access_restored_after_cleanup": true
+  },
+  "scope": "Temporary interface-scoped PF test; IPv4 Internet, IPv6 blocked",
+  "baseline_only": false,
+  "configuration": {
+    "anchor": "com.apple/000.mybox-net-test-a7806ed73d48",
+    "subnet4": "192.168.66.0/24",
+    "subnet6": "fd36:2f6:1e58:4e67::/64",
+    "inside_port": 8080,
+    "interfaces": [
+      "bridge102",
+      "vmenet2"
+    ],
+    "host_interfaces": [
+      "lo0",
+      "en0",
+      "bridge100",
+      "bridge101",
+      "bridge102"
+    ]
+  },
+  "before": {
+    "host_ipv4": {
+      "connected": true,
+      "output": "HTTP/1.0 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.082
+    },
+    "host_ipv6": {
+      "connected": true,
+      "output": "HTTP/1.0 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.079
+    },
+    "internet_ipv4": {
+      "connected": true,
+      "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.157,
+      "attempts": [
+        {
+          "connected": true,
+          "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+          "error": "",
+          "elapsed_seconds": 0.157
+        }
+      ]
+    },
+    "localhost": true,
+    "unpublished_port": {
+      "connected": true,
+      "error": ""
+    }
+  },
+  "with_rules": {
+    "host_ipv4": {
+      "connected": false,
+      "output": "",
+      "error": "TCP connection: timeout",
+      "elapsed_seconds": 4.089
+    },
+    "host_ipv6": {
+      "connected": false,
+      "output": "",
+      "error": "TCP connection: timeout",
+      "elapsed_seconds": 4.088
+    },
+    "internet_ipv4": {
+      "connected": true,
+      "output": "Resolved IPv4: 172.66.147.243\nHTTP/1.1 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.142,
+      "attempts": [
+        {
+          "connected": true,
+          "output": "Resolved IPv4: 172.66.147.243\nHTTP/1.1 200 OK",
+          "error": "",
+          "elapsed_seconds": 0.142
+        }
+      ]
+    },
+    "localhost": true,
+    "unpublished_port": {
+      "connected": false,
+      "error": "timed out"
+    }
+  },
+  "firewall": {
+    "counters": "@0 pass out quick inet proto tcp from (lo0:1) to 192.168.66.0/24 port = 8080 flags S/SA keep state label \"mybox_selected_port\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 117       Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@1 pass out quick inet proto tcp from (en0:1) to 192.168.66.0/24 port = 8080 flags S/SA keep state label \"mybox_selected_port\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 14        Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@2 pass out quick inet proto tcp from (bridge100:1) to 192.168.66.0/24 port = 8080 flags S/SA keep state label \"mybox_selected_port\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 13        Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@3 pass out quick inet proto tcp from (bridge101:1) to 192.168.66.0/24 port = 8080 flags S/SA keep state label \"mybox_selected_port\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 11        Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@4 pass out quick inet proto tcp from (bridge102:1) to 192.168.66.0/24 port = 8080 flags S/SA keep state label \"mybox_selected_port\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 11        Packets: 11        Bytes: 773         States: 1     ]\n  [ Inserted: uid 0 pid 8808 ]\n@5 block drop out quick inet from (lo0:1) to 192.168.66.0/24 label \"mybox_unpublished\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 45        Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@6 block drop out quick inet from (en0:1) to 192.168.66.0/24 label \"mybox_unpublished\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 45        Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@7 block drop out quick inet from (bridge100:1) to 192.168.66.0/24 label \"mybox_unpublished\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 37        Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@8 block drop out quick inet from (bridge101:1) to 192.168.66.0/24 label \"mybox_unpublished\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 33        Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@9 block drop out quick inet from (bridge102:1) to 192.168.66.0/24 label \"mybox_unpublished\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 22        Packets: 4         Bytes: 256         States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@10 block drop in quick on bridge102 inet from any to (lo0:1) label \"mybox_host\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 78        Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@11 block drop in quick on bridge102 inet from any to (en0:1) label \"mybox_host\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 13        Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@12 block drop in quick on bridge102 inet from any to (bridge100:1) label \"mybox_host\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 13        Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@13 block drop in quick on bridge102 inet from any to (bridge101:1) label \"mybox_host\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 13        Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@14 block drop in quick on bridge102 inet from any to (bridge102:1) label \"mybox_host\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 13        Packets: 4         Bytes: 240         States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@15 block drop in quick on bridge102 inet from any to (lo0:network:1) label \"mybox_connected_network\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@16 block drop in quick on bridge102 inet from any to (en0:network:1) label \"mybox_connected_network\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@17 block drop in quick on bridge102 inet from any to (bridge100:network:1) label \"mybox_connected_network\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@18 block drop in quick on bridge102 inet from any to (bridge101:network:1) label \"mybox_connected_network\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@19 block drop in quick on bridge102 inet from any to (bridge102:network:1) label \"mybox_connected_network\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@20 block drop in quick on bridge102 inet from any to 0.0.0.0/8 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@21 block drop in quick on bridge102 inet from any to 10.0.0.0/8 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@22 block drop in quick on bridge102 inet from any to 100.64.0.0/10 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@23 block drop in quick on bridge102 inet from any to 127.0.0.0/8 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@24 block drop in quick on bridge102 inet from any to 169.254.0.0/16 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@25 block drop in quick on bridge102 inet from any to 172.16.0.0/12 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@26 block drop in quick on bridge102 inet from any to 192.0.0.0/24 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@27 block drop in quick on bridge102 inet from any to 192.0.2.0/24 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@28 block drop in quick on bridge102 inet from any to 192.168.0.0/16 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@29 block drop in quick on bridge102 inet from any to 198.18.0.0/15 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@30 block drop in quick on bridge102 inet from any to 198.51.100.0/24 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@31 block drop in quick on bridge102 inet from any to 203.0.113.0/24 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@32 block drop in quick on bridge102 inet from any to 224.0.0.0/4 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@33 block drop in quick on bridge102 inet from any to 240.0.0.0/4 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 9         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n@34 block drop in quick on bridge102 inet6 all label \"mybox_ipv6\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 50        Packets: 7         Bytes: 512         States: 0     ]\n  [ Inserted: uid 0 pid 8808 ]\n",
+    "remaining_rules": "",
+    "main_rules_unchanged": true,
+    "main_nat_unchanged": true,
+    "cleanup_errors": []
+  },
+  "after_removal": {
+    "host_ipv4": {
+      "connected": true,
+      "output": "HTTP/1.0 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.084
+    },
+    "host_ipv6": {
+      "connected": true,
+      "output": "HTTP/1.0 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.072
+    },
+    "internet_ipv4": {
+      "connected": true,
+      "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.137,
+      "attempts": [
+        {
+          "connected": true,
+          "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+          "error": "",
+          "elapsed_seconds": 0.137
+        }
+      ]
+    },
+    "localhost": true,
+    "unpublished_port": {
+      "connected": true,
+      "error": ""
+    }
+  },
+  "success": true,
+  "test_container_cleaned": true,
+  "test_network_cleaned": true
+}

@@ -1,0 +1,49 @@
+{
+  "box_name": "interface-check-f0cc02f0",
+  "checks": {
+    "old_policy_connection_established": true,
+    "automatic_refresh_without_box_command": true,
+    "existing_connection_closed": true,
+    "new_host_connection_blocked": true,
+    "command_after_change_succeeds": true,
+    "box_did_not_restart": true,
+    "published_port_still_works": true,
+    "internet_and_dns_work": true,
+    "interface_removal_refreshed": true,
+    "command_after_removal_succeeds": true,
+    "main_pf_rules_preserved": true,
+    "main_nat_rules_preserved": true
+  },
+  "cleanup": {
+    "bridge_deleted": true,
+    "box_stopped": true,
+    "box_deleted": true,
+    "network_deleted": true
+  },
+  "success": true,
+  "zero_gap_guarantee": false,
+  "controlled_watcher_pause": true,
+  "test_interface": "bridge1",
+  "resume_to_completed_refresh_seconds": 0.2327,
+  "internet": {
+    "connected": true,
+    "output": "Resolved IPv4: 172.66.147.243\nHTTP/1.1 200 OK\n",
+    "error": "",
+    "attempts": [
+      {
+        "connected": true,
+        "output": "Resolved IPv4: 172.66.147.243\nHTTP/1.1 200 OK\n",
+        "error": ""
+      }
+    ]
+  },
+  "watcher_status": {
+    "lastChange": 1793810349.16137,
+    "reason": "route notification",
+    "pid": 22523,
+    "refreshCount": 2,
+    "duration": 0.05586099624633789,
+    "lastCheck": 1793810354.41181
+  },
+  "interface_removal_to_refresh_seconds": 0.2255
+}

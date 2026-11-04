@@ -1,0 +1,28 @@
+{
+  "box": "mybox-localhost-test",
+  "container_port": 8080,
+  "container_version": "container CLI version 1.6.1 (build: release, commit: aa8d76b)",
+  "host_address": "127.0.0.1",
+  "host_port": 8765,
+  "url": "http://localhost:8765/",
+  "perl_socket_check": true,
+  "http_status": 200,
+  "page_marker_matches": true,
+  "published_ports": [
+    {
+      "containerPort": 8080,
+      "count": 1,
+      "hostAddress": "127.0.0.1",
+      "hostPort": 8765,
+      "proto": "tcp"
+    }
+  ],
+  "mounts": [],
+  "ssh_forwarding": false,
+  "final_box_state": "running",
+  "test_date": "2026-11-04",
+  "browser": "Codex in-app browser",
+  "browser_page_verified": true,
+  "browser_title": "MyBox localhost test",
+  "screenshot": "2026-11-04-localhost.jpg"
+}

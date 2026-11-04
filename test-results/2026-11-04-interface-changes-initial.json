@@ -1,0 +1,43 @@
+{
+  "box_name": "interface-check-7ad35a5b",
+  "checks": {
+    "old_policy_connection_established": true,
+    "automatic_refresh_without_box_command": true,
+    "existing_connection_closed": true,
+    "new_host_connection_blocked": true,
+    "command_after_change_succeeds": true,
+    "box_did_not_restart": true,
+    "published_port_still_works": true,
+    "internet_and_dns_work": true
+  },
+  "cleanup": {
+    "box_stopped": true,
+    "box_deleted": true,
+    "network_deleted": true
+  },
+  "success": false,
+  "zero_gap_guarantee": false,
+  "controlled_watcher_pause": true,
+  "resume_to_completed_refresh_seconds": 0.235,
+  "internet": {
+    "connected": true,
+    "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK\n",
+    "error": "",
+    "attempts": [
+      {
+        "connected": true,
+        "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK\n",
+        "error": ""
+      }
+    ]
+  },
+  "watcher_status": {
+    "lastCheck": 1793809755.498379,
+    "reason": "route notification",
+    "lastChange": 1793809750.112778,
+    "refreshCount": 2,
+    "duration": 0.10987293720245361,
+    "pid": 20613
+  },
+  "error": "RuntimeError('Timed out while waiting for the network-change check.')"
+}

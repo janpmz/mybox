@@ -1,0 +1,9 @@
+{
+  "boot": {
+    "uuid": "21365989-A9E7-4707-B3FF-B0FF875BA5C9",
+    "time": "{ sec = 1793779570, usec = 482694 } Wed Nov  4 09:06:10 2026"
+  },
+  "prepared_at": 1793811333.6014972,
+  "helper_sha256": "cbb2e3dd83fab82708cbded0a36e36686ead791c61a7621e132f8e78e92bd291",
+  "plist_sha256": "3abcd0a83b44b333642f60c663bb6cdb95cf7a526ff07c2e577f776347965336"
+}

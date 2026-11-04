@@ -1,0 +1,62 @@
+{
+  "test_date": "2026-11-04",
+  "box": "mybox-net-882ecbcf090a",
+  "network": "mybox-net-882ecbcf090a-network",
+  "outside_port": 53264,
+  "checks": {},
+  "scope": "Temporary interface-scoped PF test; IPv4 Internet, IPv6 blocked",
+  "baseline_only": false,
+  "configuration": {
+    "anchor": "com.apple/000.mybox-net-test-882ecbcf090a",
+    "subnet4": "192.168.65.0/24",
+    "subnet6": "fd85:e9d0:b9d8:1869::/64",
+    "inside_port": 8080,
+    "interfaces": [
+      "bridge101",
+      "vmenet1"
+    ],
+    "host_interfaces": [
+      "lo0",
+      "en0",
+      "bridge100",
+      "bridge101"
+    ]
+  },
+  "before": {
+    "host_ipv4": {
+      "connected": true,
+      "output": "HTTP/1.0 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.093
+    },
+    "host_ipv6": {
+      "connected": true,
+      "output": "HTTP/1.0 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.065
+    },
+    "internet_ipv4": {
+      "connected": true,
+      "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.133,
+      "attempts": [
+        {
+          "connected": true,
+          "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+          "error": "",
+          "elapsed_seconds": 0.133
+        }
+      ]
+    },
+    "localhost": true,
+    "unpublished_port": {
+      "connected": true,
+      "error": ""
+    }
+  },
+  "success": false,
+  "error": "Administrator authentication was not completed. No isolation claim is made.",
+  "test_container_cleaned": true,
+  "test_network_cleaned": true
+}

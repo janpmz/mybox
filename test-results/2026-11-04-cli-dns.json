@@ -1,0 +1,27 @@
+{
+  "test_date": "2026-11-04",
+  "box_name": "cli-check-c0336ec2",
+  "container_id": "mybox-cli-check-c0336ec2",
+  "host_port": 53287,
+  "container_port": 8080,
+  "url": "http://localhost:53287/",
+  "checks": {
+    "default_storage_no_mounts_or_agent_localhost_only": true,
+    "friendly_dns_alias": true,
+    "recursive_import_and_exclusions": true,
+    "import_refuses_existing_destination": true,
+    "command_workdir_stdin_and_exit_status": true,
+    "changed_inside_linux": true,
+    "recursive_export_binary_hidden_and_spaced_paths": true,
+    "export_refuses_existing_destination": true,
+    "single_file_import_and_export": true,
+    "symlink_path_and_folder_export_rejected": true,
+    "localhost_http_before_restart": true,
+    "export_starts_stopped_box_and_persistence": true,
+    "explicit_stop_start_and_localhost_after_restart": true,
+    "friendly_dns_alias_after_restart": true
+  },
+  "browser_verified": false,
+  "final_state": "deleted",
+  "success": true
+}

@@ -1,0 +1,121 @@
+{
+  "test_date": "2026-11-04",
+  "pf_changes_requested": false,
+  "cases": [
+    {
+      "prefix": 30,
+      "requested_subnet": "192.168.250.0/30",
+      "network": "mybox-tiny-30-91dd790c",
+      "boxes": [
+        {
+          "name": "mybox-tiny-box-91dd790c-1",
+          "create": {
+            "exit_code": 0,
+            "stdout": "mybox-tiny-box-91dd790c-1",
+            "stderr": ""
+          },
+          "start": {
+            "exit_code": 1,
+            "stdout": "",
+            "stderr": "Error: failed to bootstrap container (cause: \"internalError: \"failed to bootstrap container mybox-tiny-box-91dd790c-1 (cause: \"unknown: \"no free indices are available for allocation\"\")\"\")"
+          }
+        }
+      ],
+      "network_create": {
+        "exit_code": 0,
+        "stdout": "mybox-tiny-30-91dd790c",
+        "stderr": ""
+      },
+      "network_status": {
+        "ipv4Gateway": "192.168.250.1",
+        "ipv4Subnet": "192.168.250.0/30",
+        "ipv6Subnet": "fd8a:8b53:2887:51d5::/64"
+      },
+      "box_cleanup": [
+        {
+          "name": "mybox-tiny-box-91dd790c-1",
+          "delete": {
+            "exit_code": 0,
+            "stdout": "mybox-tiny-box-91dd790c-1",
+            "stderr": ""
+          }
+        }
+      ],
+      "network_delete": {
+        "exit_code": 0,
+        "stdout": "mybox-tiny-30-91dd790c",
+        "stderr": ""
+      },
+      "network_removed": true
+    },
+    {
+      "prefix": 29,
+      "requested_subnet": "192.168.250.0/29",
+      "network": "mybox-tiny-29-6f2915d4",
+      "boxes": [
+        {
+          "name": "mybox-tiny-box-6f2915d4-1",
+          "create": {
+            "exit_code": 0,
+            "stdout": "mybox-tiny-box-6f2915d4-1",
+            "stderr": ""
+          },
+          "start": {
+            "exit_code": 0,
+            "stdout": "mybox-tiny-box-6f2915d4-1",
+            "stderr": ""
+          },
+          "ipv4": "192.168.250.2/29"
+        },
+        {
+          "name": "mybox-tiny-box-6f2915d4-2",
+          "create": {
+            "exit_code": 0,
+            "stdout": "mybox-tiny-box-6f2915d4-2",
+            "stderr": ""
+          },
+          "start": {
+            "exit_code": 0,
+            "stdout": "mybox-tiny-box-6f2915d4-2",
+            "stderr": ""
+          },
+          "ipv4": "192.168.250.3/29"
+        }
+      ],
+      "network_create": {
+        "exit_code": 0,
+        "stdout": "mybox-tiny-29-6f2915d4",
+        "stderr": ""
+      },
+      "network_status": {
+        "ipv4Gateway": "192.168.250.1",
+        "ipv4Subnet": "192.168.250.0/29",
+        "ipv6Subnet": "fddf:ecea:7119:dc79::/64"
+      },
+      "box_cleanup": [
+        {
+          "name": "mybox-tiny-box-6f2915d4-2",
+          "delete": {
+            "exit_code": 0,
+            "stdout": "mybox-tiny-box-6f2915d4-2",
+            "stderr": ""
+          }
+        },
+        {
+          "name": "mybox-tiny-box-6f2915d4-1",
+          "delete": {
+            "exit_code": 0,
+            "stdout": "mybox-tiny-box-6f2915d4-1",
+            "stderr": ""
+          }
+        }
+      ],
+      "network_delete": {
+        "exit_code": 0,
+        "stdout": "mybox-tiny-29-6f2915d4",
+        "stderr": ""
+      },
+      "network_removed": true
+    }
+  ]
+}

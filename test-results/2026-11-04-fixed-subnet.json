@@ -1,0 +1,15 @@
+{
+  "test_date": "2026-11-04",
+  "network": "mybox-subnet-proof-f257ea6d",
+  "scope": "Fixed-subnet reservation before VM startup; no filtering or source-spoofing test",
+  "vm_started": false,
+  "pf_changes_requested": false,
+  "status": {
+    "ipv4Gateway": "192.168.250.1",
+    "ipv4Subnet": "192.168.250.0/24",
+    "ipv6Subnet": "fd34:5b90:9c61:1::1/64"
+  },
+  "interfaces_unchanged": true,
+  "fixed_subnets_known_before_boot": true,
+  "network_removed": true
+}

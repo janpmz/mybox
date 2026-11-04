@@ -1,0 +1,8 @@
+{
+  "real_sudo_prompt_seen": true,
+  "echo_disabled_at_prompt": true,
+  "password_entered": false,
+  "cancelled_with_ctrl_c": true,
+  "terminal_echo_restored": true,
+  "command_finished": true
+}

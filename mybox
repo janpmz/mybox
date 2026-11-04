@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+launcher_path=$0
+while [ -L "$launcher_path" ]; do
+    launcher_dir=$(CDPATH= cd -- "$(dirname -- "$launcher_path")" && pwd -P)
+    launcher_path=$(readlink "$launcher_path")
+    case "$launcher_path" in
+        /*) ;;
+        *) launcher_path=$launcher_dir/$launcher_path ;;
+    esac
+done
+project_dir=$(CDPATH= cd -- "$(dirname -- "$launcher_path")" && pwd -P)
+if ! make -q -C "$project_dir" .build/mybox .build/mybox-firewall-manager; then
+    make -s -C "$project_dir" build
+fi
+exec "$project_dir/.build/mybox" "$@"

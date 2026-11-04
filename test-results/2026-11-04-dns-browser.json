@@ -1,0 +1,11 @@
+{
+  "box": "mybox-dns-browser-351db243",
+  "alias": "dns-browser-351db243.box.test",
+  "outside_port": 53378,
+  "inside_port": 8080,
+  "browser_verified": true,
+  "ipv4": "192.168.64.9/24",
+  "direct": "MyBox hostname works",
+  "localhost": "MyBox hostname works",
+  "removed": true
+}

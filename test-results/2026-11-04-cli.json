@@ -1,0 +1,33 @@
+{
+  "test_date": "2026-11-04",
+  "box_name": "cli-check-b1e503f2",
+  "container_id": "mybox-cli-check-b1e503f2",
+  "host_port": 50076,
+  "container_port": 8080,
+  "url": "http://localhost:50076/",
+  "checks": {
+    "default_storage_no_mounts_or_agent_localhost_only": true,
+    "recursive_import_and_exclusions": true,
+    "import_refuses_existing_destination": true,
+    "command_workdir_stdin_and_exit_status": true,
+    "changed_inside_linux": true,
+    "recursive_export_binary_hidden_and_spaced_paths": true,
+    "export_refuses_existing_destination": true,
+    "single_file_import_and_export": true,
+    "symlink_path_and_folder_export_rejected": true,
+    "localhost_http_before_restart": true,
+    "export_starts_stopped_box_and_persistence": true,
+    "explicit_stop_start_and_localhost_after_restart": true,
+    "interactive_bash_tty_ctrl_c_and_exit": true,
+    "in_app_browser_page_displayed": true
+  },
+  "browser_verified": true,
+  "final_state": "running",
+  "success": true,
+  "browser": "Codex in-app browser",
+  "browser_title": "MyBox CLI demo",
+  "swift_version": "6.3.3",
+  "container_version": "1.6.1",
+  "offline_tests_passed": 8,
+  "packages_installed": []
+}

@@ -1,0 +1,62 @@
+{
+  "test_date": "2026-11-04",
+  "box": "mybox-net-200f77a07e7f",
+  "network": "mybox-net-200f77a07e7f-network",
+  "outside_port": 52759,
+  "checks": {},
+  "scope": "Temporary interface-scoped PF test; IPv4 Internet, IPv6 blocked",
+  "baseline_only": true,
+  "configuration": {
+    "anchor": "com.apple/000.mybox-net-test-200f77a07e7f",
+    "subnet4": "192.168.65.0/24",
+    "subnet6": "fd85:e9d0:b9d8:1869::/64",
+    "inside_port": 8080,
+    "interfaces": [
+      "bridge101",
+      "vmenet1"
+    ],
+    "host_interfaces": [
+      "lo0",
+      "en0",
+      "bridge100",
+      "bridge101"
+    ]
+  },
+  "before": {
+    "host_ipv4": {
+      "connected": true,
+      "output": "HTTP/1.0 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.067
+    },
+    "host_ipv6": {
+      "connected": true,
+      "output": "HTTP/1.0 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.06
+    },
+    "internet_ipv4": {
+      "connected": true,
+      "output": "Resolved IPv4: 172.66.147.243\nHTTP/1.1 200 OK",
+      "error": "",
+      "elapsed_seconds": 0.135,
+      "attempts": [
+        {
+          "connected": true,
+          "output": "Resolved IPv4: 172.66.147.243\nHTTP/1.1 200 OK",
+          "error": "",
+          "elapsed_seconds": 0.135
+        }
+      ]
+    },
+    "localhost": true,
+    "unpublished_port": {
+      "connected": true,
+      "error": ""
+    }
+  },
+  "success": true,
+  "firewall_requested": false,
+  "test_container_cleaned": true,
+  "test_network_cleaned": true
+}

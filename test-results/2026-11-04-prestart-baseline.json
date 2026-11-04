@@ -1,0 +1,68 @@
+{
+  "test_date": "2026-11-04",
+  "network": "mybox-prestart-154be001d880",
+  "box": "mybox-prestart-154be001d880-box",
+  "alias": "prestart-154be001d880.box.test",
+  "baseline_only": true,
+  "checks": {
+    "baseline": {
+      "controls_present_in_first_workload": true,
+      "first_workload_host_access": true,
+      "host_access_after_start": true,
+      "internet": true,
+      "servers_running": true,
+      "dns_current": true,
+      "direct_selected": true,
+      "unpublished_policy": true,
+      "localhost": true
+    }
+  },
+  "host_listener": "192.168.178.54",
+  "outside_port": 53436,
+  "configuration": {
+    "policy": "prestart-v4",
+    "anchor": "com.apple/000.mybox-net-test-154be001d880",
+    "subnet4": "192.168.65.0/24",
+    "subnet6": "fd85:e9d0:b9d8:1869::/64",
+    "host_interfaces": [
+      "lo0",
+      "en0",
+      "bridge100"
+    ],
+    "inside_port": 8080
+  },
+  "baseline": {
+    "startup": "CapEff:\t00000000a80405fb\nCapBnd:\t00000000a80405fb\nraw_socket=0\npacket_socket=0\nipv6_socket=0\nfreebind_sent=0\nfreebind_error=Network is unreachable\nhost_connected=1\ncomplete=1\n",
+    "guest_ipv4": "192.168.65.2",
+    "A": [
+      "192.168.65.2"
+    ],
+    "AAAA": [
+      "fd85:e9d0:b9d8:1869:f0e8:7dff:fe54:ce98"
+    ],
+    "internet": {
+      "connected": true,
+      "output": "Resolved IPv4: 172.66.147.243\nHTTP/1.1 200 OK",
+      "error": "",
+      "attempts": [
+        {
+          "connected": true,
+          "output": "Resolved IPv4: 172.66.147.243\nHTTP/1.1 200 OK",
+          "error": ""
+        }
+      ]
+    },
+    "direct_selected": true,
+    "direct_unpublished": true,
+    "localhost": true,
+    "host_after_start": {
+      "connected": true,
+      "output": "HTTP/1.0 200 OK",
+      "error": ""
+    }
+  },
+  "success": true,
+  "cleanup": {
+    "mybox-prestart-154be001d880": true
+  }
+}

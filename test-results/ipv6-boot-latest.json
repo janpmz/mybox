@@ -1,0 +1,15 @@
+{
+  "name": "mybox-noipv6-8e866aa3",
+  "purpose": "Check boot-time IPv6 disabling without PF changes",
+  "start": {
+    "exit_code": 0,
+    "stdout": "mybox-noipv6-8e866aa3\n",
+    "stderr": ""
+  },
+  "guest": {
+    "exit_code": 2,
+    "stdout": "console=hvc0 tsc=reliable panic=0 ipv6.disable=1 oops=panic lsm=lockdown,capability,landlock,yama,apparmor init=/sbin/vminitd ro rootfstype=ext4 root=/dev/vda\nName:\tcat\nUmask:\t0022\nState:\tR (running)\nTgid:\t4\nNgid:\t0\nPid:\t4\nPPid:\t2\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t4\nNSpid:\t4\nNSpgid:\t2\nNSsid:\t2\nKthread:\t0\nVmPeak:\t    2580 kB\nVmSize:\t    2580 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    1180 kB\nVmRSS:\t    1180 kB\nRssAnon:\t      92 kB\nRssFile:\t    1088 kB\nRssShmem:\t       0 kB\nVmData:\t     484 kB\nVmStk:\t     132 kB\nVmExe:\t      44 kB\nVmLib:\t    1812 kB\nVmPTE:\t      40 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t0\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/1502\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000000000\nSigCgt:\t0000000000000000\nCapInh:\t0000000000000000\nCapPrm:\t00000000a80405fb\nCapEff:\t00000000a80405fb\nCapBnd:\t00000000a80405fb\nCapAmb:\t0000000000000000\nNoNewPrivs:\t0\nSeccomp:\t0\nSeccomp_filters:\t0\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\t3\nCpus_allowed_list:\t0-1\nMems_allowed:\t0001\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t0\nnonvoluntary_ctxt_switches:\t0\n",
+    "stderr": "ls: cannot access '/proc/sys/net/ipv6': No such file or directory\n"
+  },
+  "removed": true
+}

@@ -1,0 +1,49 @@
+{
+  "box": "mybox-one-disk-test",
+  "anchor": "com.apple/000.mybox-test-267cbc136c66",
+  "box_address": "192.168.64.11",
+  "mac_address": "192.168.178.54",
+  "test_port": 52725,
+  "before_rule": {
+    "connected": true,
+    "exit_code": 0,
+    "error": ""
+  },
+  "internet_before_rule": {
+    "connected": true,
+    "status": "HTTP/1.1 200 OK",
+    "exit_code": 0,
+    "error": ""
+  },
+  "rule": "block drop in quick inet from 192.168.64.11 to 192.168.178.54 label \"mybox_test_mac\"",
+  "loaded_rules": "block drop in quick inet from 192.168.64.11 to 192.168.178.54 label \"mybox_test_mac\"\n",
+  "with_rule": {
+    "connected": false,
+    "exit_code": 124,
+    "error": ""
+  },
+  "mac_server_works_with_rule": true,
+  "internet_with_rule": {
+    "connected": true,
+    "status": "HTTP/1.1 200 OK",
+    "exit_code": 0,
+    "error": ""
+  },
+  "rule_counters": "@0 block drop in quick inet from 192.168.64.11 to 192.168.178.54 label \"mybox_test_mac\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 53        Packets: 5         Bytes: 300         States: 0     ]\n  [ Inserted: uid 0 pid 9524 ]\n",
+  "remaining_test_rules": "",
+  "main_rules_unchanged": true,
+  "after_removal": {
+    "connected": true,
+    "exit_code": 0,
+    "error": ""
+  },
+  "internet_after_removal": {
+    "connected": true,
+    "status": "HTTP/1.1 200 OK",
+    "exit_code": 0,
+    "error": ""
+  },
+  "test_server_stopped": true,
+  "box_stop_exit_code": 0,
+  "final_box_state": "stopped"
+}

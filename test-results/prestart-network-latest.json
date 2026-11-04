@@ -1,0 +1,160 @@
+{
+  "test_date": "2026-11-04",
+  "network": "mybox-prestart-3c28f9773453",
+  "box": "mybox-prestart-3c28f9773453-box",
+  "alias": "prestart-3c28f9773453.box.test",
+  "baseline_only": false,
+  "checks": {
+    "baseline": {
+      "controls_present_in_first_workload": true,
+      "first_workload_host_access": true,
+      "host_access_after_start": true,
+      "internet": true,
+      "servers_running": true,
+      "dns_current": true,
+      "direct_selected": true,
+      "unpublished_policy": true,
+      "localhost": true
+    },
+    "first_start": {
+      "controls_present_in_first_workload": true,
+      "first_workload_host_access": true,
+      "host_access_after_start": true,
+      "internet": true,
+      "servers_running": true,
+      "dns_current": true,
+      "direct_selected": true,
+      "unpublished_policy": true,
+      "localhost": true
+    },
+    "restart": {
+      "controls_present_in_first_workload": true,
+      "first_workload_host_access": true,
+      "host_access_after_start": true,
+      "internet": true,
+      "servers_running": true,
+      "dns_current": true,
+      "direct_selected": true,
+      "unpublished_policy": true,
+      "localhost": true
+    }
+  },
+  "host_listener": "192.168.178.54",
+  "outside_port": 53458,
+  "configuration": {
+    "policy": "prestart-v4",
+    "anchor": "com.apple/000.mybox-net-test-3c28f9773453",
+    "subnet4": "192.168.65.0/24",
+    "subnet6": "fd85:e9d0:b9d8:1869::/64",
+    "host_interfaces": [
+      "lo0",
+      "en0",
+      "bridge100"
+    ],
+    "inside_port": 8080
+  },
+  "baseline": {
+    "startup": "boot_id=fb296cca-1508-43db-8b3a-77cab4ba3ac3\nCapEff:\t00000000a80405fb\nCapBnd:\t00000000a80405fb\nraw_socket=0\npacket_socket=0\nipv6_socket=0\nfreebind_sent=0\nfreebind_error=Network is unreachable\nhost_connected=1\ncomplete=1\n",
+    "guest_ipv4": "192.168.65.2",
+    "A": [
+      "192.168.65.2"
+    ],
+    "AAAA": [
+      "fd85:e9d0:b9d8:1869:f8ae:10ff:fe67:a46b"
+    ],
+    "internet": {
+      "connected": true,
+      "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+      "error": "",
+      "attempts": [
+        {
+          "connected": true,
+          "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+          "error": ""
+        }
+      ]
+    },
+    "direct_selected": true,
+    "direct_unpublished": true,
+    "localhost": true,
+    "host_after_start": {
+      "connected": true,
+      "output": "HTTP/1.0 200 OK",
+      "error": ""
+    }
+  },
+  "bridge_absent_before_rules": true,
+  "rules_active_before_first_start": true,
+  "first_start": {
+    "startup": "boot_id=035f4d52-6b4c-4073-b533-bcbb72acbf04\nCapEff:\t00000000a80405fb\nCapBnd:\t00000000a80405fb\nraw_socket=0\npacket_socket=0\nipv6_socket=0\nfreebind_sent=0\nfreebind_error=Network is unreachable\nhost_connected=0\ncomplete=1\n",
+    "guest_ipv4": "192.168.65.3",
+    "A": [
+      "192.168.65.3"
+    ],
+    "AAAA": [
+      "fd85:e9d0:b9d8:1869:f0fe:ff:fec3:4619"
+    ],
+    "internet": {
+      "connected": true,
+      "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+      "error": "",
+      "attempts": [
+        {
+          "connected": true,
+          "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+          "error": ""
+        }
+      ]
+    },
+    "direct_selected": true,
+    "direct_unpublished": false,
+    "localhost": true,
+    "host_after_start": {
+      "connected": false,
+      "output": "",
+      "error": "TCP connection: timeout"
+    }
+  },
+  "restart": {
+    "startup": "boot_id=d98c24a4-2f42-42c3-9a66-7ca5179ec4b4\nCapEff:\t00000000a80405fb\nCapBnd:\t00000000a80405fb\nraw_socket=0\npacket_socket=0\nipv6_socket=0\nfreebind_sent=0\nfreebind_error=Network is unreachable\nhost_connected=0\ncomplete=1\n",
+    "guest_ipv4": "192.168.65.4",
+    "A": [
+      "192.168.65.4"
+    ],
+    "AAAA": [
+      "fd85:e9d0:b9d8:1869:f034:16ff:fe93:f75a"
+    ],
+    "internet": {
+      "connected": true,
+      "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+      "error": "",
+      "attempts": [
+        {
+          "connected": true,
+          "output": "Resolved IPv4: 104.20.23.154\nHTTP/1.1 200 OK",
+          "error": ""
+        }
+      ]
+    },
+    "direct_selected": true,
+    "direct_unpublished": false,
+    "localhost": true,
+    "host_after_start": {
+      "connected": false,
+      "output": "",
+      "error": "TCP connection: timeout"
+    }
+  },
+  "success": true,
+  "cleanup": {
+    "mybox-prestart-3c28f9773453-box": true,
+    "mybox-prestart-3c28f9773453": true
+  },
+  "firewall": {
+    "counters": "@0 pass out quick inet proto tcp from 192.168.65.1 to 192.168.65.0/24 port = 8080 flags S/SA keep state label \"mybox_selected_port\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 211       Packets: 44        Bytes: 3132        States: 4     ]\n  [ Inserted: uid 0 pid 9267 ]\n@1 block drop out quick inet from any to 192.168.65.0/24 label \"mybox_unpublished\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 85        Packets: 6         Bytes: 384         States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@2 block drop in quick inet from 192.168.65.0/24 to (lo0:1) label \"mybox_host\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 97        Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@3 block drop in quick inet from 192.168.65.0/24 to (en0:1) label \"mybox_host\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 16        Packets: 12        Bytes: 720         States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@4 block drop in quick inet from 192.168.65.0/24 to (bridge100:1) label \"mybox_host\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@5 block drop in quick inet from 192.168.65.0/24 to (lo0:network:1) label \"mybox_connected_network\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@6 block drop in quick inet from 192.168.65.0/24 to (en0:network:1) label \"mybox_connected_network\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@7 block drop in quick inet from 192.168.65.0/24 to (bridge100:network:1) label \"mybox_connected_network\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@8 block drop in quick inet from 192.168.65.0/24 to 0.0.0.0/8 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@9 block drop in quick inet from 192.168.65.0/24 to 10.0.0.0/8 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@10 block drop in quick inet from 192.168.65.0/24 to 100.64.0.0/10 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@11 block drop in quick inet from 192.168.65.0/24 to 127.0.0.0/8 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@12 block drop in quick inet from 192.168.65.0/24 to 169.254.0.0/16 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@13 block drop in quick inet from 192.168.65.0/24 to 172.16.0.0/12 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@14 block drop in quick inet from 192.168.65.0/24 to 192.0.0.0/24 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@15 block drop in quick inet from 192.168.65.0/24 to 192.0.2.0/24 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@16 block drop in quick inet from 192.168.65.0/24 to 192.168.0.0/16 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@17 block drop in quick inet from 192.168.65.0/24 to 198.18.0.0/15 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@18 block drop in quick inet from 192.168.65.0/24 to 198.51.100.0/24 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@19 block drop in quick inet from 192.168.65.0/24 to 203.0.113.0/24 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@20 block drop in quick inet from 192.168.65.0/24 to 224.0.0.0/4 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@21 block drop in quick inet from 192.168.65.0/24 to 240.0.0.0/4 label \"mybox_private\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@22 pass in quick inet from 192.168.65.0/24 to any flags S/SA keep state label \"mybox_internet\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 4         Packets: 32        Bytes: 3677        States: 3     ]\n  [ Inserted: uid 0 pid 9267 ]\n@23 block drop in quick inet6 from fd85:e9d0:b9d8:1869::/64 to any label \"mybox_ipv6\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 106       Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n@24 block drop out quick inet6 from any to fd85:e9d0:b9d8:1869::/64 label \"mybox_ipv6\"\n  [ Owner : nil          Priority : 0     ]\n  [ Evaluations: 185       Packets: 0         Bytes: 0           States: 0     ]\n  [ Inserted: uid 0 pid 9267 ]\n",
+    "remaining_rules": "",
+    "main_rules_unchanged": true,
+    "main_nat_unchanged": true,
+    "cleanup_errors": []
+  }
+}

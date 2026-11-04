@@ -1,0 +1,74 @@
+{
+  "test_date": "2026-11-04",
+  "name": "mybox-dns-0ba1071d07",
+  "alias": "dns-0ba1071d07.box.test",
+  "network": "mybox-dns-0ba1071d07-network",
+  "system_resolver_requested": true,
+  "service_restarted": false,
+  "checks": {
+    "first_start_A": true,
+    "first_start_AAAA": true,
+    "first_start_alias_persisted": true,
+    "first_start_system_resolver": true,
+    "stopped_record_removed": true,
+    "stopped_alias_cannot_be_claimed": true,
+    "restart_A": true,
+    "restart_AAAA": true,
+    "restart_alias_persisted": true,
+    "restart_system_resolver": true,
+    "ip_changed": true,
+    "second_restart_A": true,
+    "second_restart_AAAA": true,
+    "second_restart_alias_persisted": true,
+    "second_restart_system_resolver": true
+  },
+  "first_start": {
+    "ipv4": "192.168.65.2",
+    "ipv6": "fd85:e9d0:b9d8:1869:f838:d5ff:feb5:c9ba",
+    "A": [
+      "192.168.65.2"
+    ],
+    "AAAA": [
+      "fd85:e9d0:b9d8:1869:f838:d5ff:feb5:c9ba"
+    ],
+    "system_addresses": [
+      "192.168.65.2",
+      "fd85:e9d0:b9d8:1869:f838:d5ff:feb5:c9ba"
+    ]
+  },
+  "duplicate_error": "Error: alias(es) already exist: [\"dns-0ba1071d07.box.test\"]",
+  "restart": {
+    "ipv4": "192.168.65.4",
+    "ipv6": "fd85:e9d0:b9d8:1869:f414:c5ff:fe42:56fc",
+    "A": [
+      "192.168.65.4"
+    ],
+    "AAAA": [
+      "fd85:e9d0:b9d8:1869:f414:c5ff:fe42:56fc"
+    ],
+    "system_addresses": [
+      "192.168.65.4",
+      "fd85:e9d0:b9d8:1869:f414:c5ff:fe42:56fc"
+    ]
+  },
+  "second_restart": {
+    "ipv4": "192.168.65.5",
+    "ipv6": "fd85:e9d0:b9d8:1869:f4c7:bff:fefa:dbd7",
+    "A": [
+      "192.168.65.5"
+    ],
+    "AAAA": [
+      "fd85:e9d0:b9d8:1869:f4c7:bff:fefa:dbd7"
+    ],
+    "system_addresses": [
+      "192.168.65.5",
+      "fd85:e9d0:b9d8:1869:f4c7:bff:fefa:dbd7"
+    ]
+  },
+  "success": true,
+  "cleanup": {
+    "mybox-dns-0ba1071d07-occupant": true,
+    "mybox-dns-0ba1071d07": true,
+    "mybox-dns-0ba1071d07-network": true
+  }
+}

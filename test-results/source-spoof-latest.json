@@ -1,0 +1,53 @@
+{
+  "test_date": "2026-11-04",
+  "network": "mybox-spoof-483f23205c",
+  "scope": "Own host UDP listener only; no PF changes",
+  "cases": [
+    {
+      "capabilities_dropped": false,
+      "source": "192.168.65.2",
+      "send_exit": 0,
+      "send_error": "",
+      "received": true,
+      "peer": [
+        "192.168.65.2",
+        43123
+      ]
+    },
+    {
+      "capabilities_dropped": false,
+      "source": "198.18.0.2",
+      "send_exit": 0,
+      "send_error": "",
+      "received": true,
+      "peer": [
+        "198.18.0.2",
+        43123
+      ]
+    },
+    {
+      "capabilities_dropped": true,
+      "source": "192.168.65.3",
+      "send_exit": 1,
+      "send_error": "raw socket: Operation not permitted",
+      "received": false
+    },
+    {
+      "capabilities_dropped": true,
+      "source": "198.18.0.2",
+      "send_exit": 1,
+      "send_error": "raw socket: Operation not permitted",
+      "received": false
+    }
+  ],
+  "network_status": {
+    "ipv4Gateway": "192.168.65.1",
+    "ipv4Subnet": "192.168.65.0/24",
+    "ipv6Subnet": "fd85:e9d0:b9d8:1869::/64"
+  },
+  "cleanup": {
+    "mybox-spoof-483f23205c-default": true,
+    "mybox-spoof-483f23205c-dropped": true,
+    "mybox-spoof-483f23205c": true
+  }
+}
