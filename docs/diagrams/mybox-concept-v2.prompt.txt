@@ -1,0 +1,6 @@
+Tool: built-in imagegen
+Edit target: mybox-concept.png
+
+Use case: precise-object-edit.
+Edit the supplied MyBox concept drawing. Make exactly one change: add the word "Mac" centered inside the screen of the small laptop in the lower-left part of the drawing. Match the existing serif lettering and muted sage-gray color. Use a modest font size that fits comfortably within the screen. Keep the existing "Mac" label at the top-left of the large boundary.
+Preserve everything else: all other text, every arrow and cross, every icon, the layout, proportions, paper tint, grain, faint grid, light line weights, and image dimensions. Do not add any other content.

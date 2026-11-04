@@ -1,0 +1,38 @@
+Tool: built-in imagegen
+Original image: mybox-browser.png
+
+Port annotations:
+Use case: precise-object-edit.
+Edit the supplied MyBox browser drawing. Preserve its layout, warm ivory paper, subtle grain, faint grid, thin sage-gray lines, all icons, the shield, both arrows, and the existing labels and addresses.
+
+Add only these concise annotations:
+1. Directly below the browser window on the Mac side, add the exact command option "--outside-port 8766". Beneath it, add the smaller note "localhost only". Keep this note clearly attached to the OUTSIDE port on the Mac, not to the app inside Linux.
+2. Directly below the app window, within the MyBox compartment, add the exact command option "--inside-port 8080".
+3. In the empty lower margin beneath the large Mac boundary, add one small, centered, legible command example:
+"mybox create web --inside-port 8080 --outside-port 8766"
+
+Use understated monospace lettering for the command options and the command example. Match the existing muted sage-gray color. Keep the "localhost only" note small and consistent with the existing serif labels.
+Retain "localhost:8766" in the browser address bar and "0.0.0.0:8080" inside the app. These addresses must not change.
+Maintain ample space around every annotation. Make only small spacing adjustments if necessary. Keep the same landscape dimensions. Do not add titles, explanations, new icons, extra paths, or other text.
+
+Project name and binding:
+Use case: text-localization.
+Edit only two text areas in the supplied MyBox browser drawing.
+
+First, replace the bottom command example with this exact command:
+"mybox create my-project --inside-port 8080 --outside-port 8766"
+
+Second, keep "--outside-port 8766" below the browser window. Replace the smaller "localhost only" note beneath it with these two lines:
+"Bound to 127.0.0.1"
+"Only this Mac can connect."
+
+Use modest sage-gray text that fits comfortably between the browser and the lower Mac boundary. The command example must remain on one legible line in the lower margin. Keep the command lettering monospaced.
+
+Preserve everything else: "localhost:8766" in the browser, "0.0.0.0:8080" in the app, "--inside-port 8080", all other labels, all boxes, icons, both arrows, the shield, the warm ivory paper, faint grid, subtle grain, light lines, spacing, and image dimensions. Add no other content.
+
+Final edit:
+Use case: precise-object-edit.
+Remove only the sentence "Only this Mac can connect." beneath the browser window.
+Preserve "--outside-port 8766" and "Bound to 127.0.0.1".
+Preserve the bottom command exactly: "mybox create my-project --inside-port 8080 --outside-port 8766".
+Preserve every other part of the supplied drawing, including all labels, addresses, arrows, icons, the shield, positions, dimensions, light linework, ivory paper, grain, and grid. Leave the removed sentence's area as matching blank paper. Add no text or other content.

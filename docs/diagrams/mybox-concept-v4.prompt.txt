@@ -1,0 +1,18 @@
+Tool: built-in imagegen
+Edit target: mybox-concept-v3.png
+
+Use case: precise-object-edit.
+Asset type: MyBox README concept diagram.
+Input image: edit target.
+
+Change only the contents below the "MyBox" label inside the smaller double-line box.
+Remove the terminal icon and the small folder icon inside this box.
+Replace these two icons with the exact text "e.g. Node.js".
+Center this text horizontally at the former icons' position.
+Use the existing muted sage-gray color and serif label style.
+Keep the text smaller than the "MyBox" label.
+
+Preserve all other text, icons, arrows, X marks, boundaries, and positions.
+Keep the Mac laptop, the outer Files folder, the shield, the Internet cloud, and the LAN router unchanged.
+Keep the ivory paper, grain, faint grid, thin linework, and 1536 by 1024 dimensions.
+Do not add any other content.

@@ -1,0 +1,16 @@
+Tool: built-in imagegen
+Edit target: mybox-files-v4.png
+
+Use case: text-localization.
+Asset type: MyBox README file-workflow diagram.
+Input image: edit target.
+
+Change only the first bullet near the bottom.
+Replace "Stop / Start: keeps files" with the exact text "Start Stop Box Keeps Files".
+Keep the bullet dot. Keep the existing font, size, color, and left alignment with the second bullet.
+The new text must fit on one line.
+
+Preserve all other text, icons, arrows, boundaries, and positions.
+Keep "Delete box: deletes files" unchanged.
+Keep the ivory paper, grain, faint grid, thin linework, and 1536 by 1024 dimensions.
+Do not add any other content.

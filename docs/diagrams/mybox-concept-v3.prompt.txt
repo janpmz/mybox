@@ -1,0 +1,11 @@
+Tool: built-in imagegen
+Edit target: mybox-concept-v2.png
+
+Use case: precise-object-edit.
+Edit the supplied MyBox concept drawing. Change only the connection between the "Files" folder on the Mac and the MyBox compartment.
+
+Remove both dashed copy arrows between Files and MyBox. Remove the word "copy".
+Replace them with one thin dashed path starting at the LEFT edge of the MyBox compartment and pointing LEFT toward the Files folder. The arrowhead must be next to the Files folder, not next to MyBox.
+Interrupt this path with one muted terracotta X near the MyBox boundary. Match the size, color, and line weight of the existing X on the lower path toward the Mac laptop. This shows that the box cannot write directly to the Mac's files.
+
+Keep the Files folder and its "Files" label. Preserve every other part of the image, including the "Mac" text inside the laptop, the blocked path to that laptop, the blocked LAN path, the permitted Internet path, the MyBox contents, the shield, all boundaries, and all remaining labels. Keep the same layout, dimensions, paper tint, grain, faint grid, and light linework. Add no new labels or explanations.

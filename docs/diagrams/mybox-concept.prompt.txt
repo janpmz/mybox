@@ -1,0 +1,14 @@
+Tool: built-in imagegen
+
+Use case: infographic-diagram.
+Create one simple technical concept drawing for MyBox, a Linux workspace isolated inside a Mac. Give it the quiet appearance of an architectural drawing on lightly tinted warm ivory paper. Use thin, light sage-gray and warm graphite lines. Add a barely visible drafting grid and subtle paper grain. Keep ample empty space. Flat two-dimensional line drawing, landscape format, careful alignment, small legible labels. No blue background, white-on-blue lines, heavy shadows, glossy effects, decorative machinery, long captions, or dense detail.
+
+Draw one large lightly outlined area labeled "Mac". Inside it, place a folder icon labeled "Files" toward the upper left, a small unlabeled laptop icon below it, and a simple double-outline compartment labeled "MyBox" toward the right. Inside MyBox, show only a tiny terminal symbol and a tiny folder symbol.
+
+Connect Files and MyBox with two restrained dashed arrows in opposite directions, together labeled "copy". This means explicit import and export, not a shared folder.
+Outside the Mac area, place a small cloud labeled "Internet" at the upper right. Show a continuous thin arrow from MyBox to Internet.
+Place a small router icon labeled "LAN" at the lower right. Draw a path from MyBox toward LAN, visibly interrupted by a small muted terracotta cross near the MyBox boundary.
+Also draw one short, separate path from MyBox toward the laptop inside Mac. Interrupt it with the same small muted cross near the MyBox boundary. These crossed paths represent blocked box-initiated network access to the Mac and LAN.
+Place one very small shield symbol on the MyBox compartment boundary to suggest filtering. Keep network paths distinct from the dashed file-copy arrows.
+
+Use only these six text labels: "Mac", "Files", "MyBox", "copy", "Internet", "LAN". Do not add a title, legend, explanatory prose, dimensions, or numbers. Keep the entire composition understated, simple, and readable. The result should feel like a light pencil-and-technical-pen drawing on pale cream drafting paper.

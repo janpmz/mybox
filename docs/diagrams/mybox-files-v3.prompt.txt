@@ -1,0 +1,17 @@
+Tool: built-in imagegen
+Edit target: mybox-files-v2.png
+
+Use case: text-localization.
+Replace only the two-line note above the large Mac boundary with this small title and three lines:
+Title: "How to move files"
+Command line: "mybox import and mybox export"
+Instruction: "Run the commands on the Mac, outside the box."
+Explanation: "The box cannot write files on your Mac by itself."
+
+Make the title slightly larger than the other lines. Use monospace lettering for the two command names. Use the existing serif lettering for the other text. Keep all text sage-gray, readable, restrained, centered, and comfortably within the empty top margin. These are direct technical instructions, not a slogan.
+
+Preserve the main diagram and both bullet points exactly:
+"• Stop / Start: keeps files"
+"• Delete box: deletes files"
+
+Change nothing else. Preserve all icons, arrows, labels, the Mac and MyBox boundaries, their positions, the paper tint, grain, faint grid, line weights, and landscape dimensions.

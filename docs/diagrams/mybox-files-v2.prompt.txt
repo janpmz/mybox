@@ -1,0 +1,44 @@
+Tool: built-in imagegen
+Original image: mybox-files.png
+
+First edit:
+Use case: precise-object-edit.
+Edit the supplied MyBox file-workflow drawing. Preserve all existing labels, icons, arrows, boxes, positions, proportions, the warm ivory paper, faint grid, subtle grain, light sage-gray linework, muted terracotta cross, and landscape dimensions.
+
+Add one small, centered two-line note in the empty top margin above the large Mac boundary:
+"Import / export: your command only"
+"Run on the Mac, outside MyBox"
+
+The first line should be modest and readable. The second line should be slightly smaller. Match the existing restrained serif typography and sage-gray color. Keep ample space around the note.
+This note explains that both file-transfer arrows require the user to issue a command on the host Mac. The box does not initiate either transfer. Do not add new command examples or automatic-sync arrows.
+Make no other changes.
+
+Second edit:
+Use case: precise-object-edit.
+Edit the supplied MyBox file-workflow drawing. Change only the lower lifecycle section.
+Remove both dashed branches below the central MyBox compartment. Remove both small lower folder icons, the pause/play marks, the cross, the trash symbol, and the existing "Stop / Start", "kept", "Delete box", and "lost" labels.
+Replace that entire lower section with a quiet two-item bullet list, centered as a group below the MyBox compartment, with its two lines aligned on the left:
+"• Stop / Start: keeps files"
+"• Delete box: deletes files"
+
+Use modest serif lettering in the same muted sage-gray color. Leave generous space above and below the list. Use ordinary small round bullets. Do not draw arrows, boxes, branches, or icons around these two points.
+
+Preserve the top note exactly:
+"Import / export: your command only"
+"Run on the Mac, outside MyBox"
+
+Preserve every part of the main import-edit-export row, its labels, icons, arrows, the MyBox compartment, and the large Mac boundary. Preserve the ivory paper, faint grid, grain, light lines, overall layout, and landscape dimensions. Add no other content.
+
+Final text correction:
+Use case: text-localization.
+Edit only the two-line note at the top of the supplied file-workflow drawing. Replace it with these exact two lines:
+"Import and export only with mybox import and mybox export."
+"Run these commands on the Mac, outside the box."
+
+Use modest, readable text in the existing sage-gray color. The command names "mybox import" and "mybox export" can use monospace lettering within the first line. Keep the sentence normal and direct. Fit both lines comfortably in the top margin without touching the large Mac boundary.
+
+Preserve everything else exactly, including the import-edit-export row and these two bullet points:
+"• Stop / Start: keeps files"
+"• Delete box: deletes files"
+
+Keep the same paper, grid, grain, colors, line weights, labels, icons, arrows, boundaries, dimensions, and spacing. Do not add slogans, headings, decorative text, or any other content.

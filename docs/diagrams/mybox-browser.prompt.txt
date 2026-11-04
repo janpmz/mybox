@@ -1,0 +1,13 @@
+Tool: built-in imagegen
+Style reference: mybox-concept-v2.png
+
+Use case: infographic-diagram.
+Use the supplied MyBox drawing as a style reference. Create a companion drawing about opening a box's web app in the Mac browser. Replace the diagram contents. Match the warm ivory paper, subtle grain, very faint drafting grid, thin sage-gray outlines, restrained serif labels, landscape proportions, and generous empty space. Keep it simple and understated.
+
+Draw a large thin boundary labeled "Mac". Inside the left half, draw one browser window. Label it "Browser" and put the exact address "localhost:8766" in its address bar. Use only a few faint page lines inside the window.
+
+Inside the right half of the Mac boundary, draw a double-outline compartment labeled "MyBox". Inside it, draw a small server/application window labeled "App", with the exact address "0.0.0.0:8080" below that icon. This means the app listens on port 8080 inside Linux.
+
+Connect the browser and app with two clean horizontal paths through the MyBox boundary. The upper path has one arrow pointing from the browser toward the app. The lower path has one arrow pointing back toward the browser. Show a tiny, unobtrusive shield at the crossing of the MyBox boundary. The paths remain continuous and permitted. The browser's localhost port 8766 forwards to the app's port 8080.
+
+Use only these exact text labels: "Mac", "Browser", "localhost:8766", "MyBox", "App", "0.0.0.0:8080". Do not add titles, explanations, legends, extra ports, files, Internet clouds, routers, dimensions, decorative objects, or blocked-connection marks. Keep the two port addresses readable, with comfortable spacing. Preserve the light paper-and-pencil appearance of the reference.

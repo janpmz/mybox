@@ -1,0 +1,21 @@
+Tool: built-in imagegen
+Style reference: mybox-concept-v2.png
+
+Use case: infographic-diagram.
+Use the supplied MyBox drawing as a style reference. Create a companion drawing about the file workflow. Replace the diagram contents. Match the warm ivory paper, subtle grain, very faint drafting grid, thin sage-gray outlines, muted terracotta crosses, restrained serif labels, landscape proportions, and generous empty space. Keep the drawing simple.
+
+Main row, arranged left to right inside one large lightly outlined area labeled "Mac":
+On the left, draw a folder labeled "Original".
+In the center, draw a double-outline compartment labeled "MyBox". Inside it, draw a folder with a small pencil, labeled "Edit".
+On the right, draw a separate folder with a small plus sign, labeled "New copy".
+Draw one dashed arrow from Original to the folder inside MyBox, labeled "import".
+Draw one dashed arrow from the folder inside MyBox to New copy, labeled "export".
+This represents two explicit copies. The original Mac folder stays in place. Export creates a new Mac destination. Do not imply automatic synchronization or overwriting the original.
+
+Below the central MyBox compartment, add two small, clearly separate outcomes connected only to that compartment:
+A short branch on the lower left ends at a simple folder with small pause/play symbols. Label it "Stop / Start" with the small word "kept" below.
+A short branch on the lower right ends at a simple folder with a small muted terracotta cross and a tiny trash symbol. Label it "Delete box" with the small word "lost" below.
+These outcomes refer only to files stored inside the box. Do not connect them to either Mac folder.
+
+Use only these text labels: "Mac", "Original", "MyBox", "Edit", "New copy", "import", "export", "Stop / Start", "kept", "Delete box", "lost".
+No title, paragraphs, legend, numbered steps, code, paths, network elements, heavy colors, or decorative details. Keep the main copy flow prominent and the two lifecycle outcomes small and quiet.

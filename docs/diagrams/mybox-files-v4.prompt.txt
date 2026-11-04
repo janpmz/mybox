@@ -1,0 +1,19 @@
+Tool: built-in imagegen
+Edit target: mybox-files-v3.png
+
+Use case: precise-object-edit.
+Edit the supplied MyBox file-workflow drawing.
+
+Move the command names from the header into the diagram:
+- Remove the entire header line "mybox import and mybox export".
+- Replace the label "import" above the left transfer arrow with "mybox import".
+- Replace the label "export" above the right transfer arrow with "mybox export".
+
+Use modest monospace text for both command labels. Center each label above its arrow. Keep both labels inside the large Mac boundary and outside the smaller MyBox compartment. Fit them in the existing gaps between the folders and the MyBox boundary.
+
+Keep the title "How to move files" and these two sentences:
+"Run the commands on the Mac, outside the box."
+"The box cannot write files on your Mac by itself."
+Use tidy spacing in the header after removing the command line.
+
+Preserve all other text, including the two lifecycle bullet points. Preserve every icon, arrow, boundary, position, color, the ivory paper, grain, faint grid, light linework, and image dimensions. Do not add any other content.

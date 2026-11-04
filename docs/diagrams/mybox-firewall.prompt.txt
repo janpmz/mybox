@@ -1,0 +1,19 @@
+Tool: built-in imagegen
+Style reference: mybox-concept.png
+
+Use case: infographic-diagram.
+The supplied image is a style reference. Make a second companion drawing about the MyBox firewall principle. Replace the diagram contents. Preserve the warm, lightly tinted ivory paper, subtle grain, very faint drafting grid, thin light sage-gray lines, muted terracotta crosses, restrained serif labels, generous empty space, and flat architectural-drawing style. Use the same landscape proportions.
+
+Keep the new drawing very simple. It explains OUTGOING connections from a Linux box, plus automatic updates to the firewall on the Mac.
+
+Main diagram: a small rectangle labeled "MyBox" on the left, with a tiny terminal symbol inside. One clear arrow leads right into a slim vertical firewall panel at the center. Put a small shield on this panel and label it "Mac firewall". The firewall is outside the MyBox rectangle.
+
+From that panel, draw three separate paths to three simple icons on the right:
+1. A cloud at the top labeled "Internet" with a tiny "IPv4" beneath it. This path is continuous and ends with an arrow toward the cloud.
+2. A laptop in the middle labeled "Mac". Interrupt this path with a small muted terracotta cross near the firewall. Keep its arrow direction toward the laptop.
+3. A router below labeled "LAN". Interrupt this path with another small muted terracotta cross near the firewall. Keep its arrow direction toward the router.
+Below the firewall, place one small muted cross beside the label "IPv6". This is a compact indication that IPv6 is blocked, not a fourth device.
+
+Above the firewall, leave generous space for a small control flow. Put a tiny network-plug symbol labeled "Network change", followed by a light dashed arrow to a circular-arrow symbol labeled "Watcher". From Watcher, draw a dashed arrow down into the firewall panel. This represents detection followed by a rule update. Keep these dashed control arrows distinct from the main traffic paths. Do not imply zero detection delay.
+
+Use only the exact labels "MyBox", "Mac firewall", "Internet", "IPv4", "Mac", "LAN", "IPv6", "Network change", and "Watcher". No title, explanatory paragraphs, legend, dimension lines, numbers, code, IP addresses, extra compartments, or decorative details. Show no incoming-port paths or file transfers in this drawing. Preserve clean spacing and make every connection direction unambiguous.

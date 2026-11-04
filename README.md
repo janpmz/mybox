@@ -1,5 +1,13 @@
 # MyBox
 
+![MyBox concept: run software such as Node.js inside the box. Internet access is allowed. Direct access to Mac files and connections to the Mac and LAN are blocked.](docs/diagrams/mybox-concept-v4.png)
+
+![MyBox firewall: allow outgoing IPv4 Internet connections, block Mac and LAN access and IPv6, and update rules after network changes.](docs/diagrams/mybox-firewall.png)
+
+![Browser access: mybox create my-project --inside-port 8080 --outside-port 8766. The outside port binds to 127.0.0.1 and forwards to the app inside MyBox.](docs/diagrams/mybox-browser-v3.png)
+
+![How to move files: run mybox import and mybox export on the Mac, outside the box. The box cannot write Mac files by itself. Start Stop Box Keeps Files. Deleting the box deletes its files.](docs/diagrams/mybox-files-v5.png)
+
 A small Swift CLI around Apple's `container` CLI. Each box keeps Linux and its
 project files on the container's default storage. Source files live in
 `/workspace` inside Linux.
