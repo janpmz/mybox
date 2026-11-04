@@ -109,6 +109,31 @@ mybox enter demo -- /bin/ls -la /workspace
 printf 'hello\n' | mybox enter demo -- /usr/bin/tee /workspace/hello.txt
 ```
 
+For `enter`, you can type part of the box name:
+
+```sh
+mybox enter doc
+```
+
+This opens `document-player-box` if it is the only box whose name contains `doc`.
+An exact name takes priority over partial matches. If several names match, MyBox
+lists them and stops. Type more of the name to select one box.
+The search includes stopped boxes and also works with `enter <name> -- <command>`.
+No shell setup is required. Other commands still require the full box name.
+
+For zsh Tab completion, add this line to `~/.zshrc`:
+
+```sh
+eval "$(mybox completion zsh)"
+```
+
+Open a new terminal, or run that line in the current terminal.
+Type `mybox enter doc` and press Tab to complete `document-player-box`.
+Box-name completion matches any part of the name, so `player` also works.
+If several names match, zsh offers the matching names.
+Completion includes stopped boxes. It does not start boxes or request administrator access.
+It also completes commands, box names for other commands, and common options.
+
 Defaults are 2 CPUs and 2 GiB of RAM. Configure them at creation with
 `--cpus 4 --memory 4g` (sizes accept `m` or `g`). These are initial defaults,
 not workload benchmarks. Debian Slim contains only its existing basic tools;

@@ -104,6 +104,27 @@ struct Backend {
         return record
     }
 
+    func managedNames() throws -> [String] {
+        try records(["list", "--all", "--format", "json"])
+            .filter(\.isManaged).map { String($0.id.dropFirst(namePrefix.count)) }.sorted()
+    }
+
+    func resolveEnterName(_ query: String) throws -> String {
+        _ = try containerID(query)
+        let names = try managedNames()
+        if names.contains(query) { return query }
+        let candidates = names.filter { $0.contains(query) }
+        guard !candidates.isEmpty else {
+            throw BoxError("No MyBox name contains \(query.debugDescription). Run mybox list to see available boxes.")
+        }
+        guard candidates.count == 1 else {
+            throw BoxError("Several MyBox names contain \(query.debugDescription):\n"
+                + candidates.map { "  \($0)" }.joined(separator: "\n")
+                + "\nType more of the name or use the full name.")
+        }
+        return candidates[0]
+    }
+
     func ready(_ name: String, progress: ((String) -> Void)? = nil) throws -> String {
         try protectedReady(name, progress: progress)
     }
@@ -408,6 +429,8 @@ Usage: mybox <command>
                          Repeat both flags for multiple TCP port mappings;
                          pair the first inside port with the first outside port.
   enter <name>           Start if needed and open Bash in /workspace.
+                         Accept a unique part of a name. Exact names take priority.
+                         List matches and stop if the partial name is ambiguous.
   enter <name> -- <command> [arguments...]
                          Run a Linux command; piped input is supported.
   import <name> <host-path>
@@ -426,6 +449,7 @@ Usage: mybox <command>
   list                   List boxes created by this CLI, including stopped ones.
                          Show CPU cores, memory, disk use, disk capacity, and ports.
   setup-network          Install the PF helper and automatic Mac startup setup.
+  completion zsh         Print the zsh script for Tab completion.
   help                   Show this help.
   --version              Show the MyBox version.
 
@@ -446,6 +470,12 @@ func mainCommand(_ arguments: [String]) throws {
     }
     #endif
     switch command {
+    case "completion":
+        guard rest == ["zsh"] else { throw BoxError("Usage: mybox completion zsh") }
+        print(zshCompletion)
+    case "_complete-boxes":
+        guard rest.isEmpty else { throw BoxError("Usage: mybox _complete-boxes") }
+        for name in try Backend().managedNames() { print(name) }
     case "setup-network":
         guard rest.isEmpty else { throw BoxError("Usage: mybox setup-network") }
         try setupNetwork()
@@ -482,7 +512,9 @@ func mainCommand(_ arguments: [String]) throws {
         _ = try containerID(name)
         guard rest.count == 1 || (rest.count >= 3 && rest[1] == "--") else { throw BoxError("Put '--' before a Linux command: mybox enter <name> -- <command> ...") }
         let backend = try Backend()
-        let id = try backend.ready(name)
+        let resolvedName = try backend.resolveEnterName(name)
+        if resolvedName != name { note("Using box \(resolvedName).") }
+        let id = try backend.ready(resolvedName)
         var execArguments = ["exec", "--interactive", "--workdir", "/workspace"]
         if isatty(STDIN_FILENO) == 1 && isatty(STDOUT_FILENO) == 1 {
             execArguments += ["--tty", "--env", "TERM=" + (ProcessInfo.processInfo.environment["TERM"] ?? "xterm-256color")]

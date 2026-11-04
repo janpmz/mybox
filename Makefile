@@ -1,7 +1,7 @@
 .PHONY: build test integration network-test protected-test interface-test reboot-prepare reboot-test dns-test clean
 
 COMMON = Sources/Support.swift Sources/HostProcess.swift Sources/NetworkPolicy.swift
-CLI = $(COMMON) Sources/Box.swift Sources/Network.swift Sources/FirewallClient.swift
+CLI = $(COMMON) Sources/Box.swift Sources/Completion.swift Sources/Network.swift Sources/FirewallClient.swift
 FIREWALL = $(COMMON) Sources/Firewall.swift Sources/FirewallRuntime.swift Sources/FirewallWatcher.swift Sources/FirewallManagerMain.swift
 
 build: .build/mybox .build/mybox-firewall-manager

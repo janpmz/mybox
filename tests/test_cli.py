@@ -44,7 +44,7 @@ elif args[0] == "delete":
     state.pop(args[1], None)
     statepath.write_text(json.dumps(state))
 elif args[:2] == ["network", "inspect"]:
-    print(json.dumps([{"id": "mybox-net-demo", "configuration": {"mode": "nat", "labels": {"com.mybox.managed": "true"}}, "status": {"ipv4Subnet": "192.168.65.0/24", "ipv4Gateway": "192.168.65.1", "ipv6Subnet": "fd00:1234::/64"}}]))
+    print(json.dumps([{"id": args[2], "configuration": {"mode": "nat", "labels": {"com.mybox.managed": "true"}}, "status": {"ipv4Subnet": "192.168.65.0/24", "ipv4Gateway": "192.168.65.1", "ipv6Subnet": "fd00:1234::/64"}}]))
 elif args[0] == "inspect":
     print(json.dumps([state[args[1]]]))
 elif args[0] == "list":
