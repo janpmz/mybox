@@ -79,7 +79,7 @@ extension Backend {
         }
     }
 
-    func protectedReady(_ name: String) throws -> String {
+    func protectedReady(_ name: String, progress: ((String) -> Void)? = nil) throws -> String {
         try installedFirewall()
         let lock = try networkLock()
         defer { withExtendedLifetime(lock) {} }
@@ -97,6 +97,7 @@ extension Backend {
             var helperCreated = false
             var boxStarted = false
             do {
+                progress?("Preparing firewall protection...")
                 _ = try run(["create", "--name", helper, "--label", "\(helperLabel)=true", "--network", policy.network,
                              "--cpus", "1", "--memory", "256m", "--read-only", "--entrypoint", "/bin/sleep", trustedImage, "infinity"], capture: true)
                 helperCreated = true
@@ -112,9 +113,11 @@ extension Backend {
                 try firewallRequest("apply", policy: policy)
                 try firewallRequest("verify", policy: policy)
                 guard try policy.bridge(in: hostInterfaces()) == bridge else { throw BoxError("The network bridge changed before startup.") }
+                progress?("Firewall rules checked. Starting Linux...")
                 _ = try run(["start", record.id], capture: true)
                 boxStarted = true
                 guard try policy.bridge(in: hostInterfaces()) == bridge else { throw BoxError("The box did not retain its protected bridge.") }
+                progress?("Checking firewall protection and /workspace...")
                 try firewallRequest("verify", policy: policy)
                 _ = try run(["stop", helper], capture: true)
                 _ = try run(["delete", helper], capture: true)

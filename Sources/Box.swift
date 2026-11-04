@@ -104,9 +104,19 @@ struct Backend {
         return record
     }
 
-    func ready(_ name: String) throws -> String {
-        try protectedReady(name)
+    func ready(_ name: String, progress: ((String) -> Void)? = nil) throws -> String {
+        try protectedReady(name, progress: progress)
     }
+}
+
+func resourceSize(_ bytes: UInt64) -> String {
+    let units: [(UInt64, String)] = [(1 << 40, "TiB"), (1 << 30, "GiB"), (1 << 20, "MiB"), (1 << 10, "KiB")]
+    for (scale, unit) in units where bytes >= scale {
+        let value = bytes % scale == 0 ? String(bytes / scale)
+            : String(format: "%.1f", locale: Locale(identifier: "en_US_POSIX"), Double(bytes) / Double(scale))
+        return "\(value) \(unit)"
+    }
+    return "\(bytes) B"
 }
 
 struct BoxRecord {
@@ -133,6 +143,35 @@ struct BoxRecord {
     }
 
     var ports: [[String: Any]] { configuration["publishedPorts"] as? [[String: Any]] ?? [] }
+
+    var coreDescription: String {
+        guard let resources = configuration["resources"] as? [String: Any],
+              let cores = resources["cpus"] as? Int, cores > 0 else { return "-" }
+        return String(cores)
+    }
+
+    var memoryDescription: String {
+        guard let resources = configuration["resources"] as? [String: Any],
+              let bytes = resources["memoryInBytes"] as? UInt64, bytes > 0 else { return "-" }
+        return resourceSize(bytes)
+    }
+
+    var diskDescriptions: (used: String, capacity: String) {
+        var directory = files.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/com.apple.container/containers", isDirectory: true)
+        #if MYBOX_TESTING
+        if let path = ProcessInfo.processInfo.environment["MYBOX_TEST_CONTAINER_ROOT"] {
+            directory = URL(fileURLWithPath: path, isDirectory: true)
+        }
+        #endif
+        let disk = directory.appendingPathComponent(id, isDirectory: true).appendingPathComponent("rootfs.ext4")
+        var metadata = stat()
+        // The logical file size gives capacity. Allocated blocks give host usage.
+        guard lstat(disk.path, &metadata) == 0,
+              metadata.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG),
+              metadata.st_size > 0, metadata.st_blocks >= 0 else { return ("-", "-") }
+        return (resourceSize(UInt64(metadata.st_blocks) * 512), resourceSize(UInt64(metadata.st_size)))
+    }
 
     func checkConfiguration() throws {
         guard let mounts = configuration["mounts"] as? [Any], mounts.isEmpty,
@@ -214,14 +253,18 @@ func create(_ options: CreateOptions, backend: Backend) throws {
                      "--dns", "1.1.1.1", "--dns", "1.0.0.1", "--network", "\(network),alias=\(options.name).box.test"]
     for port in options.ports { arguments += ["--publish", port] }
     arguments += ["--entrypoint", "/bin/sh", "docker.io/library/debian:trixie-slim", "-c", "mkdir -p /workspace && exec sleep infinity"]
+    note("Creating the box network...")
     _ = try backend.run(["network", "create", "--label", "\(managedLabel)=true", network], capture: true)
-    do { _ = try backend.run(arguments, capture: true) }
+    do {
+        note("Creating the Linux disk...")
+        _ = try backend.run(arguments, capture: true)
+    }
     catch {
         _ = try? backend.run(["network", "delete", network], capture: true)
         throw error
     }
     do {
-        _ = try backend.ready(options.name)
+        _ = try backend.ready(options.name, progress: note)
     } catch {
         note("The box was created. After resolving the error, retry with: mybox start \(options.name)")
         throw error
@@ -381,6 +424,7 @@ Usage: mybox <command>
   start <name>           Start a stopped box, keeping its files.
   stop <name>            Stop a box, keeping its files.
   list                   List boxes created by this CLI, including stopped ones.
+                         Show CPU cores, memory, disk use, disk capacity, and ports.
   setup-network          Install the PF helper and automatic Mac startup setup.
   help                   Show this help.
   --version              Show the MyBox version.
@@ -412,12 +456,19 @@ func mainCommand(_ arguments: [String]) throws {
         guard rest.isEmpty else { throw BoxError("Usage: mybox list") }
         let records = try Backend().records(["list", "--all", "--format", "json"]).filter(\.isManaged).sorted { $0.id < $1.id }
         if records.isEmpty { print("No MyBox boxes yet. Create one with: mybox create demo"); return }
-        let width = max(4, records.map { $0.id.count - namePrefix.count }.max() ?? 4) + 2
-        print("NAME".padding(toLength: width, withPad: " ", startingAt: 0) + "STATE".padding(toLength: 12, withPad: " ", startingAt: 0) + "PORTS")
-        for record in records {
-            print(String(record.id.dropFirst(namePrefix.count)).padding(toLength: width, withPad: " ", startingAt: 0)
-                + record.state.padding(toLength: 12, withPad: " ", startingAt: 0) + record.portDescription)
+        let rows = [["NAME", "STATE", "CORES", "MEMORY", "DISK USED", "DISK MAX", "PORTS"]] + records.map { record in
+            let disk = record.diskDescriptions
+            return [String(record.id.dropFirst(namePrefix.count)), record.state, record.coreDescription,
+                    record.memoryDescription, disk.used, disk.capacity, record.ports.isEmpty ? "-" : record.portDescription]
         }
+        let widths = rows[0].indices.map { column in rows.map { $0[column].count }.max() ?? 0 }
+        for row in rows {
+            print(row.indices.map { column in
+                column == row.count - 1 ? row[column] : row[column].padding(toLength: widths[column] + 2, withPad: " ", startingAt: 0)
+            }.joined())
+        }
+        print("\nCORES and MEMORY are configured limits. DISK USED is the Linux disk's space on your Mac.")
+        print("DISK MAX is virtual capacity. Disk growth needs free space on your Mac.")
     case "start", "stop":
         guard rest.count == 1 else { throw BoxError("Usage: mybox \(command) <name>") }
         _ = try containerID(rest[0])

@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import unittest
@@ -19,6 +20,7 @@ statepath = logpath.with_suffix(".state")
 scenario = os.environ.get("MYBOX_TEST_SCENARIO", "normal")
 configuration = {
     "labels": {"com.mybox.managed": "true", "com.mybox.network": "mybox-net-demo"}, "mounts": [], "ssh": False,
+    "resources": {"cpus": 2, "memoryInBytes": 2147483648},
     "publishedSockets": [], "publishedPorts": [], "networks": [{"network": "mybox-net-demo"}]
 }
 if scenario == "unmanaged": configuration["labels"] = {}
@@ -90,8 +92,10 @@ class CLI(unittest.TestCase):
         host.chmod(0o755)
         self.log = self.directory / "calls.jsonl"
         self.payload = self.directory / "payload.json"
+        self.container_root = self.directory / "containers"
         self.environment = dict(os.environ, PATH=str(self.directory) + ":/usr/bin:/bin",
-                                MYBOX_TEST_LOG=str(self.log), MYBOX_TEST_PAYLOAD=str(self.payload), MYBOX_TEST_HOST=str(host))
+                                MYBOX_TEST_LOG=str(self.log), MYBOX_TEST_PAYLOAD=str(self.payload), MYBOX_TEST_HOST=str(host),
+                                MYBOX_TEST_CONTAINER_ROOT=str(self.container_root))
 
     def run_box(self, *arguments, success=True):
         result = subprocess.run([BOX, *arguments], env=self.environment, text=True,
@@ -111,6 +115,62 @@ class CLI(unittest.TestCase):
 
     def test_version(self):
         self.assertEqual(self.run_box("--version").stdout.strip(), "MyBox 0.1.0")
+
+    def test_list_shows_limits_and_sparse_disk_use_without_starting_boxes(self):
+        disk = self.container_root / "mybox-demo" / "rootfs.ext4"
+        disk.parent.mkdir(parents=True)
+        with disk.open("wb") as stream:
+            stream.truncate(8 * 1024 ** 3)
+        self.assertLess(disk.stat().st_blocks * 512, disk.stat().st_size)
+        for scenario, state in [("normal", "running"), ("stopped", "stopped")]:
+            with self.subTest(state=state):
+                self.environment["MYBOX_TEST_SCENARIO"] = scenario
+                lines = self.run_box("list").stdout.splitlines()
+                self.assertEqual(re.split(r"\s{2,}", lines[0]), ["NAME", "STATE", "CORES", "MEMORY", "DISK USED", "DISK MAX", "PORTS"])
+                self.assertEqual(re.split(r"\s{2,}", lines[1]), ["demo", state, "2", "2 GiB", "0 B", "8 GiB", "-"])
+                self.assertIn("DISK MAX is virtual capacity", "\n".join(lines))
+                self.assertEqual(self.calls(), [["list", "--all", "--format", "json"]])
+                self.log.unlink()
+
+    def test_list_reports_allocated_disk_space_after_writes(self):
+        disk = self.container_root / "mybox-demo" / "rootfs.ext4"
+        disk.parent.mkdir(parents=True)
+        with disk.open("wb") as stream:
+            stream.write(os.urandom(1024 ** 2))
+            stream.truncate(8 * 1024 ** 3)
+        row = re.split(r"\s{2,}", self.run_box("list").stdout.splitlines()[1])
+        value, unit = row[4].split()
+        self.assertEqual(unit, "MiB")
+        self.assertGreater(float(value), 0)
+        self.assertAlmostEqual(float(value), disk.stat().st_blocks * 512 / 1024 ** 2, delta=0.05)
+        self.assertEqual(row[5], "8 GiB")
+        self.assertEqual(self.calls(), [["list", "--all", "--format", "json"]])
+
+    def test_list_uses_each_box_configuration_and_preserves_ports(self):
+        for memory, expected in [(512 * 1024 ** 2, "512 MiB"), (1536 * 1024 ** 2, "1.5 GiB")]:
+            with self.subTest(memory=memory):
+                configuration = {
+                    "labels": {"com.mybox.managed": "true"},
+                    "resources": {"cpus": 6, "memoryInBytes": memory},
+                    "publishedPorts": [{"hostPort": 8766, "containerPort": 8080}],
+                }
+                self.log.with_suffix(".state").write_text(json.dumps({"mybox-demo": {
+                    "id": "mybox-demo", "configuration": configuration, "status": {"state": "stopped"}
+                }}))
+                row = re.split(r"\s{2,}", self.run_box("list").stdout.splitlines()[1])
+                self.assertEqual(row, ["demo", "stopped", "6", expected, "-", "-", "inside 8080 / outside 8766 (localhost)"])
+
+    def test_list_shows_unknown_resources_without_inventing_defaults(self):
+        self.log.with_suffix(".state").write_text(json.dumps({"mybox-demo": {
+            "id": "mybox-demo", "configuration": {"labels": {"com.mybox.managed": "true"}},
+            "status": {"state": "stopped"}
+        }}))
+        row = re.split(r"\s{2,}", self.run_box("list").stdout.splitlines()[1])
+        self.assertEqual(row, ["demo", "stopped", "-", "-", "-", "-", "-"])
+        disk = self.container_root / "mybox-demo" / "rootfs.ext4"
+        disk.parent.mkdir(parents=True)
+        disk.symlink_to(self.directory / "calls.state")
+        self.assertEqual(re.split(r"\s{2,}", self.run_box("list").stdout.splitlines()[1]), row)
 
     def test_invalid_input_never_reaches_backend(self):
         cases = [

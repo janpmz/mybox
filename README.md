@@ -114,6 +114,14 @@ Defaults are 2 CPUs and 2 GiB of RAM. Configure them at creation with
 not workload benchmarks. Debian Slim contains only its existing basic tools;
 MyBox does not install development tools or packages.
 
+`mybox list` shows each box's CPU cores, memory limit, disk use, disk capacity,
+and ports. It also lists stopped boxes without starting them. `DISK USED` shows
+the allocated space for the box's Linux disk file on the Mac, including Linux
+and project files. It excludes cached images and other container files.
+Deleting files inside the box might not immediately reduce this value.
+`DISK MAX` is the virtual disk's capacity. Disk growth needs free space on the
+Mac. A dash in a resource column means the value is unavailable.
+
 ## Stable hostnames
 
 On Apple `container` 1.6.1, new boxes receive a persistent alias such as
