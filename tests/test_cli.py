@@ -14,6 +14,21 @@ FAKE_BACKEND = r'''#!/usr/bin/python3
 import json, os, pathlib, sys
 args = sys.argv[1:]
 logpath = pathlib.Path(os.environ["MYBOX_TEST_LOG"])
+if args[:1] == ["system"]:
+    service = logpath.with_suffix(".service")
+    with logpath.with_suffix(".service-log").open("a") as log:
+        log.write(json.dumps(args) + "\n")
+    if args == ["system", "status", "--format", "json"]:
+        status = service.read_text() if service.exists() else "running"
+        print(json.dumps({"status": status}))
+        sys.exit(0 if status == "running" else 1)
+    if args == ["system", "start", "--disable-kernel-install"]:
+        if os.environ.get("MYBOX_TEST_SERVICE_FAIL"):
+            print("test service startup failure", file=sys.stderr)
+            sys.exit(1)
+        service.write_text("running")
+        sys.exit(0)
+    sys.exit(2)
 with logpath.open("a") as log:
     log.write(json.dumps(args) + "\n")
 failure = json.loads(os.environ.get("MYBOX_TEST_BACKEND_FAIL", "[]"))
@@ -22,6 +37,7 @@ if failure and args[:len(failure)] == failure:
 statepath = logpath.with_suffix(".state")
 scenario = os.environ.get("MYBOX_TEST_SCENARIO", "normal")
 configuration = {
+    "id": "mybox-demo",
     "creationDate": "2026-11-04T10:00:00Z",
     "labels": {"com.mybox.managed": "true", "com.mybox.network": "mybox-net-demo"}, "mounts": [], "ssh": False,
     "resources": {"cpus": 2, "memoryInBytes": 2147483648},
@@ -36,9 +52,25 @@ if scenario == "public-port":
 status = {"state": "stopped" if scenario == "stopped" else "running", "startedDate": "2026-11-04T10:01:00Z",
           "networks": [{"network": "mybox-net-demo", "ipv4Address": "192.168.65.3/24"}]}
 state = json.loads(statepath.read_text()) if statepath.exists() else {"mybox-demo": {"id": "mybox-demo", "configuration": configuration, "status": status}}
-if args[0] == "create":
+if args[:2] == ["volume", "create"]:
+    name = args[-1]
+    directory = pathlib.Path(os.environ["MYBOX_TEST_CONTAINER_ROOT"]).parent / "volumes" / name
+    directory.mkdir(parents=True)
+    with (directory / "volume.img").open("wb") as stream:
+        journal = int(args[args.index("--opt")+1].split(":")[1])
+        stream.truncate(int(args[args.index("-s")+1]) + journal)
+elif args[:2] == ["volume", "inspect"]:
+    name = args[2]
+    path = pathlib.Path(os.environ["MYBOX_TEST_CONTAINER_ROOT"]).parent / "volumes" / name / "volume.img"
+    print(json.dumps([dict(id=name, configuration=dict(name=name, format="ext4", source=str(path)))]))
+elif args[:2] == ["volume", "delete"]:
+    import shutil
+    path = pathlib.Path(os.environ["MYBOX_TEST_CONTAINER_ROOT"]).parent / "volumes" / args[2]
+    if path.exists(): shutil.rmtree(path)
+elif args[0] == "create":
     name = args[args.index("--name")+1]
     item = json.loads(json.dumps(configuration))
+    item["id"] = name
     item["labels"] = dict(args[i+1].split("=", 1) for i, value in enumerate(args) if value == "--label")
     item["networks"] = [{"network": args[args.index("--network")+1].split(",")[0]}]
     item["publishedPorts"] = []
@@ -110,9 +142,9 @@ class CLI(unittest.TestCase):
                                 MYBOX_TEST_CONTAINER_ROOT=str(self.container_root),
                                 MYBOX_TEST_PORT_ROOT=str(self.directory / "ports"), MYBOX_TEST_FAKE_FORWARDER="1")
 
-    def run_box(self, *arguments, success=True):
+    def run_box(self, *arguments, success=True, answers=None):
         result = subprocess.run([BOX, *arguments], env=self.environment, text=True,
-                                capture_output=True, timeout=15)
+                                input=answers, capture_output=True, timeout=15)
         if success:
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         else:
@@ -124,6 +156,32 @@ class CLI(unittest.TestCase):
 
     def test_help_does_not_need_backend(self):
         self.assertIn("whole folder", self.run_box("help").stdout)
+        self.assertEqual(self.calls(), [])
+        self.assertFalse(self.log.with_suffix(".service-log").exists())
+
+    def test_first_service_command_starts_the_service_once(self):
+        service = self.log.with_suffix(".service")
+        service.write_text("unregistered")
+        service_log = self.log.with_suffix(".service-log")
+        self.run_box("_complete-boxes")
+        self.assertFalse(service_log.exists())
+        result = self.run_box("list")
+        self.assertIn("Starting Apple's container service", result.stderr)
+        self.assertIn("demo", result.stdout)
+        self.run_box("enter", "demo", "--", "/bin/true")
+        actions = [json.loads(line)[:2] for line in service_log.read_text().splitlines()]
+        self.assertEqual(actions.count(["system", "start"]), 1)
+        self.assertEqual(service.read_text(), "running")
+
+    def test_service_errors_stop_the_requested_operation(self):
+        service = self.log.with_suffix(".service")
+        service.write_text("unknown")
+        self.run_box("list", success=False)
+        self.assertNotIn('"start"', self.log.with_suffix(".service-log").read_text())
+        service.write_text("not running")
+        self.environment["MYBOX_TEST_SERVICE_FAIL"] = "1"
+        result = self.run_box("enter", "demo", success=False)
+        self.assertIn("test service startup failure", result.stderr)
         self.assertEqual(self.calls(), [])
 
     def test_version(self):
@@ -140,7 +198,7 @@ class CLI(unittest.TestCase):
                 self.environment["MYBOX_TEST_SCENARIO"] = scenario
                 lines = self.run_box("list").stdout.splitlines()
                 self.assertEqual(re.split(r"\s{2,}", lines[0]), ["NAME", "STATE", "CORES", "MEMORY", "DISK USED", "DISK MAX", "PORTS"])
-                self.assertEqual(re.split(r"\s{2,}", lines[1]), ["demo", state, "2", "2 GiB", "0 B", "8 GiB", "-"])
+                self.assertEqual(re.split(r"\s{2,}", lines[1].replace(",", ".")), ["demo", state, "2", "2 GB", "0 B", "8.6 GB", "-"])
                 self.assertIn("DISK MAX is virtual capacity", "\n".join(lines))
                 self.assertEqual(self.calls(), [["list", "--all", "--format", "json"]])
                 self.log.unlink()
@@ -151,16 +209,16 @@ class CLI(unittest.TestCase):
         with disk.open("wb") as stream:
             stream.write(os.urandom(1024 ** 2))
             stream.truncate(8 * 1024 ** 3)
-        row = re.split(r"\s{2,}", self.run_box("list").stdout.splitlines()[1])
+        row = re.split(r"\s{2,}", self.run_box("list").stdout.splitlines()[1].replace(",", "."))
         value, unit = row[4].split()
-        self.assertEqual(unit, "MiB")
+        self.assertEqual(unit, "MB")
         self.assertGreater(float(value), 0)
-        self.assertAlmostEqual(float(value), disk.stat().st_blocks * 512 / 1024 ** 2, delta=0.05)
-        self.assertEqual(row[5], "8 GiB")
+        self.assertAlmostEqual(float(value), disk.stat().st_blocks * 512 / 1_000_000, delta=0.05)
+        self.assertEqual(row[5], "8.6 GB")
         self.assertEqual(self.calls(), [["list", "--all", "--format", "json"]])
 
     def test_list_uses_each_box_configuration_and_preserves_ports(self):
-        for memory, expected in [(512 * 1024 ** 2, "512 MiB"), (1536 * 1024 ** 2, "1.5 GiB")]:
+        for memory, expected in [(512 * 1024 ** 2, "0.5 GB"), (1536 * 1024 ** 2, "1.5 GB")]:
             with self.subTest(memory=memory):
                 configuration = {
                     "labels": {"com.mybox.managed": "true"},
@@ -170,7 +228,7 @@ class CLI(unittest.TestCase):
                 self.log.with_suffix(".state").write_text(json.dumps({"mybox-demo": {
                     "id": "mybox-demo", "configuration": configuration, "status": {"state": "stopped"}
                 }}))
-                row = re.split(r"\s{2,}", self.run_box("list").stdout.splitlines()[1])
+                row = re.split(r"\s{2,}", self.run_box("list").stdout.splitlines()[1].replace(",", "."))
                 self.assertEqual(row, ["demo", "stopped", "6", expected, "-", "-", "inside 8080 / outside 8766 (localhost)"])
 
     def test_list_shows_unknown_resources_without_inventing_defaults(self):

@@ -5,14 +5,16 @@ let networkLabel = "com.mybox.network"
 let helperLabel = "com.mybox.helper"
 let trustedImage = "docker.io/library/debian:trixie-slim"
 
-func networkLock() throws -> FileLock {
+func operationLock(_ name: String) throws -> FileLock {
     #if MYBOX_TESTING
-    if let path = ProcessInfo.processInfo.environment["MYBOX_TEST_LOG"] { return try FileLock(path + ".lock") }
+    if let path = ProcessInfo.processInfo.environment["MYBOX_TEST_LOG"] { return try FileLock(path + "." + name + ".lock") }
     #endif
     let directory = files.homeDirectoryForCurrentUser.appendingPathComponent(".config/mybox", isDirectory: true)
     try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-    return try FileLock(directory.appendingPathComponent("network.lock").path)
+    return try FileLock(directory.appendingPathComponent(name + ".lock").path)
 }
+
+func networkLock() throws -> FileLock { try operationLock("network") }
 
 func setupNetwork() throws {
     let manager = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()

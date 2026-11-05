@@ -62,12 +62,16 @@ command. The launcher builds `.build/mybox` on first use or after source changes
 Then, from any folder:
 
 ```sh
-container system start
 mybox setup-network
 mybox create demo --inside-port 8080 --outside-port 8766
 mybox import demo /path/to/website
 mybox enter demo
 ```
+
+After login or a reboot, run a box command such as `mybox list` or `mybox enter demo`.
+MyBox checks Apple's container service and starts it for your account if needed.
+The CLI handles startup on first use. It needs no login item or separate startup script.
+Apple's container CLI and a Linux kernel are prerequisites on each Mac.
 
 Inside Linux, the imported folder is `/workspace/website`. Edit and run your
 project there. A server on `127.0.0.1:8080` or `0.0.0.0:8080` can be viewed on the Mac at
@@ -138,7 +142,7 @@ If several names match, zsh offers the matching names.
 Completion includes stopped boxes. It does not start boxes or request administrator access.
 It also completes commands, box names for other commands, and common options.
 
-Defaults are 2 CPUs and 2 GiB of RAM. Configure them at creation with
+The defaults are 2 CPUs and 2 GB of memory. Configure them at creation with
 `--cpus 4 --memory 4g` (sizes accept `m` or `g`). These are initial defaults,
 not workload benchmarks. Debian Slim contains only its existing basic tools;
 MyBox does not install development tools or packages.
@@ -150,6 +154,53 @@ and project files. It excludes cached images and other container files.
 Deleting files inside the box might not immediately reduce this value.
 `DISK MAX` is the virtual disk's capacity. Disk growth needs free space on the
 Mac. A dash in a resource column means the value is unavailable.
+
+## Change CPU, memory, or disk size
+
+Run `mybox resize` to select a stopped box. Each prompt shows the Mac's CPU count or free and total capacity.
+If only one box is stopped, MyBox selects it. You can also run `mybox resize <name>` to select a box directly.
+Enter a number for each setting, or press Enter to keep the value in brackets.
+MyBox applies the settings after the last answer. Press Control-C during input to cancel.
+
+For scripts, specify the settings as options:
+
+```sh
+mybox stop document-player-box
+mybox resize document-player-box --cpus 4 --memory-gb 4 --disk-size-gb 64
+mybox start document-player-box
+```
+
+Specify one or more options. Omitted options retain their current values.
+Use the full box name. MyBox follows the macOS convention for GB.
+For memory, 1 GB is 1,073,741,824 bytes. For disk, 1 GB is 1,000,000,000 bytes.
+MyBox rounds allocations up to a multiple of 1,048,576 bytes.
+Memory must be at least 200 MB. Disk size must be at least 128 MiB and less than 16 TiB.
+`resize` leaves the box stopped. `mybox list` shows the saved limits and disk capacity.
+
+Before applying changes, MyBox shows the Mac's shared logical CPUs, installed RAM, and estimated available RAM.
+The estimate counts memory pages that macOS marks free or inactive. It can change before the box starts.
+A warning appears if a requested resource, including overhead, reaches 80% of the corresponding host capacity.
+A memory request above the current availability estimate also triggers a warning.
+Warnings allow the resize to proceed. Requests above a VM limit stop the resize.
+
+CPU and memory changes preserve the existing disk. Disk changes can increase or decrease capacity.
+MyBox copies the stopped filesystem into a new ext4 disk before it replaces the original disk.
+The copy preserves file contents, ownership, permissions, links, extended attributes, and sparse files.
+If the files do not fit, or the copy fails, MyBox keeps the original disk and resource settings.
+Disk changes need temporary free space on the Mac and can take several minutes.
+They require APFS file clones and use the existing Debian image without installing packages.
+The temporary copy helper has no network connection and reads a clone of the source disk.
+The box keeps its name, network, hostname, and port mappings.
+
+A box that never started can change CPU and memory settings immediately.
+For disk changes, start that box once, then stop it to create its Linux disk.
+Do not use Apple's CLI to start or change the same box while `resize` runs.
+
+This implementation was checked with Apple `container` 1.6.1.
+It updates the saved configuration that Apple reads on each start.
+Apple's API caches the old resource values until its service restarts, so MyBox reads the saved limits for `list` and `copy`.
+The storage behavior follows Apple's [container bundle](https://github.com/apple/container/blob/1.6.1/Sources/ContainerResource/Container/Bundle.swift)
+and [startup implementation](https://github.com/apple/container/blob/1.6.1/Sources/Services/ContainerAPIService/Server/Containers/ContainersService.swift).
 
 ## Copy a box
 
@@ -381,6 +432,7 @@ host credentials.
 
 ```sh
 make test          # CLI validation and argument handling; no containers created
+make resources-test # resize an isolated disposable box and check its files and limits
 make integration   # real file/folder, restart, and localhost checks
 make ports-test    # live port changes on a disposable box; requests sudo authentication
 make network-test  # reversible PF experiment; requests sudo authentication

@@ -1,7 +1,7 @@
-.PHONY: build test integration ports-test network-test protected-test interface-test reboot-prepare reboot-test dns-test clean
+.PHONY: build test integration resources-test ports-test network-test protected-test interface-test reboot-prepare reboot-test dns-test clean
 
 COMMON = Sources/Support.swift Sources/HostProcess.swift Sources/NetworkPolicy.swift
-CLI = $(COMMON) Sources/Box.swift Sources/Completion.swift Sources/Network.swift Sources/FirewallClient.swift Sources/PortState.swift Sources/Ports.swift
+CLI = $(COMMON) Sources/Box.swift Sources/Resources.swift Sources/Completion.swift Sources/Network.swift Sources/FirewallClient.swift Sources/PortState.swift Sources/Ports.swift
 FIREWALL = $(COMMON) Sources/Firewall.swift Sources/FirewallRuntime.swift Sources/FirewallWatcher.swift Sources/FirewallManagerMain.swift
 FORWARDER = Sources/Support.swift Sources/PortState.swift Sources/GuestPortRelay.swift Sources/PortForwarder.swift
 
@@ -32,6 +32,9 @@ test: build .build/mybox-test .build/mybox-firewall-test
 
 integration: build
 	python3 tests/integration.py
+
+resources-test: build
+	python3 tests/resources_integration.py
 
 ports-test: build
 	python3 tests/ports_integration.py

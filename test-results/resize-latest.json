@@ -1,0 +1,22 @@
+{
+  "backend": "container CLI version 1.6.1 (build: release, commit: aa8d76b)",
+  "status": "passed",
+  "checks": [
+    "CPU and memory settings apply on first boot",
+    {
+      "cpus": 3,
+      "memoryGB": 0.75,
+      "diskGB": 1,
+      "filesystemBytes": 967860224,
+      "files": "content, ownership, mode, hard link, symlink, FIFO, and sparse allocation matched"
+    },
+    {
+      "cpus": 1,
+      "memoryGB": 0.25,
+      "diskGB": 2,
+      "filesystemBytes": 1937833984,
+      "files": "content, ownership, mode, hard link, symlink, FIFO, and sparse allocation matched"
+    },
+    "Insufficient space preserved the original disk and configuration. The box restarted."
+  ]
+}

@@ -44,10 +44,11 @@ final class TemporaryFolder {
     deinit { try? files.removeItem(at: url) }
 }
 
-struct Backend {
+final class Backend {
     let executable: String
+    private var needsServiceCheck: Bool
 
-    init() throws {
+    init(startServiceIfNeeded: Bool = true) throws {
         let directories = (ProcessInfo.processInfo.environment["PATH"] ?? "").split(separator: ":").map(String.init)
         let candidates = directories.filter { $0.hasPrefix("/") }.map { $0 + "/container" }
             + ["/usr/local/bin/container", "/opt/homebrew/bin/container"]
@@ -55,10 +56,36 @@ struct Backend {
             throw BoxError("Apple's container CLI was not found. It must be installed before using MyBox.")
         }
         executable = path
+        needsServiceCheck = startServiceIfNeeded
+    }
+
+    private func serviceIsRunning() throws -> Bool {
+        let result = try capturedCommand(executable, ["system", "status", "--format", "json"])
+        if result.status == 0 { return true }
+        let data = Data(result.output.utf8)
+        if result.status == 1, let payload = try? JSONDecoder().decode([String: String].self, from: data),
+           let status = payload["status"], ["unregistered", "not running"].contains(status) { return false }
+        throw BoxError("Cannot check Apple's container service. \(result.output.trimmingCharacters(in: .whitespacesAndNewlines))")
+    }
+
+    private func ensureService() throws {
+        guard try !serviceIsRunning() else { return }
+        let lock = try operationLock("service")
+        defer { withExtendedLifetime(lock) {} }
+        guard try !serviceIsRunning() else { return }
+        note("Starting Apple's container service...")
+        let result = try capturedCommand(executable, ["system", "start", "--disable-kernel-install"])
+        guard result.status == 0 else {
+            throw BoxError("Cannot start Apple's container service. \(result.output.trimmingCharacters(in: .whitespacesAndNewlines))")
+        }
     }
 
     @discardableResult
     func run(_ arguments: [String], capture: Bool = false) throws -> Data {
+        if needsServiceCheck {
+            try ensureService()
+            needsServiceCheck = false
+        }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
@@ -130,12 +157,24 @@ struct Backend {
     }
 }
 
-func resourceSize(_ bytes: UInt64) -> String {
-    let units: [(UInt64, String)] = [(1 << 40, "TiB"), (1 << 30, "GiB"), (1 << 20, "MiB"), (1 << 10, "KiB")]
+// macOS labels binary memory sizes and decimal disk sizes in GB.
+let bytesPerMemoryGB: UInt64 = 1 << 30
+let bytesPerDiskGB: UInt64 = 1_000_000_000
+
+func formatSize(_ bytes: UInt64, scale: UInt64, unit: String, decimals: Int = 1) -> String {
+    let value = (Double(bytes) / Double(scale)).formatted(
+        .number.grouping(.never).precision(.fractionLength(0...decimals)))
+    return "\(value) \(unit)"
+}
+
+func memorySize(_ bytes: UInt64) -> String {
+    formatSize(bytes, scale: bytesPerMemoryGB, unit: "GB", decimals: 2)
+}
+
+func diskSize(_ bytes: UInt64) -> String {
+    let units: [(UInt64, String)] = [(1000 * bytesPerDiskGB, "TB"), (bytesPerDiskGB, "GB"), (1_000_000, "MB"), (1000, "kB")]
     for (scale, unit) in units where bytes >= scale {
-        let value = bytes % scale == 0 ? String(bytes / scale)
-            : String(format: "%.1f", locale: Locale(identifier: "en_US_POSIX"), Double(bytes) / Double(scale))
-        return "\(value) \(unit)"
+        return formatSize(bytes, scale: scale, unit: unit)
     }
     return "\(bytes) B"
 }
@@ -168,32 +207,26 @@ struct BoxRecord {
     var ports: [[String: Any]] { configuration["publishedPorts"] as? [[String: Any]] ?? [] }
 
     var coreDescription: String {
-        guard let resources = configuration["resources"] as? [String: Any],
+        guard let resources = savedResources,
               let cores = resources["cpus"] as? Int, cores > 0 else { return "-" }
         return String(cores)
     }
 
     var memoryDescription: String {
-        guard let resources = configuration["resources"] as? [String: Any],
+        guard let resources = savedResources,
               let bytes = resources["memoryInBytes"] as? UInt64, bytes > 0 else { return "-" }
-        return resourceSize(bytes)
+        return memorySize(bytes)
     }
 
     var diskDescriptions: (used: String, capacity: String) {
-        var directory = files.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Application Support/com.apple.container/containers", isDirectory: true)
-        #if MYBOX_TESTING
-        if let path = ProcessInfo.processInfo.environment["MYBOX_TEST_CONTAINER_ROOT"] {
-            directory = URL(fileURLWithPath: path, isDirectory: true)
-        }
-        #endif
+        let directory = containerStorageRoot
         let disk = directory.appendingPathComponent(id, isDirectory: true).appendingPathComponent("rootfs.ext4")
         var metadata = stat()
         // The logical file size gives capacity. Allocated blocks give host usage.
         guard lstat(disk.path, &metadata) == 0,
               metadata.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG),
               metadata.st_size > 0, metadata.st_blocks >= 0 else { return ("-", "-") }
-        return (resourceSize(UInt64(metadata.st_blocks) * 512), resourceSize(UInt64(metadata.st_size)))
+        return (diskSize(UInt64(metadata.st_blocks) * 512), diskSize(UInt64(metadata.st_size)))
     }
 
     func checkConfiguration() throws {
@@ -300,7 +333,7 @@ func copyBox(_ arguments: [String], backend: Backend) throws {
     guard ["running", "stopped"].contains(source.state) else {
         throw BoxError("The source box is \(source.state). Wait for its current operation to finish.")
     }
-    guard let resources = source.configuration["resources"] as? [String: Any],
+    guard let resources = source.savedResources,
           let cpus = resources["cpus"] as? Int, cpus > 0,
           let memory = resources["memoryInBytes"] as? UInt64, memory > 0, memory % (1 << 20) == 0 else {
         throw BoxError("Cannot read the source box's CPU and memory limits.")
@@ -479,7 +512,7 @@ MyBox 0.1.0 — a small Linux workspace on your Mac
 Usage: mybox <command>
 
   create <name> [--inside-port N --outside-port N] [--cpus N] [--memory 2g]
-                         Create and start a Debian box (default: 2 CPUs, 2 GiB).
+                         Create and start a Debian box (default: 2 CPUs, --memory 2g).
                          --inside-port: server port inside the Linux box.
                          --outside-port: localhost port on your Mac.
                          Repeat both flags for multiple TCP port mappings;
@@ -506,6 +539,14 @@ Usage: mybox <command>
                          Relative box paths start at /workspace. Reject links.
   start <name>           Start a stopped box, keeping its files.
   stop <name>            Stop a box, keeping its files.
+  resize [name]          Choose a stopped box and enter CPU, memory, and disk values.
+                         Press Enter to keep a value.
+  resize <name> [--cpus N] [--memory-gb N] [--disk-size-gb N]
+                         Change resources on a stopped box. Keep its files and ports.
+                         Enter sizes in GB, using the macOS units for memory and storage.
+                         Show available Mac resources before applying changes.
+                         Memory: at least 200 MB. Disk: 128 MiB to less than 16 TiB.
+                         Disk changes copy the filesystem and need temporary Mac space.
   ports add <name> --inside-port N --outside-port N
                          Add a TCP mapping without restarting a running box.
   ports remove <name> --outside-port N
@@ -540,7 +581,7 @@ func mainCommand(_ arguments: [String]) throws {
         print(zshCompletion)
     case "_complete-boxes":
         guard rest.isEmpty else { throw BoxError("Usage: mybox _complete-boxes") }
-        for name in try Backend().managedNames() { print(name) }
+        for name in try Backend(startServiceIfNeeded: false).managedNames() { print(name) }
     case "setup-network":
         guard rest.isEmpty else { throw BoxError("Usage: mybox setup-network") }
         try setupNetwork()
@@ -556,6 +597,14 @@ func mainCommand(_ arguments: [String]) throws {
     case "ports":
         let options = try PortOptions(rest)
         try Backend().changePorts(options)
+    case "resize":
+        if rest.count <= 1 {
+            if let name = rest.first { _ = try containerID(name) }
+            try Backend().promptResize(name: rest.first)
+        } else {
+            let options = try ResizeOptions(rest)
+            try Backend().resize(options)
+        }
     case "list":
         guard rest.isEmpty else { throw BoxError("Usage: mybox list") }
         let records = try Backend().records(["list", "--all", "--format", "json"]).filter(\.isManaged).sorted { $0.id < $1.id }

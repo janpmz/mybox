@@ -27,6 +27,7 @@ _mybox() {
         'export:Copy files from a box'
         'start:Start a box'
         'stop:Stop a box'
+        'resize:Change CPU, memory, or disk size'
         'ports:Manage port mappings'
         'list:List boxes'
         'setup-network:Install the firewall helper'
@@ -48,6 +49,16 @@ _mybox() {
                 _files
             elif [[ "${words[2]}" == enter ]] && (( CURRENT == 4 )); then
                 compadd -- --
+            fi
+            ;;
+        resize)
+            if (( CURRENT == 3 )); then
+                _mybox_box_names
+            elif (( CURRENT >= 4 )); then
+                case "${words[CURRENT-1]}" in
+                    --cpus|--memory-gb|--disk-size-gb) return ;;
+                esac
+                compadd -- --cpus --memory-gb --disk-size-gb
             fi
             ;;
         create)

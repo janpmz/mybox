@@ -6,6 +6,20 @@ struct ToolResult {
     let output: String
 }
 
+func capturedCommand(_ executable: String, _ arguments: [String]) throws -> ToolResult {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: executable)
+    process.arguments = arguments
+    process.standardInput = FileHandle.nullDevice
+    let output = Pipe()
+    process.standardOutput = output
+    process.standardError = output
+    try process.run()
+    let data = output.fileHandleForReading.readDataToEndOfFile()
+    process.waitUntilExit()
+    return ToolResult(status: process.terminationStatus, output: String(decoding: data, as: UTF8.self))
+}
+
 @discardableResult
 func hostCommand(_ path: String, _ arguments: [String], check: Bool = true, terminal: Bool = false) throws -> ToolResult {
     var executable = path
@@ -20,17 +34,7 @@ func hostCommand(_ path: String, _ arguments: [String], check: Bool = true, term
     if terminal {
         result = try foregroundCommand(executable, commandArguments)
     } else {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = commandArguments
-        process.standardInput = FileHandle.nullDevice
-        let output = Pipe()
-        process.standardOutput = output
-        process.standardError = output
-        try process.run()
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        result = ToolResult(status: process.terminationStatus, output: String(decoding: data, as: UTF8.self))
+        result = try capturedCommand(executable, commandArguments)
     }
     if check && result.status != 0 {
         if terminal {

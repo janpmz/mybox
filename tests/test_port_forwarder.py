@@ -84,7 +84,9 @@ class Forwarder(unittest.TestCase):
 import json, os, pathlib, sys
 root = pathlib.Path(__file__).parent
 args = sys.argv[1:]
-if args == ["inspect", "mybox-test"]:
+if args == ["system", "status", "--format", "json"]:
+    print(json.dumps({"status": "running"}))
+elif args == ["inspect", "mybox-test"]:
     print((root / "identity.json").read_text())
 elif args == ["list", "--all", "--format", "json"]:
     print((root / "identity.json").read_text())
