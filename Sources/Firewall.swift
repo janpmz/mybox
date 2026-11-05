@@ -11,24 +11,40 @@ let firewallAnchor = "com.apple/000.mybox"
 
 let privateIPv4 = "0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.0.0.0/24, 192.0.2.0/24, 192.168.0.0/16, 198.18.0.0/15, 198.51.100.0/24, 203.0.113.0/24, 224.0.0.0/4, 240.0.0.0/4"
 
-func firewallRules(_ policies: [NetworkPolicy], interfaces: [HostInterface]) throws -> String {
+func firewallRules(_ policies: [NetworkPolicy], interfaces: [HostInterface], routed: [String] = []) throws -> String {
     // Include dormant host interfaces so their later address changes are covered.
     // vmenet members are transient; their parent bridge is the filtering boundary.
     let names = interfaces.filter { !$0.name.hasPrefix("vmenet") }.map(\.name).sorted()
     guard !names.isEmpty, names.allSatisfy({ matches($0, "^[a-z][a-z0-9]{0,15}$") }) else { throw BoxError("Cannot identify Mac network interfaces.") }
     let host = "{ " + names.map { "(\($0))" }.joined(separator: ", ") + " }"
-    let connected = "{ " + names.map { "(\($0):network)" }.joined(separator: ", ") + " }"
-    var rules = ["# MyBox owns only this anchor. IPv4 Internet is allowed; IPv6 is blocked."]
+    let connected = "{ " + names.filter { !isTunnelInterface($0) }.map { "(\($0):network)" }.joined(separator: ", ") + " }"
+    var rules = ["# MyBox owns only this anchor."]
     for policy in policies.sorted(by: { $0.key < $1.key }) where policy.active {
         try policy.validate()
         let bridge = try policy.bridge(in: interfaces)
         // No incoming rule selects packets by a guest-supplied source address.
+        // vmnet advertises the default gateway. Allow discovery on this link without
+        // allowing a guest to advertise itself as a router or open a host service.
+        let neighbors = "{ ::, fe80::/10, \(policy.subnet6) }"
+        rules += [
+            "pass in quick on \(bridge) inet6 proto icmp6 from \(neighbors) to ff02::2 icmp6-type 133 no state",
+            "pass in quick on \(bridge) inet6 proto icmp6 from \(neighbors) to { fe80::/10, (\(bridge)), ff02::1:ff00:0/104, ff02::1 } icmp6-type { 135, 136 } no state",
+            "pass out quick on \(bridge) inet6 proto icmp6 from fe80::/10 to { fe80::/10, \(policy.subnet6), ff02::/16 } icmp6-type 134 no state",
+            "pass out quick on \(bridge) inet6 proto icmp6 from { fe80::/10, (\(bridge)) } to { fe80::/10, \(policy.subnet6), ff02::/16 } icmp6-type { 135, 136 } no state",
+        ]
+        if !routed.isEmpty {
+            rules.append("block drop in quick on \(bridge) from any to { \(routed.joined(separator: ", ")) } label \"mybox_routed\"")
+        }
         rules += [
             "block drop in quick on \(bridge) inet from any to \(host) label \"mybox_host\"",
             "block drop in quick on \(bridge) inet from any to \(connected) label \"mybox_lan\"",
             "block drop in quick on \(bridge) inet from any to { \(privateIPv4) } label \"mybox_private\"",
-            "block drop in quick on \(bridge) inet6 all label \"mybox_ipv6\"",
-            "block drop out quick inet6 to \(policy.subnet6) label \"mybox_ipv6\"",
+            "block drop in quick on \(bridge) inet6 from any to \(host) label \"mybox_host6\"",
+            "block drop in quick on \(bridge) inet6 from any to \(connected) label \"mybox_lan6\"",
+            "block drop in quick on \(bridge) inet6 from any to { 2001::/32, 2002::/16 } label \"mybox_transition6\"",
+            "pass in quick on \(bridge) inet6 from \(policy.subnet6) to 2000::/3 keep state (if-bound) label \"mybox_internet6\"",
+            "block drop in quick on \(bridge) inet6 all label \"mybox_other6\"",
+            "block drop out quick on \(bridge) inet6 all label \"mybox_unpublished6\"",
         ]
         for port in policy.ports.sorted() {
             rules.append("pass out quick inet proto tcp from \(policy.gateway) to \(policy.subnet4) port \(port) flags S/SA keep state label \"mybox_selected\"")
@@ -102,7 +118,12 @@ func saveStore(_ store: FirewallStore) throws {
     try JSONEncoder().encode(store).write(to: URL(fileURLWithPath: firewallDirectory + "/state.json"), options: .atomic)
 }
 
-func firewallMain(_ arguments: [String]) throws {
+func firewallMain(_ arguments: [String], serviceOwner: UInt32? = nil, checkPending: (() throws -> Void)? = nil) throws {
+    if arguments.first == "approve" {
+        guard arguments.count == 2 else { throw BoxError("Expected a firewall request number.") }
+        try approveServiceFirewall(arguments[1])
+        return
+    }
     guard let action = arguments.first else { throw BoxError("Missing firewall operation.") }
     // Pure rule rendering is available for offline tests. It changes no PF state.
     if action == "render", arguments.count == 3 {
@@ -131,6 +152,7 @@ func firewallMain(_ arguments: [String]) throws {
     try rootDirectory(firewallDirectory)
     let lock = try FileLock(firewallDirectory + "/lock")
     defer { withExtendedLifetime(lock) {} }
+    try checkPending?()
     if action == "status" {
         let data = try Data(contentsOf: firewallURL("watcher.json"))
         print(String(decoding: data, as: UTF8.self))
@@ -146,7 +168,7 @@ func firewallMain(_ arguments: [String]) throws {
         guard chown(firewallExecutable, 0, 0) == 0, chmod(firewallExecutable, 0o755) == 0 else {
             throw BoxError("Cannot secure the installed firewall helper.")
         }
-        let path = "/Library/LaunchDaemons/com.mybox.firewall.plist"
+        let path = "/Library/LaunchDaemons/io.github.janpmz.my-container-box.firewall.plist"
         try PropertyListSerialization.data(fromPropertyList: firewallLaunchConfiguration(), format: .xml, options: 0)
             .write(to: URL(fileURLWithPath: path), options: .atomic)
         guard chown(path, 0, 0) == 0, chmod(path, 0o644) == 0 else { throw BoxError("Cannot secure the startup configuration.") }
@@ -156,7 +178,7 @@ func firewallMain(_ arguments: [String]) throws {
     if policyAction {
         var policy = try JSONDecoder().decode(NetworkPolicy.self, from: Data(arguments[1].utf8))
         try policy.validate()
-        guard let caller = ProcessInfo.processInfo.environment["SUDO_UID"].flatMap(UInt32.init), caller == policy.owner else {
+        guard let caller = serviceOwner ?? ProcessInfo.processInfo.environment["SUDO_UID"].flatMap(UInt32.init), caller == policy.owner else {
             throw BoxError("The network policy belongs to another Mac user.")
         }
         if action != "remove" { _ = try policy.bridge(in: hostInterfaces()) }
@@ -189,13 +211,13 @@ func firewallMain(_ arguments: [String]) throws {
                               starting: action == "apply" ? requested : nil)
     if action == "install" {
         // Update the existing startup job to use the dedicated manager.
-        let job = "system/com.mybox.firewall"
+        let job = "system/io.github.janpmz.my-container-box.firewall"
         if try hostCommand("/bin/launchctl", ["print", job], check: false).status == 0 {
             _ = try hostCommand("/bin/launchctl", ["bootout", job])
         }
         let watcherStatus = firewallURL("watcher.json")
         if files.fileExists(atPath: watcherStatus.path) { try files.removeItem(at: watcherStatus) }
-        _ = try hostCommand("/bin/launchctl", ["bootstrap", "system", "/Library/LaunchDaemons/com.mybox.firewall.plist"])
+        _ = try hostCommand("/bin/launchctl", ["bootstrap", "system", "/Library/LaunchDaemons/io.github.janpmz.my-container-box.firewall.plist"])
         let legacy = "/Library/PrivilegedHelperTools/com.mybox.firewall"
         var info = stat()
         if lstat(legacy, &info) == 0 {

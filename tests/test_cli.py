@@ -39,12 +39,12 @@ scenario = os.environ.get("MYBOX_TEST_SCENARIO", "normal")
 configuration = {
     "id": "mybox-demo",
     "creationDate": "2026-11-04T10:00:00Z",
-    "labels": {"com.mybox.managed": "true", "com.mybox.network": "mybox-net-demo"}, "mounts": [], "ssh": False,
+    "labels": {"io.github.janpmz.my-container-box.managed": "true", "io.github.janpmz.my-container-box.network": "mybox-net-demo"}, "mounts": [], "ssh": False,
     "resources": {"cpus": 2, "memoryInBytes": 2147483648},
     "publishedSockets": [], "publishedPorts": [], "networks": [{"network": "mybox-net-demo"}]
 }
 if scenario == "unmanaged": configuration["labels"] = {}
-if scenario == "legacy": configuration["labels"].pop("com.mybox.network")
+if scenario == "legacy": configuration["labels"].pop("io.github.janpmz.my-container-box.network")
 if scenario == "mount": configuration["mounts"] = [{"source": "/Users/example"}]
 if scenario == "ssh": configuration["ssh"] = True
 if scenario == "public-port":
@@ -78,7 +78,7 @@ elif args[0] == "create":
     memory = args[args.index("--memory")+1]
     item["resources"]["memoryInBytes"] = int(memory[:-1]) * (1024 ** (3 if memory[-1] == "g" else 2))
     if name.startswith("mybox-helper-"):
-        item["labels"] = {"com.mybox.helper": "true"}
+        item["labels"] = {"io.github.janpmz.my-container-box.helper": "true"}
     state[name] = {"id": name, "configuration": item, "status": dict(status, state="stopped")}
     statepath.write_text(json.dumps(state))
 elif args[0] in ("start", "stop"):
@@ -88,7 +88,7 @@ elif args[0] == "delete":
     state.pop(args[1], None)
     statepath.write_text(json.dumps(state))
 elif args[:2] == ["network", "inspect"]:
-    print(json.dumps([{"id": args[2], "configuration": {"mode": "nat", "labels": {"com.mybox.managed": "true"}}, "status": {"ipv4Subnet": "192.168.65.0/24", "ipv4Gateway": "192.168.65.1", "ipv6Subnet": "fd00:1234::/64"}}]))
+    print(json.dumps([{"id": args[2], "configuration": {"mode": "nat", "labels": {"io.github.janpmz.my-container-box.managed": "true"}}, "status": {"ipv4Subnet": "192.168.65.0/24", "ipv4Gateway": "192.168.65.1", "ipv6Subnet": "fd00:1234::/64"}}]))
 elif args[0] == "inspect":
     print(json.dumps([state[args[1]]]))
 elif args[0] == "list":
@@ -116,7 +116,7 @@ elif args[0] == "/usr/bin/sudo":
     if os.environ.get("MYBOX_TEST_FIREWALL_FAIL") == action:
         print("Test firewall failure", file=sys.stderr)
         sys.exit(1)
-    print("mybox-firewall-manager-3-ok")
+    print("mybox-firewall-manager-5-ok")
 else:
     sys.exit(2)
 '''
@@ -221,7 +221,7 @@ class CLI(unittest.TestCase):
         for memory, expected in [(512 * 1024 ** 2, "0.5 GB"), (1536 * 1024 ** 2, "1.5 GB")]:
             with self.subTest(memory=memory):
                 configuration = {
-                    "labels": {"com.mybox.managed": "true"},
+                    "labels": {"io.github.janpmz.my-container-box.managed": "true"},
                     "resources": {"cpus": 6, "memoryInBytes": memory},
                     "publishedPorts": [{"hostPort": 8766, "containerPort": 8080}],
                 }
@@ -233,7 +233,7 @@ class CLI(unittest.TestCase):
 
     def test_list_shows_unknown_resources_without_inventing_defaults(self):
         self.log.with_suffix(".state").write_text(json.dumps({"mybox-demo": {
-            "id": "mybox-demo", "configuration": {"labels": {"com.mybox.managed": "true"}},
+            "id": "mybox-demo", "configuration": {"labels": {"io.github.janpmz.my-container-box.managed": "true"}},
             "status": {"state": "stopped"}
         }}))
         row = re.split(r"\s{2,}", self.run_box("list").stdout.splitlines()[1])

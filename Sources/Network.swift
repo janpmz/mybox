@@ -1,8 +1,8 @@
 import Foundation
 import Darwin
 
-let networkLabel = "com.mybox.network"
-let helperLabel = "com.mybox.helper"
+let networkLabel = "io.github.janpmz.my-container-box.network"
+let helperLabel = "io.github.janpmz.my-container-box.helper"
 let trustedImage = "docker.io/library/debian:trixie-slim"
 
 func operationLock(_ name: String) throws -> FileLock {
@@ -94,6 +94,29 @@ extension Backend {
         try checkNetworkMembers(policy, allowed: [record.id])
         if record.state == "running" {
             try firewallRequest("verify", policy: policy)
+        } else if usesFork {
+            var requestedStart = false
+            do {
+                let bridge = try withPreparedBridge(policy.network) {
+                    let bridge = try policy.bridge(in: hostInterfaces())
+                    try firewallRequest("apply", policy: policy)
+                    try firewallRequest("verify", policy: policy)
+                    guard try policy.bridge(in: hostInterfaces()) == bridge else {
+                        throw BoxError("The box network bridge changed before startup.")
+                    }
+                    progress?("Firewall rules checked. Starting Linux...")
+                    requestedStart = true
+                    _ = try run(["start", record.id], capture: true)
+                    return bridge
+                }
+                guard try policy.bridge(in: hostInterfaces()) == bridge else {
+                    throw BoxError("The box lost its protected bridge after the temporary endpoint closed.")
+                }
+                try firewallRequest("verify", policy: policy)
+            } catch {
+                if requestedStart { _ = try? run(["stop", record.id], capture: true) }
+                throw error
+            }
         } else {
             // Create a fresh helper from the trusted base image on each start.
             // Never reuse a helper filesystem that a project could have changed.
@@ -154,4 +177,42 @@ extension Backend {
             try firewallRequest("remove", policy: policy)
         }
     }
+}
+
+// The fork helper holds a vmnet endpoint on the same reserved network as the guest.
+// The kernel releases the endpoint if the worker or helper exits unexpectedly.
+private func withPreparedBridge(_ network: String, startBox: () throws -> String) throws -> String {
+    let process = Process()
+    let input = Pipe()
+    let output = Pipe()
+    process.executableURL = URL(fileURLWithPath: forkBridgeExecutable)
+    process.arguments = [network]
+    process.standardInput = input
+    process.standardOutput = output
+    process.standardError = FileHandle.standardError
+    try process.run()
+    defer {
+        input.fileHandleForWriting.closeFile()
+        // Never hold the box-operation lock forever if a network plugin stalls.
+        for _ in 0..<40 where process.isRunning { Thread.sleep(forTimeInterval: 0.05) }
+        if process.isRunning { kill(process.processIdentifier, SIGKILL) }
+        process.waitUntilExit()
+    }
+    let fd = output.fileHandleForReading.fileDescriptor
+    let deadline = ProcessInfo.processInfo.systemUptime + 15
+    var ready = [UInt8]()
+    while ready.count < 6 {
+        let remaining = deadline - ProcessInfo.processInfo.systemUptime
+        guard remaining > 0 else { throw BoxError("Timed out preparing the box network bridge.") }
+        var event = pollfd(fd: fd, events: Int16(POLLIN), revents: 0)
+        let result = poll(&event, 1, Int32(remaining * 1000))
+        if result == -1 && errno == EINTR { continue }
+        guard result > 0, let next = try output.fileHandleForReading.read(upToCount: 6 - ready.count), !next.isEmpty else {
+            if process.isRunning { process.terminate() }
+            throw BoxError("The fork could not prepare the box network bridge.")
+        }
+        ready.append(contentsOf: next)
+    }
+    guard ready == Array("ready\n".utf8) else { throw BoxError("Unexpected reply from the fork's bridge helper.") }
+    return try startBox()
 }

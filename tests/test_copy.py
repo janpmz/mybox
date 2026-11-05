@@ -22,7 +22,7 @@ class Copy(unittest.TestCase):
                 self.assertIn(commit[2], create)
                 self.assertEqual(create[create.index("--name") + 1], "mybox-photo-box")
                 self.assertEqual(create[create.index("--network") + 1], "mybox-net-photo-box,alias=photo-box.box.test")
-                self.assertIn("com.mybox.network=mybox-net-photo-box", create)
+                self.assertIn("io.github.janpmz.my-container-box.network=mybox-net-photo-box", create)
                 self.assertEqual(create[create.index("--cpus") + 1], "2")
                 self.assertEqual(create[create.index("--memory") + 1], "2048m")
                 self.assertFalse(any(c[0] in ("start", "stop", "exec", "host", "delete", "image") for c in calls))

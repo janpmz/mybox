@@ -5,18 +5,17 @@ Copies retain the source box's Linux filesystem and installed tools.
 
 ![MyBox concept: run software such as Node.js inside the box. Internet access is allowed. Direct access to Mac files and connections to the Mac and LAN are blocked.](docs/diagrams/mybox-concept-v4.png)
 
-![MyBox firewall: allow outgoing IPv4 Internet connections, block Mac and LAN access and IPv6, and update rules after network changes.](docs/diagrams/mybox-firewall.png)
 
 ![Browser access: mybox create my-project --inside-port 8080 --outside-port 8766. The outside port binds to 127.0.0.1 and forwards to the app inside MyBox.](docs/diagrams/mybox-browser-v3.png)
 
 ![How to move files: run mybox import and mybox export on the Mac, outside the box. The box cannot write Mac files by itself. Start Stop Box Keeps Files. Deleting the box deletes its files.](docs/diagrams/mybox-files-v5.png)
 
-A small Swift CLI around Apple's `container` CLI. Each box keeps Linux and its
+A small Swift CLI using the `janpmz/my-container-box` fork of Apple’s `container`. Each box keeps Linux and its
 project files on the container's default storage. Source files live in
 `/workspace` inside Linux.
 
-This development version includes PF protection before box startup. A trusted
-helper creates the bridge before MyBox starts the development VM. The live PF
+The fork prepares the network bridge before MyBox starts Linux. The runtime running as
+`_mybox` asks the Mac firewall manager to verify the rules before booting the box. The live PF
 and CLI integration tests passed on 4 November 2026 before the watcher update.
 Automatic network-change detection is installed and passed all 12 live interface-change checks.
 After an actual Mac reboot, automatic firewall recovery and all 14 CLI checks passed.
@@ -26,26 +25,54 @@ tested Mac IPv4/IPv6 listeners or the router's IPv4 TCP port. Internet/DNS conti
 Detection does not guarantee zero exposure time.
 See [the recorded results and limits](project.md#current-implementation-trusted-helper-and-pf).
 
-There are three separate programs:
+## Who can open a box
 
-- `mybox` manages boxes, shells, and file transfers as your normal user.
-- `mybox-firewall-manager` watches network changes and manages MyBox firewall rules with administrator rights.
-- `mybox-port-forwarder` forwards TCP traffic from the Mac to a box as your normal user.
+MyBox uses a private Mac account called `_mybox` for new boxes. Your terminal
+sends commands to that account through a local service. Only the Mac account
+that installed the service can use it. Each shell, explicit Linux command, import,
+and export requires fresh macOS authentication from that account. The prompt names
+the box and operation. Touch ID or the Mac login password can approve the operation.
+macOS may also offer a configured Apple Watch. Canceling, timing out, or having no
+signed-in owner denies the request. Listing boxes requires no access prompt.
 
-The firewall manager does not contain the box-management commands.
-Run `mybox setup-network` after this update to install firewall protocol version 3 for live port changes.
-The update retains saved firewall policy and box data.
+An approved explicit command receives the calling program’s input and sends it
+the output. Approving a shell gives the requesting terminal control for that
+whole session. Review unexpected prompts before approving them. The separate
+firewall check can also ask for administrator authentication.
+
+The private account owns the Linux disks and runs Apple's container software,
+the box commands, and the port forwarder. Direct Apple commands under your
+normal account use a different container service. An administrator who can
+become `_mybox` can still control the private boxes.
+
+The installed firewall helper uses administrator access to check and change
+Mac firewall rules. The terminal runs `sudo` when MyBox needs that work.
+The private account has no administrator membership or password-free sudo rule.
+The helper confirms each request in the private account's storage. A reply
+from the terminal alone cannot authorize a box to start.
+
+Existing boxes belong to the account that created them. Setup leaves them in that
+account. They remain accessible through that account's Apple CLI. Test the new
+service with a new box name before transferring existing projects.
+
+The November 4 live results above cover the previous account layout. On November 5,
+a disposable box passed the private-account test on this Mac. MyBox opened the box and
+transferred a file in both directions. The normal account could neither enter nor start
+the box directly, and it could not read the stopped box’s disk. MyBox rejected both a
+forged firewall confirmation and a real confirmation that the client delayed for six seconds.
+The private service started without a graphical login for `_mybox`.
+See the [live test report](test-results/private-service-latest.json).
+After the next Mac restart, run `make service-reboot-test` before running setup again.
 
 ## Development setup
 
-Requires the existing Apple `container` CLI, macOS with its supported Apple
+Requires the `janpmz/my-container-box` fork of Apple’s `container`, macOS with supported Apple
 silicon hardware, and the installed Swift compiler. Uses Foundation, Darwin,
-SystemConfiguration, and Network. No third-party packages or Node.js installation are required.
+SystemConfiguration, Network, and the Python 3 standard library included with the Mac developer tools.
 
 The checkout and auto-building launcher below are for development. The planned
 public release will ship a precompiled executable with an installer, so users
-will not need this checkout or a Swift compiler. Apple's `container` CLI is
-still a runtime dependency. See the [distribution plan](project.md#distribution).
+will not need this checkout or a Swift compiler. Both accounts use the fork’s `/usr/local/bin/container`. See the [distribution plan](project.md#distribution).
 
 One-time setup from this project folder on this Mac:
 
@@ -62,16 +89,19 @@ command. The launcher builds `.build/mybox` on first use or after source changes
 Then, from any folder:
 
 ```sh
-mybox setup-network
+mybox setup-service
 mybox create demo --inside-port 8080 --outside-port 8766
 mybox import demo /path/to/website
 mybox enter demo
 ```
 
-After login or a reboot, run a box command such as `mybox list` or `mybox enter demo`.
-MyBox checks Apple's container service and starts it for your account if needed.
-The CLI handles startup on first use. It needs no login item or separate startup script.
-Apple's container CLI and a Linux kernel are prerequisites on each Mac.
+`setup-service` uses your Mac password to create the account, install the programs,
+and register the background services. Run it again after changing the service or worker.
+On first use, Apple's runtime obtains its recommended Linux kernel and initial image
+for the new account if necessary. Install the fork package once in `/usr/local` before running setup.
+Running `container` directly uses your Mac account’s containers. MyBox runs the same executables
+as `_mybox`, whose home directory holds the MyBox disks.
+If the private service is unavailable, box commands stop and report that problem.
 
 Inside Linux, the imported folder is `/workspace/website`. Edit and run your
 project there. A server on `127.0.0.1:8080` or `0.0.0.0:8080` can be viewed on the Mac at
@@ -322,6 +352,10 @@ fully qualified aliases. Do not add `--localhost` to that command. Existing
 boxes keep their original configuration and do not gain an alias retroactively.
 New box names must end with a letter or digit.
 
+Apple uses the same local DNS ports for every Mac account. If your personal
+Apple service already owns those ports, it cannot resolve private boxes by name.
+Use `localhost` and the mapped outside port in that case. Both services can
+still use their own boxes. When the private service owns the DNS ports,
 Apple's DNS returns the box's current IP address for this name after each start.
 The name does not resolve while the box is stopped. DNS caching may briefly retain an older address.
 The name addresses the **inside** port: `demo.box.test:8080` is a different path
@@ -333,30 +367,27 @@ unpublished ports. The hostname itself imposes no access restrictions.
 
 ## Network protection
 
-`mybox setup-network` requests administrator authentication in the Mac terminal.
-It installs the separate `mybox-firewall-manager` program and a Mac startup job.
-Run it again after changes to the firewall code. It preserves `/etc/pf.conf`
-and the main PF/NAT rules. MyBox uses only `com.apple/000.mybox` for its rules.
+Run `mybox setup-service` after changing the firewall or worker. The firewall manager
+loads its rules in the `com.apple/000.mybox` PF anchor. Each MyBox has a dedicated
+NAT network. When starting Linux, the fork holds the box’s bridge open while MyBox
+applies the rules. The Linux runtime asks the Mac firewall manager to check those rules
+immediately before boot. The worker checks the bridge again after the VM starts.
 
-New boxes receive separate NAT networks. Each startup follows this sequence:
+The firewall permits outbound IPv4 and public IPv6. The IPv6 rules allow the router
+and neighbor discovery messages that Linux needs to configure its interface. Guest
+applications can contact global IPv6 destinations from the box’s assigned subnet.
+Rules for Mac addresses, directly connected networks, and specific routed LAN or VPN
+prefixes run before the public-internet rule. A global IPv6 address on your LAN
+therefore gets the same protection as a private LAN address. Linux learns its IPv6
+default gateway from the bridge’s router advertisements.
 
-1. Start a fresh, trusted helper on the box's network.
-2. Identify the bridge from that network's gateway address.
-3. Apply the PF policy and check that PF and the expected rules are active.
-4. Start the development VM.
-5. Check the bridge and rules again.
-6. Stop and delete the helper.
-
-The helper uses one CPU and 256 MiB of memory during startup. It shares no
-project storage and publishes no ports. Only the development VM remains during
-normal use. An interrupted startup can leave a helper behind. The next operation
-removes helpers that belong to that dedicated network before it continues.
-
-The policy allows IPv4 Internet access and public DNS. It blocks traffic from
-the box to Mac addresses, connected networks, and private or special ranges.
-It blocks IPv6. Incoming rules select the actual bridge and accept any source
-address for matching. They do not depend on the guest claiming an assigned IP.
-No guest capability drops or IPv6 kernel setting are required by this approach.
+Boxes can use the Mac’s internet connection while a VPN is connected and after it
+disconnects. MyBox allows the default internet route, including common VPN routes
+that split the internet into large address ranges. It blocks private address ranges
+and specific networks routed through the VPN. If a VPN routes a specific public site
+separately, MyBox blocks that route too. If an internal service uses a public IP
+reachable only through the default route, MyBox cannot identify it as internal.
+[Live IPv4 and IPv6 firewall test](test-results/shared-ipv6-firewall-latest.json).
 
 All startup paths use this sequence, including import and export. A failed
 protection check prevents startup. Operations on a running box also check its
@@ -394,7 +425,7 @@ configuration. This version can list and stop them, but refuses to start or ente
 them through an unprotected path. Automatic migration is not implemented.
 
 The installed files are `/Library/PrivilegedHelperTools/mybox-firewall-manager`,
-`/Library/LaunchDaemons/com.mybox.firewall.plist`, and `/var/db/mybox`.
+`/Library/LaunchDaemons/io.github.janpmz.my-container-box.firewall.plist`, and `/var/db/mybox`.
 This is development setup. Release packaging remains deferred.
 
 ## File transfers
@@ -431,9 +462,11 @@ host credentials.
 ## Checks
 
 ```sh
-make test          # CLI validation and argument handling; no containers created
+make test          # local tests for the CLI, service, and firewall
 make resources-test # resize an isolated disposable box and check its files and limits
-make integration   # real file/folder, restart, and localhost checks
+make integration   # real private account, direct access denial, firewall checks, and transfers
+make service-reboot-test # repeat the private-account check after a Mac restart
+make backend-integration # single-account fixtures for the Linux runtime and localhost checks
 make ports-test    # live port changes on a disposable box; requests sudo authentication
 make network-test  # reversible PF experiment; requests sudo authentication
 make protected-test # production helper/PF checks; installs the persistent setup
@@ -443,11 +476,14 @@ make reboot-test    # checks automatic recovery after an actual Mac restart
 make dns-test      # custom-network DNS, changed IP, stop/start; no sudo needed
 ```
 
-The integration check uses the already available Debian image and its existing
-Perl interpreter. It installs nothing. See `project.md` and `test-results/` for
-observations, scope, and the remaining network work. New integration runs write
+The single-account backend integration check uses the existing Debian image and its Perl interpreter.
+See `project.md` and `test-results/` for earlier results. Backend integration runs write
 `test-results/cli-latest.json` and leave the dated acceptance results intact.
-Run integration checks in a Mac terminal after `mybox setup-network` so sudo can
+The older single-account checks use the test build with disposable boxes in the caller’s Apple account. They exercise backend behavior separately from the private service.
+For the private-account build, use `make service-test` after `mybox setup-service`.
+Stay at the Mac during that test. It asks for approval when it enters the disposable
+box and when it transfers a file, just as it would for a script you wrote.
+The live tests require a Mac terminal so sudo can
 request authentication. The protected test removes its boxes and networks. It
 retains the requested persistent firewall setup and writes
 `test-results/protected-network-latest.json`.

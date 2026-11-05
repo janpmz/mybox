@@ -23,11 +23,11 @@ def run(*args, check=True, answers=None):
 def main():
     name = 'resize-check-' + uuid.uuid4().hex[:12]
     cid = 'mybox-' + name
-    box = ROOT / '.build/mybox'
+    box = ROOT / '.build/mybox-test'
     bundle = Path.home() / 'Library/Application Support/com.apple.container/containers' / cid
     disk = bundle / 'rootfs.ext4'
     checks = []
-    run('container', 'create', '--name', cid, '--label', 'com.mybox.managed=true',
+    run('container', 'create', '--name', cid, '--label', 'io.github.janpmz.my-container-box.managed=true',
         '--network', 'none', '--cpus', '2', '--memory', '512m', '--entrypoint', '/bin/sleep',
         'docker.io/library/debian:trixie-slim', 'infinity')
     try:

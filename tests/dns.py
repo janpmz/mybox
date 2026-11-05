@@ -38,12 +38,12 @@ def main():
               "service_restarted": False, "checks": {}}
     checks = report["checks"]
     try:
-        container("network", "create", "--label", "com.mybox.network-test=true", network)
+        container("network", "create", "--label", "io.github.janpmz.my-container-box.network-test=true", network)
         created = True
 
         def create(box, attachment):
             container("create", "--name", box, "--network", attachment,
-                      "--label", "com.mybox.network-test=true", "--memory", "256m",
+                      "--label", "io.github.janpmz.my-container-box.network-test=true", "--memory", "256m",
                       "--cpus", "1", "--entrypoint", "/bin/sleep", "debian:trixie-slim", "infinity")
             boxes.append(box)
 

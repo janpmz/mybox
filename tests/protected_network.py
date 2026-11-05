@@ -25,7 +25,7 @@ from network_isolation import (ROOT, PROBE, SERVER, IPv6HTTPServer, ProbeHandler
 from prestart_network import host_http
 from source_spoof import RAW
 
-BOX = str(ROOT / ".build/mybox")
+BOX = str(ROOT / ".build/mybox-test")
 HELPER = "/Library/PrivilegedHelperTools/mybox-firewall-manager"
 ANCHOR = "com.apple/000.mybox"
 
@@ -117,10 +117,10 @@ def main():
             network = 'mybox-net-' + short
             identifier = 'mybox-' + short
             port = free_port()
-            container('network', 'create', '--label', 'com.mybox.managed=true', network)
+            container('network', 'create', '--label', 'io.github.janpmz.my-container-box.managed=true', network)
             networks.append(network)
-            command_args = ['create', '--name', identifier, '--label', 'com.mybox.managed=true',
-                            '--label', 'com.mybox.network=' + network, '--network', network + ',alias=' + short + '.box.test',
+            command_args = ['create', '--name', identifier, '--label', 'io.github.janpmz.my-container-box.managed=true',
+                            '--label', 'io.github.janpmz.my-container-box.network=' + network, '--network', network + ',alias=' + short + '.box.test',
                             '--cpus', '1', '--memory', '256m', '--dns', '1.1.1.1', '--dns', '1.0.0.1',
                             '--publish', f'127.0.0.1:{port}:8080', '--entrypoint', '/usr/bin/perl',
                             'debian:trixie-slim', '-e', BOOT, host4, str(host_server.server_port), str(udp.getsockname()[1]), short]
@@ -176,7 +176,7 @@ def main():
         port = create_fixture(baseline)
         trusted = 'mybox-helper-' + str(uuid.uuid4())
         container('create', '--name', trusted, '--network', 'mybox-net-' + baseline,
-                  '--label', 'com.mybox.helper=true', '--memory', '256m', '--cpus', '1', '--read-only',
+                  '--label', 'io.github.janpmz.my-container-box.helper=true', '--memory', '256m', '--cpus', '1', '--read-only',
                   '--entrypoint', '/bin/sleep', 'debian:trixie-slim', 'infinity')
         report['baseline_helper'] = trusted
         try:
@@ -208,7 +208,7 @@ def main():
             box('start', name)
             guest = observe(name, port, stage, True)
             active_helpers = [x['id'] for x in json.loads(container('list', '--all', '--format', 'json').stdout)
-                              if x['configuration'].get('labels', {}).get('com.mybox.helper') == 'true'
+                              if x['configuration'].get('labels', {}).get('io.github.janpmz.my-container-box.helper') == 'true'
                               and any(n['network'] == 'mybox-net-' + name for n in x['configuration'].get('networks', []))]
             report['checks'][stage]['helper_removed'] = not active_helpers
             if active_helpers:
@@ -245,7 +245,7 @@ def main():
         report['firewall_counters'] = sudo('/sbin/pfctl', '-a', ANCHOR, '-vvsr')
         report['checks']['main_rules_preserved'] = before_main == sudo('/sbin/pfctl', '-sr')
         report['checks']['main_nat_preserved'] = before_nat == sudo('/sbin/pfctl', '-sn')
-        report['checks']['startup_plist_valid'] = command(['/usr/bin/plutil', '-lint', '/Library/LaunchDaemons/com.mybox.firewall.plist'], check=False).returncode == 0
+        report['checks']['startup_plist_valid'] = command(['/usr/bin/plutil', '-lint', '/Library/LaunchDaemons/io.github.janpmz.my-container-box.firewall.plist'], check=False).returncode == 0
 
         def passed(value):
             return all(passed(item) for item in value.values()) if isinstance(value, dict) else value is True

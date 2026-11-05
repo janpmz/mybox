@@ -350,7 +350,7 @@ def main():
     firewall_process = None
     servers = []
     try:
-        container("network", "create", "--label", "com.mybox.network-test=true", network)
+        container("network", "create", "--label", "io.github.janpmz.my-container-box.network-test=true", network)
         network_created = True
         network_info = json.loads(container("network", "inspect", network).stdout)[0]
         container("create", "--name", name, "--network", network, "--memory", "256m", "--cpus", "1",

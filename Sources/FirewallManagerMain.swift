@@ -15,7 +15,8 @@ struct FirewallManagerMain {
             return
         }
         do {
-            try firewallMain(arguments)
+            if arguments == ["verify-runtime-boot"] { try verifyRuntimeBoot() }
+            else { try firewallMain(arguments) }
         } catch let error as CommandFailed {
             exit(error.status > 0 && error.status < 256 ? error.status : 1)
         } catch {

@@ -105,7 +105,7 @@ def main():
     before = {item["id"]: item["status"] for item in records()}
     info = json.loads(run(BACKEND, "inspect", identifier))[0]
     assert info["status"]["state"] == "running", "Start the selected box before this test."
-    assert info["configuration"]["labels"]["com.mybox.managed"] == "true"
+    assert info["configuration"]["labels"]["io.github.janpmz.my-container-box.managed"] == "true"
     address = info["status"]["networks"][0]["ipv4Address"].split("/")[0]
     marker = "/tmp/mybox-loopback-" + uuid.uuid4().hex
     report = dict(date=datetime.now(timezone.utc).isoformat(), box=args.box, checks={}, success=False)

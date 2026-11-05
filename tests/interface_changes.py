@@ -21,7 +21,7 @@ import uuid
 from network_isolation import ROOT, PROBE, SERVER, check_internet
 from prestart_network import host_http
 
-BOX = str(ROOT / ".build/mybox")
+BOX = str(ROOT / ".build/mybox-test")
 HELPER = "/Library/PrivilegedHelperTools/mybox-firewall-manager"
 ANCHOR = "com.apple/000.mybox"
 
@@ -130,7 +130,7 @@ def main():
     if os.geteuid() == 0:
         raise RuntimeError("Run this test as your normal Mac user.")
     existing = json.loads(run("container", "list", "--format", "json").stdout)
-    if any(item["configuration"].get("labels", {}).get("com.mybox.managed") == "true" for item in existing):
+    if any(item["configuration"].get("labels", {}).get("io.github.janpmz.my-container-box.managed") == "true" for item in existing):
         raise RuntimeError("Stop other MyBox boxes before this test. It briefly pauses automatic firewall refresh.")
     name = "interface-check-" + uuid.uuid4().hex[:8]
     identifier = "mybox-" + name

@@ -30,7 +30,7 @@ my ($host, $port, $family, $timeout) = @ARGV;
 my $domain = $family eq '6' ? AF_INET6 : AF_INET;
 my $address = inet_pton($domain, $host) or die "invalid IP address\n";
 my $scope = 0;
-if ($family eq '6') {
+if ($family eq '6' && $host =~ /^fe[89ab]/i) {
     open my $index, '<', '/sys/class/net/eth0/ifindex' or die "interface: $!\n";
     $scope = <$index>;
     chomp $scope;

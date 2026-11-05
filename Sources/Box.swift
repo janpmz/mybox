@@ -1,7 +1,7 @@
 import Foundation
 import Darwin
 
-let managedLabel = "com.mybox.managed"
+let managedLabel = "io.github.janpmz.my-container-box.managed"
 let namePrefix = "mybox-"
 
 func containerID(_ name: String) throws -> String {
@@ -47,11 +47,25 @@ final class TemporaryFolder {
 final class Backend {
     let executable: String
     private var needsServiceCheck: Bool
+    var usesFork: Bool {
+        #if MYBOX_SERVICE_WORKER
+        return true
+        #else
+        return false
+        #endif
+    }
 
     init(startServiceIfNeeded: Bool = true) throws {
+        #if MYBOX_SERVICE_WORKER
+        guard files.isExecutableFile(atPath: forkBridgeExecutable) else {
+            throw BoxError("Install the shared my-container-box package before using MyBox.")
+        }
+        let candidates = [forkInstallRoot + "/bin/container"]
+        #else
         let directories = (ProcessInfo.processInfo.environment["PATH"] ?? "").split(separator: ":").map(String.init)
         let candidates = directories.filter { $0.hasPrefix("/") }.map { $0 + "/container" }
             + ["/usr/local/bin/container", "/opt/homebrew/bin/container"]
+        #endif
         guard let path = candidates.first(where: { files.isExecutableFile(atPath: $0) }) else {
             throw BoxError("Apple's container CLI was not found. It must be installed before using MyBox.")
         }
@@ -61,7 +75,22 @@ final class Backend {
 
     private func serviceIsRunning() throws -> Bool {
         let result = try capturedCommand(executable, ["system", "status", "--format", "json"])
-        if result.status == 0 { return true }
+        if result.status == 0 {
+            #if MYBOX_SERVICE_WORKER
+            let metadata = try JSONSerialization.jsonObject(with: Data(result.output.utf8)) as? [String: Any]
+            let paths = metadata?["paths"] as? [String: String]
+            guard let appRoot = paths?["appRoot"],
+                  URL(fileURLWithPath: appRoot).resolvingSymlinksInPath().standardizedFileURL.path ==
+                    containerStorageRoot.deletingLastPathComponent().resolvingSymlinksInPath().standardizedFileURL.path else {
+                throw BoxError("Apple's service is using an unexpected storage directory. MyBox stopped.")
+            }
+            guard let root = paths?["installRoot"],
+                  URL(fileURLWithPath: root).standardizedFileURL.path == forkInstallRoot else {
+                throw BoxError("The _mybox container service must use the shared installation in /usr/local.")
+            }
+            #endif
+            return true
+        }
         let data = Data(result.output.utf8)
         if result.status == 1, let payload = try? JSONDecoder().decode([String: String].self, from: data),
            let status = payload["status"], ["unregistered", "not running"].contains(status) { return false }
@@ -74,7 +103,12 @@ final class Backend {
         defer { withExtendedLifetime(lock) {} }
         guard try !serviceIsRunning() else { return }
         note("Starting Apple's container service...")
-        let result = try capturedCommand(executable, ["system", "start", "--disable-kernel-install"])
+        #if MYBOX_SERVICE_WORKER
+        let kernelOption = "--enable-kernel-install"
+        #else
+        let kernelOption = "--disable-kernel-install"
+        #endif
+        let result = try capturedCommand(executable, ["system", "start", kernelOption])
         guard result.status == 0 else {
             throw BoxError("Cannot start Apple's container service. \(result.output.trimmingCharacters(in: .whitespacesAndNewlines))")
         }
@@ -503,7 +537,9 @@ func exportFiles(_ name: String, path: String, destination: URL, backend: Backen
     _ = try backend.run(["cp", "\(id):\(source)", payload.path])
     try validateHostTree(payload)
     try files.moveItem(at: payload, to: destination)
+    #if !MYBOX_SERVICE_WORKER
     print("Exported to \(destination.path)")
+    #endif
 }
 
 let help = """
@@ -554,6 +590,7 @@ Usage: mybox <command>
   ports list <name>      Show saved mappings and forwarding status.
   list                   List boxes created by this CLI, including stopped ones.
                          Show CPU cores, memory, disk use, disk capacity, and ports.
+  setup-service          Install the private MyBox account and register its service.
   setup-network          Install the PF helper and automatic Mac startup setup.
   completion zsh         Print the zsh script for Tab completion.
   help                   Show this help.
@@ -561,7 +598,7 @@ Usage: mybox <command>
 
 No host folders, project disks, or SSH agents are mounted.
 New boxes use a dedicated network. PF protection is checked before startup.
-Run setup-network once in a Mac terminal. PF changes require administrator access.
+Run setup-service once in a Mac terminal. PF changes require administrator access.
 """
 
 func mainCommand(_ arguments: [String]) throws {
@@ -637,6 +674,7 @@ func mainCommand(_ arguments: [String]) throws {
         let backend = try Backend()
         let resolvedName = try backend.resolveEnterName(name)
         if resolvedName != name { note("Using box \(resolvedName).") }
+        try approveBoxAccess("enter", box: resolvedName, arguments: Array(rest.dropFirst(2)))
         let id = try backend.ready(resolvedName)
         var execArguments = ["exec", "--interactive", "--workdir", "/workspace"]
         if isatty(STDIN_FILENO) == 1 && isatty(STDOUT_FILENO) == 1 {
@@ -648,15 +686,40 @@ func mainCommand(_ arguments: [String]) throws {
     case "import":
         guard rest.count == 2 else { throw BoxError("Usage: mybox import <name> <host-file-or-folder>") }
         _ = try containerID(rest[0])
+        try approveBoxAccess("import", box: rest[0], arguments: [URL(fileURLWithPath: rest[1]).lastPathComponent])
         try importFiles(rest[0], path: rest[1], backend: Backend())
     case "export":
         guard rest.count == 3 else { throw BoxError("Usage: mybox export <name> <box-path> <new-host-path>") }
         _ = try containerID(rest[0])
         _ = try workspacePath(rest[1])
+        try approveBoxAccess("export", box: rest[0], arguments: [rest[1]])
         try exportFiles(rest[0], path: rest[1], destination: hostURL(rest[2]), backend: Backend())
     default:
         throw BoxError("Unknown command \(command.debugDescription). Run mybox help for usage.")
     }
+}
+
+let serviceCommands: Set<String> = ["list", "_complete-boxes", "create", "copy", "start", "stop", "enter",
+                                    "import", "export", "resize", "ports"]
+
+// The installed worker asks over a service-private socket. There is no CLI flag
+// or client response that can grant access.
+func approveBoxAccess(_ action: String, box: String, arguments: [String]) throws {
+    #if MYBOX_SERVICE_WORKER
+    let result = try capturedCommand("/usr/bin/python3", ["-I", "-B", serviceInstall + "/access.py",
+                                                         "request", action, box] + arguments)
+    guard result.status == 0 else {
+        let explanation = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
+        throw BoxError(explanation.isEmpty ? "Box access was not approved." : explanation)
+    }
+    #endif
+}
+
+func execTool(_ path: String, _ arguments: [String]) throws -> Never {
+    let argv = ([path] + arguments).map { strdup($0) } + [nil]
+    defer { argv.forEach { free($0) } }
+    _ = argv.withUnsafeBufferPointer { execv(path, $0.baseAddress!) }
+    throw BoxError("Cannot start \(path): \(String(cString: strerror(errno)))")
 }
 
 @main
@@ -671,5 +734,37 @@ struct MyBoxMain {
             exit(1)
         }
     }
-    static func run() throws { try mainCommand(Array(CommandLine.arguments.dropFirst())) }
+    static func run() throws {
+        let args = Array(CommandLine.arguments.dropFirst())
+        #if MYBOX_TESTING
+        try mainCommand(args)
+        #elseif MYBOX_SERVICE_WORKER
+        guard getuid() == (try privateAccountID()), geteuid() == getuid(),
+              let fd = ProcessInfo.processInfo.environment["MYBOX_FIREWALL_CHANNEL"].flatMap(Int32.init),
+              fcntl(fd, F_SETFD, FD_CLOEXEC) == 0,
+              let command = args.first, serviceCommands.contains(command) else {
+            throw BoxError("The private worker accepts box commands only from the MyBox service.")
+        }
+        try mainCommand(args)
+        #else
+        let checkoutService = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
+            .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("service")
+        if args.first == "setup-service" {
+            guard args.count == 1 else {
+                throw BoxError("Usage: mybox setup-service")
+            }
+            let installer = checkoutService.appendingPathComponent("install.py")
+            try execTool("/usr/bin/sudo", ["/usr/bin/python3", "-I", "-B", installer.path])
+        }
+        if let command = args.first, serviceCommands.contains(command) {
+            // The checkout client can still reach the installed account socket during a software upgrade.
+            let clients = [serviceInstall + "/broker.py", checkoutService.appendingPathComponent("broker.py").path]
+            guard let client = clients.first(where: { files.isReadableFile(atPath: $0) }) else {
+                throw BoxError("Run mybox setup-service in your Mac terminal to configure the private account.")
+            }
+            try execTool("/usr/bin/python3", ["-I", "-B", client, "client"] + args)
+        }
+        try mainCommand(args)
+        #endif
+    }
 }

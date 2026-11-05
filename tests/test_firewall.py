@@ -24,13 +24,18 @@ class Firewall(unittest.TestCase):
         rules = result.stdout
         incoming = [line for line in rules.splitlines() if " in quick " in line]
         self.assertTrue(all("on bridge999" in line for line in incoming))
-        self.assertTrue(all("from any" in line or "inet6 all" in line for line in incoming))
+        for label in ["mybox_host6", "mybox_lan6", "mybox_transition6"]:
+            self.assertLess(rules.index(label), rules.index("mybox_internet6"))
+        self.assertLess(rules.index("mybox_internet6"), rules.index("mybox_other6"))
+        self.assertIn("from fd00:1234::/64 to 2000::/3 keep state (if-bound)", rules)
+        self.assertNotIn("icmp6-type 134", "\n".join(incoming))
+        self.assertIn("from fe80::/10 to { fe80::/10, fd00:1234::/64, ff02::/16 } icmp6-type 134 no state", rules)
         self.assertIn("(en0)", rules)
         self.assertIn("(en0:network)", rules)
         self.assertIn("port 8080", rules)
         self.assertIn("port 9000", rules)
         self.assertIn('label "mybox_unpublished"', rules)
-        self.assertIn("block drop out quick inet6", rules)
+        self.assertIn("block drop out quick on bridge999 inet6", rules)
         with tempfile.NamedTemporaryFile(mode="w", suffix=".pf") as file:
             file.write(rules)
             file.flush()
@@ -55,7 +60,7 @@ class Firewall(unittest.TestCase):
         self.policy["ports"] = []
         result = self.render()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertNotIn("pass out", result.stdout)
+        self.assertNotIn("inet proto tcp", result.stdout)
         self.assertIn("mybox_unpublished", result.stdout)
 
 

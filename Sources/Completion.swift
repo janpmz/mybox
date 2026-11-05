@@ -20,6 +20,7 @@ _mybox_box_names() {
 _mybox() {
     local -a commands
     commands=(
+        'setup-service:Install the private account and service'
         'create:Create a box'
         'enter:Open a shell or run a Linux command'
         'copy:Copy a box'

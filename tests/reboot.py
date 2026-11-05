@@ -21,7 +21,7 @@ BASELINE = ROOT / "test-results/reboot-before.json"
 REPORT = ROOT / "test-results/reboot-latest.json"
 CLI_REPORT = ROOT / "test-results/reboot-cli-latest.json"
 HELPER = Path("/Library/PrivilegedHelperTools/mybox-firewall-manager")
-PLIST = Path("/Library/LaunchDaemons/com.mybox.firewall.plist")
+PLIST = Path("/Library/LaunchDaemons/io.github.janpmz.my-container-box.firewall.plist")
 
 
 def digest(path):
@@ -76,7 +76,7 @@ def startup_checks(boot, job, status, store, snapshot, pf_info, references, now)
 
 def prepare():
     boot = current_boot()
-    job = run("/bin/launchctl", "print", "system/com.mybox.firewall").stdout
+    job = run("/bin/launchctl", "print", "system/io.github.janpmz.my-container-box.firewall").stdout
     if not re.search(r"^\s*state = running\s*$", job, re.MULTILINE):
         raise RuntimeError("The firewall watcher is not running before the reboot.")
     baseline = {"boot": boot, "prepared_at": time.time(), "helper_sha256": digest(HELPER), "plist_sha256": digest(PLIST)}
@@ -104,7 +104,7 @@ def verify():
         deadline = time.monotonic() + 15
         while True:
             try:
-                job = sudo("/bin/launchctl", "print", "system/com.mybox.firewall").stdout
+                job = sudo("/bin/launchctl", "print", "system/io.github.janpmz.my-container-box.firewall").stdout
                 status = json.loads(sudo("/bin/cat", "/var/db/mybox/watcher.json").stdout)
                 store = json.loads(sudo("/bin/cat", "/var/db/mybox/state.json").stdout)
                 snapshot = json.loads(sudo("/bin/cat", "/var/db/mybox/snapshot.json").stdout)

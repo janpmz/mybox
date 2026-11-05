@@ -2,7 +2,7 @@ import Foundation
 import Darwin
 
 let firewallExecutable = "/Library/PrivilegedHelperTools/mybox-firewall-manager"
-let firewallVersion = 3
+let firewallVersion = 5
 
 final class FileLock {
     let descriptor: Int32
@@ -19,6 +19,8 @@ struct HostInterface: Codable, Equatable {
     var ipv4: [String] = []
     var members: [String] = []
     var networks4: [String] = []
+    var ipv6: [String] = []
+    var networks6: [String] = []
 }
 
 func ipv4Network(_ address: String, mask: String) throws -> String {
@@ -27,6 +29,25 @@ func ipv4Network(_ address: String, mask: String) throws -> String {
           (~bits &+ 1) & ~bits == 0 else { throw BoxError("Cannot read an IPv4 interface address or netmask.") }
     let value = octets.reduce(UInt32(0)) { ($0 << 8) | UInt32($1) } & bits
     return [24, 16, 8, 0].map { String((value >> $0) & 255) }.joined(separator: ".") + "/\(bits.nonzeroBitCount)"
+}
+
+// Normalize IPv6 prefixes before saving them or passing them to pfctl.
+func ipv6Network(_ address: String, length: Int) throws -> String {
+    var binary = in6_addr()
+    guard (0...128).contains(length), inet_pton(AF_INET6, address, &binary) == 1 else {
+        throw BoxError("Cannot read IPv6 prefix \(address)/\(length).")
+    }
+    withUnsafeMutableBytes(of: &binary) { bytes in
+        for i in bytes.indices {
+            let bits = min(8, max(0, length - i * 8))
+            bytes[i] &= UInt8(truncatingIfNeeded: 0xff << (8 - bits))
+        }
+    }
+    var text = [CChar](repeating: 0, count: Int(INET6_ADDRSTRLEN))
+    guard inet_ntop(AF_INET6, &binary, &text, socklen_t(text.count)) != nil else {
+        throw BoxError("Cannot format the IPv6 prefix.")
+    }
+    return String(cString: text) + "/\(length)"
 }
 
 func hostInterfaces() throws -> [HostInterface] {
@@ -43,6 +64,14 @@ func hostInterfaces() throws -> [HostInterface] {
                 }
                 result[result.count - 1].ipv4.append(words[1])
                 result[result.count - 1].networks4.append(try ipv4Network(words[1], mask: words[mask + 1]))
+            }
+            if words.count > 1 && words[0] == "inet6" {
+                guard let field = words.firstIndex(of: "prefixlen"), words.indices.contains(field + 1),
+                      let length = Int(words[field + 1]), let address = words[1].split(separator: "%").first else {
+                    throw BoxError("Cannot read the Mac interface IPv6 prefix.")
+                }
+                result[result.count - 1].ipv6.append(try ipv6Network(String(address), length: 128))
+                result[result.count - 1].networks6.append(try ipv6Network(String(address), length: length))
             }
             if words.count > 1 && words[0] == "member:" { result[result.count - 1].members.append(words[1]) }
         }

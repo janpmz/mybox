@@ -20,14 +20,14 @@ class Completion(unittest.TestCase):
     def save_names(self, *names):
         records = {"mybox-" + name: {
             "id": "mybox-" + name,
-            "configuration": {"labels": {"com.mybox.managed": "true"}},
+            "configuration": {"labels": {"io.github.janpmz.my-container-box.managed": "true"}},
             "status": {"state": "stopped"},
         } for name in names}
         records["mybox-foreign"] = {
             "id": "mybox-foreign", "configuration": {"labels": {}}, "status": {"state": "running"},
         }
         records["mybox-helper-test"] = {
-            "id": "mybox-helper-test", "configuration": {"labels": {"com.mybox.helper": "true"}},
+            "id": "mybox-helper-test", "configuration": {"labels": {"io.github.janpmz.my-container-box.helper": "true"}},
             "status": {"state": "running"},
         }
         self.log.with_suffix(".state").write_text(json.dumps(records))

@@ -16,7 +16,7 @@ import urllib.request
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
-BOX = ROOT / ".build/mybox"
+BOX = ROOT / ".build/mybox-test"
 CONTAINER = shutil.which("container")
 REPORT = ROOT / "test-results/ports-latest.json"
 

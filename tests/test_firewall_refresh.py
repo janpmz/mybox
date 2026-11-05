@@ -30,6 +30,10 @@ with (root / 'calls.jsonl').open('a') as log:
 failure = root / 'fail-once'
 if args[0] == '/sbin/ifconfig':
     print((root / 'interfaces.txt').read_text())
+elif args[0] == '/usr/sbin/netstat':
+    print('Destination Gateway Flags Netif Expire')
+    routes = root / (args[-1] + '.routes')
+    if routes.exists(): print(routes.read_text())
 elif args[0] == '/usr/sbin/sysctl':
     print('boot-test')
 elif args[0] == '/sbin/pfctl':
@@ -85,6 +89,53 @@ class FirewallRefresh(unittest.TestCase):
         self.assertEqual(result.returncode == 0, success, result.stdout + result.stderr)
         return result
 
+    def test_new_ipv6_lan_and_vpn_routes_revoke_existing_states(self):
+        self.change_interfaces(BASE_INTERFACES.replace("en0: flags=0", "en0: flags=0\n    inet6 2001:db8:8::a prefixlen 64"))
+        (self.root / "inet6.routes").write_text(
+            "default fe80::1%utun3 UGcIg utun3\n2001:db8:6::/56 fe80::1 UGSc en0\n"
+            "2001:db8:7::/64 link#44 USc utun3\n")
+        self.run_manager("refresh")
+        rules = (self.root / "policy.pf").read_text()
+        for subnet in ["2001:db8:6::/56", "2001:db8:7::/64"]:
+            self.assertIn(subnet, rules)
+            self.assertIn(["/sbin/pfctl", "-i", "bridge999", "-k", "::/0", "-k", subnet], self.calls())
+        for destination in ["2001:db8:8::a/128", "2001:db8:8::/64"]:
+            self.assertIn(["/sbin/pfctl", "-i", "bridge999", "-k", "::/0", "-k", destination], self.calls())
+        self.assertNotIn("::/0", rules)
+        self.assertLess(rules.index("mybox_routed"), rules.index("mybox_internet6"))
+
+    def test_vpn_internet_routes_preserve_more_specific_private_destinations(self):
+        vpn_interface = ("utun7: flags=0\n"
+                         "    inet 10.8.0.2 --> 10.8.0.1 netmask 0x0\n"
+                         "    inet6 fd00:7::2 prefixlen 0\n"
+                         "    inet6 2001:db8:77::1 prefixlen 64\n")
+        self.change_interfaces(BASE_INTERFACES + vpn_interface)
+        v4_routes = self.root / "inet.routes"
+        v6_routes = self.root / "inet6.routes"
+        for four, six in [
+            (["default", "0.0.0.0/0"], ["default", "::/0"]),
+            (["0/1", "128/1"], ["::/1", "8000::/1"]),
+            (["default"], ["2000::/3"]),
+            (["default"], ["2000::/4", "3000::/4"]),
+        ]:
+            with self.subTest(four=four, six=six):
+                v4_routes.write_text("".join(f"{dest} 10.8.0.1 UGSc utun7\n" for dest in four + ["10.42/16", "11.22.33/24"]))
+                v6_routes.write_text("".join(f"{dest} link#44 USc utun7\n" for dest in six + ["2001:db8:7::/64"]))
+                self.run_manager("refresh")
+                snapshot = json.loads((self.root / "snapshot.json").read_text())
+                self.assertEqual(set(snapshot["routed"]), {"10.42.0.0/16", "11.22.33.0/24", "2001:db8:7::/64", "2001:db8:77::/64"})
+                rules = (self.root / "policy.pf").read_text()
+                self.assertIn("(utun7)", rules)
+                self.assertNotIn("(utun7:network)", rules)
+                self.assertLess(rules.index("mybox_routed"), rules.index("mybox_internet6"))
+
+        self.change_interfaces(BASE_INTERFACES)
+        v4_routes.write_text("")
+        v6_routes.write_text("")
+        self.run_manager("refresh")
+        self.assertEqual(json.loads((self.root / "snapshot.json").read_text())["routed"], [])
+        self.assertIn("mybox_internet6", (self.root / "policy.pf").read_text())
+
     def reset_calls(self):
         (self.root / "calls.jsonl").write_text("")
 
@@ -104,7 +155,7 @@ class FirewallRefresh(unittest.TestCase):
         for destination in ["11.22.33.44/32", "11.22.33.0/24"]:
             self.assertIn(["/sbin/pfctl", "-i", "bridge999", "-k", "0.0.0.0/0", "-k", destination], calls)
         self.assertFalse(any("-F" in call or "-d" in call for call in calls))
-        load = next(i for i, call in enumerate(calls) if "-f" in call)
+        load = next(i for i, call in enumerate(calls) if call[0] == "/sbin/pfctl" and "-f" in call)
         cleanup = next(i for i, call in enumerate(calls) if "-k" in call)
         self.assertLess(load, cleanup)
         self.assertFalse(any("container" in arg for call in calls for arg in call))
@@ -116,7 +167,7 @@ class FirewallRefresh(unittest.TestCase):
 
     def test_no_change_does_not_reload_rules_or_interrupt_connections(self):
         self.run_manager("refresh")
-        self.assertFalse(any("-f" in call or "-k" in call for call in self.calls()))
+        self.assertFalse(any(call[0] == "/sbin/pfctl" and ("-f" in call or "-k" in call) for call in self.calls()))
 
     def test_adding_ports_preserves_all_existing_connections(self):
         expanded = dict(self.policy, ports=[8080, 8081])
@@ -127,7 +178,7 @@ class FirewallRefresh(unittest.TestCase):
 
     def test_removing_ports_clears_only_mac_to_box_connections(self):
         self.run_manager("update-ports", json.dumps(dict(self.policy, ports=[])))
-        self.assertNotIn("pass out", (self.root / "active.pf").read_text())
+        self.assertNotIn("mybox_selected", (self.root / "active.pf").read_text())
         kills = [call for call in self.calls() if "-k" in call]
         self.assertEqual(kills, [["/sbin/pfctl", "-k", "192.168.65.1", "-k", "192.168.65.0/24"]])
         self.assertEqual(json.loads((self.root / "state.json").read_text())["pendingHostCleanup"], [])
@@ -135,7 +186,7 @@ class FirewallRefresh(unittest.TestCase):
     def test_live_port_update_cannot_change_network_identity(self):
         changed = dict(self.policy, subnet4="192.168.66.0/24", gateway="192.168.66.1")
         self.run_manager("update-ports", json.dumps(changed), success=False)
-        self.assertFalse(any("-f" in call or "-k" in call for call in self.calls()))
+        self.assertFalse(any(call[0] == "/sbin/pfctl" and ("-f" in call or "-k" in call) for call in self.calls()))
 
     def test_failed_port_revocation_is_retried_by_the_watcher(self):
         (self.root / "fail-once").write_text("states")
@@ -147,7 +198,7 @@ class FirewallRefresh(unittest.TestCase):
     def test_helper_membership_does_not_interrupt_connections(self):
         self.change_interfaces(BASE_INTERFACES + "    member: vmenet998 flags=0\nvmenet998: flags=0\n")
         self.run_manager("refresh")
-        self.assertFalse(any("-f" in call or "-k" in call for call in self.calls()))
+        self.assertFalse(any(call[0] == "/sbin/pfctl" and ("-f" in call or "-k" in call) for call in self.calls()))
 
     def test_removed_interface_refreshes_without_killing_unaffected_states(self):
         self.change_interfaces()
@@ -176,7 +227,7 @@ class FirewallRefresh(unittest.TestCase):
                 self.assertFalse(json.loads((self.root / "snapshot.json").read_text())["blocked"])
                 calls = self.calls()
                 cleanup = next(i for i, call in enumerate(calls) if "-k" in call)
-                load = next(i for i, call in enumerate(calls) if "-f" in call)
+                load = next(i for i, call in enumerate(calls) if call[0] == "/sbin/pfctl" and "-f" in call)
                 self.assertLess(cleanup, load, "Recovery must clear old states before allowing traffic.")
 
     def test_missing_bridge_never_reuses_an_old_bridge_number(self):

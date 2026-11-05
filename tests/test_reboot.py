@@ -67,7 +67,7 @@ class RebootWorkflowChecks(unittest.TestCase):
         def fake_sudo(*args, **kwargs):
             events.append(args)
             responses = {
-                ("/bin/launchctl", "print", "system/com.mybox.firewall"): "state = running\npid = 42\n",
+                ("/bin/launchctl", "print", "system/io.github.janpmz.my-container-box.firewall"): "state = running\npid = 42\n",
                 ("/bin/cat", "/var/db/mybox/watcher.json"): json.dumps(status),
                 ("/bin/cat", "/var/db/mybox/state.json"): json.dumps({"boot": boot["time"], "token": "123"}),
                 ("/bin/cat", "/var/db/mybox/snapshot.json"): json.dumps({"boot": boot["time"], "blocked": False}),

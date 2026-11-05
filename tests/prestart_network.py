@@ -115,7 +115,7 @@ def main():
             listener.bind(("127.0.0.1", 0))
             outside_port = listener.getsockname()[1]
         report.update(host_listener=host4, outside_port=outside_port)
-        container("network", "create", "--label", "com.mybox.network-test=true", network)
+        container("network", "create", "--label", "io.github.janpmz.my-container-box.network-test=true", network)
         network_created = True
         status = json.loads(container("network", "inspect", network).stdout)[0]["status"]
         gateway = status["ipv4Gateway"]

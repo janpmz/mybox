@@ -34,7 +34,7 @@ def main():
     report = {"test_date": date.today().isoformat(), "network": network,
               "scope": "Own host UDP listener only; no PF changes", "cases": []}
     try:
-        container("network", "create", "--label", "com.mybox.network-test=true", network)
+        container("network", "create", "--label", "io.github.janpmz.my-container-box.network-test=true", network)
         created = True
         status = json.loads(container("network", "inspect", network).stdout)[0]["status"]
         report["network_status"] = status

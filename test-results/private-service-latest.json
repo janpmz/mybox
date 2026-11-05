@@ -1,0 +1,19 @@
+{
+  "finished_at": "2026-11-05T10:36:58.578376+00:00",
+  "box": "access-test-cd0e338f0c70",
+  "service_uid": 499,
+  "backend": "container CLI version 1.6.1 (build: release, commit: aa8d76b)",
+  "after_reboot": false,
+  "terminal_checked": true,
+  "passed": [
+    "private shell",
+    "direct exec denied",
+    "direct start denied",
+    "stopped disk private",
+    "file transfer",
+    "forged firewall approval rejected",
+    "expired firewall approval rejected",
+    "protected restart",
+    "cleanup"
+  ]
+}

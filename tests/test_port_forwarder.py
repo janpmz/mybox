@@ -74,7 +74,7 @@ class Forwarder(unittest.TestCase):
                            mappings=[dict(inside=self.inside, outside=self.outside)],
                            target=dict(address=self.target_address, started="boot-test"), revision=str(uuid.uuid4()))
         self.identity = [{"id": "mybox-test", "configuration": {
-            "creationDate": "created-test", "labels": {"com.mybox.managed": "true", "com.mybox.network": "mybox-net-test"},
+            "creationDate": "created-test", "labels": {"io.github.janpmz.my-container-box.managed": "true", "io.github.janpmz.my-container-box.network": "mybox-net-test"},
             "mounts": [], "publishedSockets": [], "publishedPorts": [], "ssh": False,
             "networks": [{"network": "mybox-net-test"}]},
                           "status": {"state": "running", "startedDate": "boot-test", "networks": [{"network": "mybox-net-test", "ipv4Address": self.target_address + "/24"}]}}]
@@ -91,7 +91,7 @@ elif args == ["inspect", "mybox-test"]:
 elif args == ["list", "--all", "--format", "json"]:
     print((root / "identity.json").read_text())
 elif args == ["network", "inspect", "mybox-net-test"]:
-    print(json.dumps([{"id": "mybox-net-test", "configuration": {"mode": "nat", "labels": {"com.mybox.managed": "true"}},
+    print(json.dumps([{"id": "mybox-net-test", "configuration": {"mode": "nat", "labels": {"io.github.janpmz.my-container-box.managed": "true"}},
                       "status": {"ipv4Subnet": "192.168.65.0/24", "ipv4Gateway": "192.168.65.1", "ipv6Subnet": "fd00:1234::/64"}}]))
 elif args[:6] == ["exec", "--interactive", "--user", "0", "mybox-test", "/usr/bin/perl"]:
     (root / ("relay-" + str(os.getpid()))).write_text(json.dumps(args[:6] + [args[-1]]))

@@ -433,7 +433,7 @@ Proposed network policy:
 
 | Connection | Default |
 | --- | --- |
-| Box to Internet | Allow package downloads, APIs, and agent services |
+| Box to Internet | Allow outbound public IPv4 and IPv6 traffic from any application, without a proxy or a port allowlist |
 | Box to macOS services | Block |
 | Box to local network | Block |
 | Box to other boxes | Block |
@@ -442,6 +442,40 @@ Proposed network policy:
 Apple's default networking does not establish this policy automatically.
 The prototype must check enforcement, including access to host services.
 Internet access lets malicious code transmit data and credentials available inside its box.
+
+### Bridge experiment on 5 November 2026
+
+On macOS 26.7.2, an endpoint in the fork's vmnet plugin created a bridge before a disposable Debian VM booted. The VM used the same bridge after the bridge client disconnected. The bridge disappeared after the VM stopped.
+
+Live testing stopped after the Mac restarted unexpectedly. Local crash reports record two Apple `InternetSharing` aborts at 13:22 and 13:27 CET and an iBoot panic at 13:29 CET. The panic report does not identify the cause.
+
+After the restart, the private MyBox service switched to fork commit `44a7d72a` on branch `codex/mybox-bridge`. Its reported install root was `/Library/PrivilegedHelperTools/com.mybox.service/runtime`. All three installed executables matched the signed build, the firewall verification socket existed, and `mybox list` succeeded. The service reported zero running containers. This installation check did not boot Linux or test bridge stability, firewall enforcement at boot, or public IPv6.
+
+### Shared fork installation on 5 November 2026
+
+Apple’s 1.6.1 package and the separate MyBox runtime directory were removed. The replacement package, `io.github.janpmz.my-container-box`, installs the release build of fork commit `36245146` once under `/usr/local`. The signed-in account and `_mybox` each reported server version `1.6.1-mybox.1` from that directory. The signed-in account retained five stopped containers. The private account had no boxes, owned its mode-0700 home directory, and answered `mybox list`. The installer verified both account services. A subsequent [live guest test](test-results/shared-fork-live-latest.json) booted Linux 6.18.35 through MyBox. Public IPv4 TCP, UDP DNS and an HTTP request by hostname worked. The guest timed out when connecting to the Mac’s LAN and bridge IPv4 addresses, the Mac’s link-local IPv6 address and the router’s IPv4 port 443. Mac control connections reached each listener before and after the guest probe.
+
+Public IPv6 TCP and UDP failed inside the box even though both worked from the Mac. At the time of the route check Linux had no usable IPv6 default route on its network interface. The MyBox firewall in that run blocked all IPv6 on the box bridge. This run tested an already booted guest; it did not capture packets during boot or test a separate IPv6 LAN device. The test removed its box and dedicated network.
+
+### Public IPv6 in the shared fork
+
+On 5 November, the installed release `1.6.1-mybox.4` and MyBox firewall version 5 passed [25 live checks](test-results/shared-ipv6-firewall-latest.json). Linux accepted vmnet’s router advertisement and learned the bridge’s link-local IPv6 gateway. TCP connections to port 443 and DNS queries over UDP received replies from public endpoints on both IPv4 and IPv6.
+
+The first program inside the disposable box sent identifiable IPv4 and IPv6 packets toward the physical router. A capture on the Mac’s physical interface saw the control packets before and after boot and neither guest marker. Connections to the tested Mac, router, and peer-box listeners timed out from the box.
+
+The test added two routes covering public IPv6 to a temporary VPN tunnel. Only connections explicitly bound to that tunnel used those routes. Public TCP and UDP worked from the running box over the Mac’s ordinary connection before, during, and after the test tunnel was active. The Mac also reached a TCP listener behind the tunnel, while the firewall counted three dropped packets from the box to that listener. Testing internet traffic through an external VPN provider requires a separate connection. Both boxes, their networks, and the temporary tunnel were removed.
+
+### Network-change test plan
+
+Apply the destination policy before the box can send its first packet. Block connections to the Mac, other boxes, and local networks reachable through physical or VPN interfaces. This includes local devices with globally routable addresses. Allow the IPv6 control traffic needed to reach the Internet.
+
+Use a disposable box on a network with working public IPv6 to check the fork:
+
+1. Force IPv6 for a TCP connection and a UDP request to public test endpoints. Require a reply to each over IPv6 so that IPv4 fallback cannot hide a failure.
+2. Probe IPv6 listeners on the Mac, a physical LAN device, a VPN destination, and another box. Include link-local, unique-local, and globally addressed local targets. Confirm that a control client can reach each listener before and after the blocked probe. Record any missing target as untested.
+3. Repeat the probes at box startup and after Wi-Fi and VPN changes. Check that an existing connection to a destination stops passing traffic if that destination becomes local.
+
+The [earlier reboot test](test-results/2026-11-04-reboot-network-passed.json) used the IPv4-only firewall. The live test of the new firewall covered a physical router and a temporary VPN route. Switching Wi-Fi during an established IPv6 connection and reaching a server behind a real VPN remain untested.
 
 ## MVP
 

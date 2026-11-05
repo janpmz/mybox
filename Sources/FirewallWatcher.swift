@@ -13,7 +13,7 @@ struct FirewallWatcherStatus: Codable {
 }
 
 final class FirewallWatcher {
-    let queue = DispatchQueue(label: "com.mybox.firewall.watch")
+    let queue = DispatchQueue(label: "io.github.janpmz.my-container-box.firewall.watch")
     var pending = false
     var status = FirewallWatcherStatus()
     var previousError: String?
@@ -104,7 +104,7 @@ final class FirewallWatcher {
 }
 
 func firewallLaunchConfiguration() -> [String: Any] {
-    ["Label": "com.mybox.firewall", "ProgramArguments": [firewallExecutable, "watch"],
+    ["Label": "io.github.janpmz.my-container-box.firewall", "ProgramArguments": [firewallExecutable, "watch"],
      "RunAtLoad": true, "KeepAlive": true, "ThrottleInterval": 5,
      "StandardErrorPath": "/var/log/mybox-firewall.log"]
 }

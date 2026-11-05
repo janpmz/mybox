@@ -6,6 +6,7 @@ struct FirewallSnapshot: Codable, Equatable {
     var bridges: [String: String]
     var boot: String
     var blocked: Bool
+    var routed: [String] = []
 }
 
 func requireFirewallAdministrator() throws {
@@ -31,12 +32,79 @@ func readFirewallStore() throws -> FirewallStore {
 func trackedInterfaces(_ interfaces: [HostInterface]) -> [HostInterface] {
     interfaces.filter { !$0.name.hasPrefix("vmenet") }.map {
         // Helper membership changes do not change the host destination policy.
-        HostInterface(name: $0.name, ipv4: $0.ipv4.sorted(), networks4: $0.networks4.sorted())
+        HostInterface(name: $0.name, ipv4: $0.ipv4.sorted(), networks4: $0.networks4.sorted(),
+                      ipv6: $0.ipv6.sorted(), networks6: $0.networks6.sorted())
     }.sorted { $0.name < $1.name }
 }
 
+// A default route describes where internet packets go. VPNs can also install the
+// two halves of a default, or routes covering the global IPv6 unicast space.
+private let internetRoutes: Set<String> = [
+    "0.0.0.0/0", "0.0.0.0/1", "128.0.0.0/1",
+    "::/0", "::/1", "8000::/1", "::/2", "2000::/3", "2000::/4", "3000::/4",
+]
+
+func isTunnelInterface(_ name: String) -> Bool {
+    ["utun", "ipsec", "ppp", "tun", "gif", "wg"].contains { name.hasPrefix($0) }
+}
+
+private func localNetworks(_ interface: HostInterface) -> [String] {
+    let networks = interface.networks4 + interface.networks6
+    return isTunnelInterface(interface.name) ? networks.filter { !internetRoutes.contains($0) } : networks
+}
+
 func blockedDestinations(_ interfaces: [HostInterface]) -> Set<String> {
-    Set(interfaces.flatMap { $0.ipv4.map { $0 + "/32" } + $0.networks4 })
+    Set(interfaces.flatMap { item in
+        item.ipv4.map { $0 + "/32" } + item.ipv6 + localNetworks(item)
+    })
+}
+
+// Interface addresses omit prefixes routed behind a LAN router or through a VPN.
+func routedDestinations(_ interfaces: [HostInterface]) throws -> [String] {
+    // Tunnel interface masks can also be /0. Include their specific networks
+    // explicitly instead of expanding (utunN:network) to the whole internet in PF.
+    var destinations = Set(interfaces.filter { isTunnelInterface($0.name) }.flatMap(localNetworks))
+    for family in ["inet", "inet6"] {
+        let table = try hostCommand("/usr/sbin/netstat", ["-rn", "-f", family]).output
+        guard table.contains("Destination"), table.contains("Netif") else {
+            throw BoxError("Cannot identify destinations in the Mac routing table.")
+        }
+        for line in table.split(separator: "\n") {
+            let row = line.split(whereSeparator: \.isWhitespace)
+            guard row.count >= 4 else { continue }
+            let (destination, flags, device) = (row[0], row[2], row[3])
+            let tunnel = isTunnelInterface(String(device))
+            guard flags.contains("U"), !flags.contains("W"), flags.contains("G") || tunnel else { continue }
+            if destination == "default" { continue }
+            let cidr = destination.split(separator: "/")
+            guard let address = cidr.first?.split(separator: "%").first else { throw BoxError("Invalid routed address.") }
+            let maxBits = family == "inet6" ? 128 : 32
+            let length = cidr.count == 1 ? maxBits : Int(cidr[1])
+            guard cidr.count <= 2, let length, (0...maxBits).contains(length) else {
+                throw BoxError("Invalid routed prefix: \(destination)")
+            }
+            if length == 0 { continue }
+            let network: String
+            if family == "inet6" {
+                // Multicast and link-local app traffic already hits the final IPv6 deny.
+                if address.hasPrefix("ff") || address.hasPrefix("fe80:") { continue }
+                network = try ipv6Network(String(address), length: length)
+            } else {
+                // Darwin abbreviates network addresses (for example, 10.25/16).
+                let parts = address.split(separator: ".")
+                guard (1...4).contains(parts.count), parts.allSatisfy({ UInt8($0) != nil }) else {
+                    throw BoxError("Invalid IPv4 route: \(destination)")
+                }
+                let octets = parts.map(String.init) + Array(repeating: "0", count: 4 - parts.count)
+                let bits = cidr.count == 1 && !flags.contains("H") ? parts.count * 8 : length
+                network = octets.joined(separator: ".") + "/\(bits)"
+            }
+            if !tunnel || !internetRoutes.contains(network) {
+                destinations.insert(network)
+            }
+        }
+    }
+    return destinations.sorted()
 }
 
 func liveFirewallPolicies(_ store: FirewallStore, interfaces: [HostInterface]) throws -> [NetworkPolicy] {
@@ -123,11 +191,12 @@ func reconcileFirewall(_ store: inout FirewallStore, force: Bool = false, starti
         boot = try hostCommand("/usr/sbin/sysctl", ["-n", "kern.boottime"]).output
         let live = try liveFirewallPolicies(store, interfaces: interfaces)
         let bridges = try Dictionary(uniqueKeysWithValues: live.map { ($0.key, try $0.bridge(in: interfaces)) })
-        let snapshot = FirewallSnapshot(interfaces: trackedInterfaces(interfaces), bridges: bridges, boot: boot, blocked: false)
+        let routed = live.isEmpty ? [] : try routedDestinations(interfaces)
+        let snapshot = FirewallSnapshot(interfaces: trackedInterfaces(interfaces), bridges: bridges, boot: boot, blocked: false, routed: routed)
         let previous = (try? Data(contentsOf: firewallURL("snapshot.json"))).flatMap { try? JSONDecoder().decode(FirewallSnapshot.self, from: $0) }
         try checkPFParent()
         try enableFirewall(&store, boot: boot)
-        let rules = try firewallRules(live, interfaces: interfaces)
+        let rules = try firewallRules(live, interfaces: interfaces, routed: routed)
         let savedRules = try? String(contentsOf: firewallURL("policy.pf"), encoding: .utf8)
         let expected = try? String(contentsOf: firewallURL("loaded.txt"), encoding: .utf8)
         let active = try pf(["-a", firewallAnchor, "-sr"])
@@ -144,13 +213,14 @@ func reconcileFirewall(_ store: inout FirewallStore, force: Bool = false, starti
         if !wasBlocked && (previous?.boot != boot || previous?.blocked != false || expected != active) {
             try clearBridgeStates(Array(bridges.values))
         } else if !wasBlocked {
-            let added = blockedDestinations(snapshot.interfaces).subtracting(blockedDestinations(previous!.interfaces))
+            let added = blockedDestinations(snapshot.interfaces).union(routed)
+                .subtracting(blockedDestinations(previous!.interfaces).union(previous!.routed))
             for (key, bridge) in bridges.sorted(by: { $0.key < $1.key }) {
                 if previous?.bridges[key] != bridge {
                     try clearBridgeStates([bridge])
                 } else {
                     for destination in added.sorted() {
-                        _ = try pf(["-i", bridge, "-k", "0.0.0.0/0", "-k", destination])
+                        _ = try pf(["-i", bridge, "-k", destination.contains(":") ? "::/0" : "0.0.0.0/0", "-k", destination])
                     }
                 }
             }

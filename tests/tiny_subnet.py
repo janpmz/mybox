@@ -25,7 +25,7 @@ def main():
         report["cases"].append(case)
         print(f"Checking /{prefix}...", flush=True)
         try:
-            case["network_create"] = call("network", "create", "--label", "com.mybox.network-test=true",
+            case["network_create"] = call("network", "create", "--label", "io.github.janpmz.my-container-box.network-test=true",
                                           "--subnet", case["requested_subnet"], network)
             if case["network_create"]["exit_code"]:
                 print(f"/{prefix}: network creation failed: " + case["network_create"]["stderr"], flush=True)
@@ -39,7 +39,7 @@ def main():
                 box = {"name": name}
                 case["boxes"].append(box)
                 box["create"] = call("create", "--name", name, "--network", network, "--memory", "256m", "--cpus", "1",
-                                     "--label", "com.mybox.network-test=true", "--entrypoint", "/bin/sleep", "debian:trixie-slim", "infinity")
+                                     "--label", "io.github.janpmz.my-container-box.network-test=true", "--entrypoint", "/bin/sleep", "debian:trixie-slim", "infinity")
                 if box["create"]["exit_code"]:
                     break
                 boxes.append(name)

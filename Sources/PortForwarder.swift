@@ -215,7 +215,7 @@ func checkForwardingTarget(_ config: PortConfiguration, backend: String) throws 
           let items = try JSONSerialization.jsonObject(with: output.fileHandleForReading.readDataToEndOfFile()) as? [[String: Any]],
           items.count == 1, let item = items.first, item["id"] as? String == config.id,
           let configuration = item["configuration"] as? [String: Any], configuration["creationDate"] as? String == config.created,
-          (configuration["labels"] as? [String: String])?["com.mybox.managed"] == "true",
+          (configuration["labels"] as? [String: String])?["io.github.janpmz.my-container-box.managed"] == "true",
           let status = item["status"] as? [String: Any], status["state"] as? String == "running",
           status["startedDate"] as? String == target.started,
           let networks = status["networks"] as? [[String: Any]], networks.count == 1,

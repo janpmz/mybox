@@ -17,7 +17,7 @@ from dns import lookup
 import reboot_network
 
 ROOT = Path(__file__).resolve().parents[1]
-BOX = str(ROOT / "mybox")
+BOX = str(ROOT / ".build/mybox-test")
 CONTAINER = shutil.which("container")
 PAGE_MARKER = "MyBox CLI is working"
 

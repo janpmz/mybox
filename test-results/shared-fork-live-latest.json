@@ -1,0 +1,110 @@
+{
+  "started": "2026-11-05T17:03:22.211167+00:00",
+  "box": "fork-test-265b5d5f76",
+  "probes": {
+    "public_tcp4": {
+      "host": "1.1.1.1",
+      "port": 443,
+      "host_before": "connected",
+      "guest": "connected",
+      "error": "",
+      "host_after": "connected"
+    },
+    "public_tcp6": {
+      "host": "2606:4700:4700::1111",
+      "port": 443,
+      "host_before": "connected",
+      "guest": "error",
+      "error": "connect: Network is unreachable",
+      "host_after": "connected"
+    },
+    "public_udp4": {
+      "host": "1.1.1.1",
+      "host_control": "DNS reply",
+      "guest": "DNS reply",
+      "exit": 0
+    },
+    "public_udp6": {
+      "host": "2606:4700:4700::1111",
+      "host_control": "DNS reply",
+      "guest": "timeout",
+      "exit": 4
+    },
+    "dns_http": {
+      "exit": 0,
+      "reply": "Resolved IPv4: 151.101.130.132\nHTTP/1.1 200 OK\n",
+      "error": ""
+    },
+    "mac_lan4": {
+      "host": "192.168.178.49",
+      "port": 49420,
+      "host_before": "connected",
+      "guest": "timeout",
+      "error": "",
+      "host_after": "connected"
+    },
+    "mac_gateway4": {
+      "host": "192.168.65.1",
+      "port": 49420,
+      "host_before": "connected",
+      "guest": "timeout",
+      "error": "",
+      "host_after": "connected"
+    },
+    "mac_bridge6": {
+      "host": "fe80::5c9b:a6ff:fe08:7164",
+      "port": 49421,
+      "host_before": "connected",
+      "guest": "timeout",
+      "error": "",
+      "host_after": "connected"
+    },
+    "lan_router4": {
+      "host": "192.168.178.1",
+      "port": 443,
+      "host_before": "connected",
+      "guest": "timeout",
+      "error": "",
+      "host_after": "connected"
+    },
+    "lan_router6": {
+      "guest": "untested",
+      "reason": "Physical router uses a link-local gateway; no separate routable IPv6 LAN endpoint supplied."
+    }
+  },
+  "cleanup": {
+    "box": "removed",
+    "network": "removed"
+  },
+  "phase": "Finished guest probes",
+  "version": "container CLI version 1.6.1-mybox.1 (build: release, commit: 3624514)",
+  "create": {
+    "exit": 0,
+    "stdout": "Created fork-test-265b5d5f76. Project files live in /workspace.\nEnter with: mybox enter fork-test-265b5d5f76\n",
+    "stderr": "Creating the box network...\nCreating the Linux box...\nFirewall rules checked. Starting Linux...\n"
+  },
+  "linux": "Linux 6.18.35",
+  "bridge": "bridge100",
+  "guest_ipv6_routes": "fe800000000000000000000000000000 40 00000000000000000000000000000000 00 00000000000000000000000000000000 00000100 00000001 00000000 00000001     eth0\n00000000000000000000000000000000 00 00000000000000000000000000000000 00 00000000000000000000000000000000 ffffffff 00000001 00000000 00200200       lo\n00000000000000000000000000000001 80 00000000000000000000000000000000 00 00000000000000000000000000000000 00000000 00000002 00000000 80200001       lo\nfe80000000000000fc2b52fffeed4730 80 00000000000000000000000000000000 00 00000000000000000000000000000000 00000000 00000002 00000000 80200001     eth0\nff000000000000000000000000000000 08 00000000000000000000000000000000 00 00000000000000000000000000000000 00000100 00000003 00000000 00000001     eth0\n00000000000000000000000000000000 00 00000000000000000000000000000000 00 00000000000000000000000000000000 ffffffff 00000001 00000000 00200200       lo\n",
+  "new_internetsharing_reports": [],
+  "finished": "2026-11-05T17:04:20.224711+00:00",
+  "checks": {
+    "linux_boot": true,
+    "public_ipv4_tcp": true,
+    "public_ipv4_udp_dns": true,
+    "public_ipv4_dns_and_http": true,
+    "public_ipv6_tcp": false,
+    "public_ipv6_udp_dns": false,
+    "mac_lan4_blocked": true,
+    "mac_gateway4_blocked": true,
+    "mac_bridge6_blocked": true,
+    "lan_router4_blocked": true
+  },
+  "untested": [
+    "Separate IPv6 LAN device",
+    "Peer box",
+    "VPN destinations",
+    "Packet capture during boot",
+    "Network interface changes"
+  ]
+}

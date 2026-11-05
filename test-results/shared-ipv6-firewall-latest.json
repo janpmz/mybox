@@ -1,0 +1,160 @@
+{
+  "started": "2026-11-05T19:06:19.673958+00:00",
+  "probes": {
+    "boot4": {
+      "sent": true,
+      "arrived_on_lan": false,
+      "capture_controls": true,
+      "passed": true
+    },
+    "boot6": {
+      "sent": true,
+      "arrived_on_lan": false,
+      "capture_controls": true,
+      "passed": true
+    },
+    "public_tcp_ipv4": {
+      "before": "connected",
+      "guest": "connected",
+      "after": "connected",
+      "passed": true
+    },
+    "public_udp_dns_ipv4": {
+      "control": "DNS reply",
+      "guest": "DNS reply",
+      "passed": true
+    },
+    "public_tcp_ipv6": {
+      "before": "connected",
+      "guest": "connected",
+      "after": "connected",
+      "passed": true
+    },
+    "public_udp_dns_ipv6": {
+      "control": "DNS reply",
+      "guest": "DNS reply",
+      "passed": true
+    },
+    "http_via_dns": {
+      "response": "Resolved IPv4: 151.101.194.132\nHTTP/1.1 200 OK",
+      "passed": true
+    },
+    "physical_router_ipv4": {
+      "before": "connected",
+      "guest": "timeout",
+      "after": "connected",
+      "passed": true
+    },
+    "physical_router_ipv6": {
+      "before": "connected",
+      "guest": "timeout",
+      "after": "connected",
+      "passed": true
+    },
+    "mac_lan4": {
+      "before": "connected",
+      "guest": "timeout",
+      "after": "connected",
+      "passed": true
+    },
+    "mac_bridge4": {
+      "before": "connected",
+      "guest": "timeout",
+      "after": "connected",
+      "passed": true
+    },
+    "mac_linklocal6": {
+      "before": "connected",
+      "guest": "timeout",
+      "after": "connected",
+      "passed": true
+    },
+    "peer_box_ipv4": {
+      "before": "connected",
+      "guest": "timeout",
+      "after": "connected",
+      "passed": true
+    },
+    "peer_box_ipv6": {
+      "before": "connected",
+      "guest": "timeout",
+      "after": "connected",
+      "passed": true
+    },
+    "public_ipv6_test_route": {
+      "scoped": "utun4",
+      "ordinary": "en0",
+      "passed": true
+    },
+    "public_tcp_ipv4_while_tunnel_exists": {
+      "before": "connected",
+      "guest": "connected",
+      "after": "connected",
+      "passed": true
+    },
+    "public_udp_dns_ipv4_while_tunnel_exists": {
+      "control": "DNS reply",
+      "guest": "DNS reply",
+      "passed": true
+    },
+    "public_tcp_ipv6_while_tunnel_exists": {
+      "before": "connected",
+      "guest": "connected",
+      "after": "connected",
+      "passed": true
+    },
+    "public_udp_dns_ipv6_while_tunnel_exists": {
+      "control": "DNS reply",
+      "guest": "DNS reply",
+      "passed": true
+    },
+    "temporary_vpn_route6": {
+      "before": "connected",
+      "guest": "timeout",
+      "after": "connected",
+      "passed": true
+    },
+    "vpn_rule_dropped_packets": {
+      "before": 0,
+      "after": 3,
+      "passed": true
+    },
+    "public_tcp_ipv4_after_tunnel_closed": {
+      "before": "connected",
+      "guest": "connected",
+      "after": "connected",
+      "passed": true
+    },
+    "public_udp_dns_ipv4_after_tunnel_closed": {
+      "control": "DNS reply",
+      "guest": "DNS reply",
+      "passed": true
+    },
+    "public_tcp_ipv6_after_tunnel_closed": {
+      "before": "connected",
+      "guest": "connected",
+      "after": "connected",
+      "passed": true
+    },
+    "public_udp_dns_ipv6_after_tunnel_closed": {
+      "control": "DNS reply",
+      "guest": "DNS reply",
+      "passed": true
+    }
+  },
+  "cleanup": {
+    "peer-92633b94d8": true,
+    "v6-92633b94d8": true
+  },
+  "version": "container CLI version 1.6.1-mybox.4 (build: release, commit: 68b4b5e)",
+  "boot_output": "boot4 sent\nboot6 error: Network is unreachable\nboot6 error: Network is unreachable\nboot6 error: Network is unreachable\nboot6 error: Network is unreachable\nboot6 error: Network is unreachable\nboot6 error: Network is unreachable\nboot6 error: Network is unreachable\nboot6 error: Network is unreachable\nboot6 error: Network is unreachable\nboot6 sent\ndone\n",
+  "ipv6_address_ready": true,
+  "accept_ra": "1",
+  "guest_routes": "fd85e9d0b9d818690000000000000000 40 00000000000000000000000000000000 00 00000000000000000000000000000000 00000100 00000001 00000000 004c0001     eth0\nfe800000000000000000000000000000 40 00000000000000000000000000000000 00 00000000000000000000000000000000 00000100 00000002 00000000 00000001     eth0\n00000000000000000000000000000000 00 00000000000000000000000000000000 00 fe800000000000005c9ba6fffe087164 00000400 00000002 00000000 00450003     eth0\n00000000000000000000000000000001 80 00000000000000000000000000000000 00 00000000000000000000000000000000 00000000 00000002 00000000 80200001       lo\nfd85e9d0b9d81869fce221fffe5def78 80 00000000000000000000000000000000 00 00000000000000000000000000000000 00000000 00000002 00000000 80200001     eth0\nfe80000000000000fce221fffe5def78 80 00000000000000000000000000000000 00 00000000000000000000000000000000 00000000 00000003 00000000 80200001     eth0\nff000000000000000000000000000000 08 00000000000000000000000000000000 00 00000000000000000000000000000000 00000100 00000004 00000000 00000001     eth0\n00000000000000000000000000000000 00 00000000000000000000000000000000 00 00000000000000000000000000000000 ffffffff 00000001 00000000 00200200       lo\n",
+  "guest_addresses": "fd85e9d0b9d81869fce221fffe5def78 02 40 00 00     eth0\nfe80000000000000fce221fffe5def78 02 40 20 80     eth0\n00000000000000000000000000000001 01 80 10 80       lo\n",
+  "test_tunnel": "utun4",
+  "new_crash_reports": [],
+  "finished": "2026-11-05T19:08:22.498175+00:00",
+  "test_tunnel_removed": true,
+  "real_vpn": "No reachable VPN-only server was supplied."
+}

@@ -16,7 +16,7 @@ class EnterNames(unittest.TestCase):
             "id": "mybox-" + name,
             "configuration": {
                 "creationDate": "2026-11-04T10:00:00Z",
-                "labels": {"com.mybox.managed": "true", "com.mybox.network": network},
+                "labels": {"io.github.janpmz.my-container-box.managed": "true", "io.github.janpmz.my-container-box.network": network},
                 "mounts": [], "publishedSockets": [], "publishedPorts": [], "ssh": False,
                 "networks": [{"network": network}],
             },
@@ -63,7 +63,7 @@ class EnterNames(unittest.TestCase):
         unmanaged = self.box("doc")
         unmanaged["configuration"]["labels"] = {}
         helper = self.box("helper-doc")
-        helper["configuration"]["labels"] = {"com.mybox.helper": "true"}
+        helper["configuration"]["labels"] = {"io.github.janpmz.my-container-box.helper": "true"}
         foreign = self.box("doc-foreign")
         foreign["id"] = "doc-foreign"
         self.save_boxes(unmanaged, helper, foreign, self.box("document-player-box"))
