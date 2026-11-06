@@ -606,8 +606,8 @@ Usage: mybox <command>
   help                   Show this help.
   --version              Show the MyBox version.
 
-No host folders, project disks, or SSH agents are mounted.
-New boxes use a dedicated network. PF protection is checked before startup.
+No host folders, project disks, or SSH agents get mounted.
+Each box connects to its own virtual network. MyBox checks the firewall rules before starting Linux.
 Run setup-service once in a Mac terminal. PF changes require administrator access.
 """
 
