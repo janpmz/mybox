@@ -8,11 +8,24 @@ import secrets
 import socket
 import subprocess
 import sys
+import time
+import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from broker import ACCOUNT, INSTALL, packet, peer_uid, receive
+from broker import ACCOUNT, FIREWALL, INSTALL, packet, peer_uid, receive
 
 SOCKET = '/private/var/db/mybox-boot/access.sock'
+PREPARATION_SECONDS = 300
+
+# Only the firewall sequence used to prepare a running or stopped box is
+# permitted. An interrupted port change may first restore the saved settings.
+NEXT_ACTIONS = {
+    (): ['apply', 'verify', 'update-ports'],
+    ('apply',): ['verify'],
+    ('apply', 'verify'): ['verify'],
+    ('update-ports',): ['verify'],
+}
+FINISHED_ACTIONS = {('verify',), ('apply', 'verify', 'verify'), ('update-ports', 'verify')}
 
 
 def prompt_for(args):
@@ -45,20 +58,83 @@ def request(args):
         conn.connect(SOCKET)
         if peer_uid(conn) != 0:
             raise PermissionError('The macOS approval service is unavailable.')
-        packet(conn, [challenge, args])
+        packet(conn, ['access-v2', challenge, args])
         answer = receive(conn)
         if answer != ['approved', challenge]:
             raise PermissionError('Box access was not approved.')
+
+
+def prepare_box(conn, box):
+    # This authorization exists only in this root process and connection. No
+    # reusable credential is returned to the worker or the terminal client.
+    deadline = time.monotonic() + PREPARATION_SECONDS
+    expires = time.time() + PREPARATION_SECONDS
+    actions, used, policy = (), set(), None
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise PermissionError('Box preparation approval expired.')
+        conn.settimeout(remaining)
+        try:
+            message = receive(conn)
+        except EOFError:
+            return
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise PermissionError('Box preparation approval expired.')
+        if message == ['finish']:
+            if actions not in FINISHED_ACTIONS:
+                raise PermissionError('Firewall preparation is incomplete.')
+            packet(conn, ['finished'])
+            return
+        if (not isinstance(message, list) or len(message) != 2 or message[0] != 'firewall'
+                or not isinstance(message[1], str) or actions not in NEXT_ACTIONS):
+            raise ValueError('Unexpected approved firewall operation.')
+        token = message[1]
+        if str(uuid.UUID(token)) != token or token in used:
+            raise ValueError('Invalid or reused firewall request.')
+        used.add(token)
+        scope = dict(box=box, expires=expires, actions=NEXT_ACTIONS[actions], policy=policy)
+        # Fixed root-owned executable, fixed operation, private stdin. The
+        # helper checks the actual request under its lock before changing PF.
+        try:
+            result = subprocess.run([FIREWALL, 'approve-access', token],
+                                    input=json.dumps(scope).encode(), stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, timeout=remaining, check=True)
+        except subprocess.CalledProcessError as error:
+            detail = (error.stderr or b'').decode(errors='replace').strip()
+            detail = ''.join(c if c.isprintable() or c in '\n\t' else '?' for c in detail)[:2000]
+            detail = detail or f'The firewall helper exited with status {error.returncode}.'
+            print(detail, file=sys.stderr, flush=True)
+            packet(conn, ['firewall-error', token, detail])
+            return
+        except subprocess.TimeoutExpired:
+            packet(conn, ['firewall-error', token, 'Firewall preparation timed out; entry was refused.'])
+            return
+        confirmed = json.loads(result.stdout)
+        if (not isinstance(confirmed, dict) or confirmed.get('action') not in NEXT_ACTIONS[actions]
+                or not isinstance(confirmed.get('policy'), dict)
+                or confirmed['policy'].get('network') != 'mybox-net-' + box
+                or (policy is not None and confirmed['policy'] != policy)):
+            raise PermissionError('The firewall helper returned an unexpected confirmation.')
+        policy = confirmed['policy']
+        actions += (confirmed['action'],)
+        if time.monotonic() >= deadline:
+            raise PermissionError('Box preparation approval expired.')
+        packet(conn, ['firewall', token])
 
 
 def serve(conn):
     if os.geteuid() != 0 or peer_uid(conn) != pwd.getpwnam(ACCOUNT).pw_uid:
         raise PermissionError('Only the private MyBox service can request approval.')
     conn.settimeout(5)
-    challenge, args = receive(conn)
+    message = receive(conn)
+    if not isinstance(message, list) or len(message) != 3 or message[0] != 'access-v2':
+        raise ValueError('Update the MyBox worker and approval service together.')
+    _, challenge, args = message
     if not isinstance(challenge, str) or not re.fullmatch('[0-9a-f]{64}', challenge):
         raise ValueError('Invalid approval challenge.')
-    reason = prompt_for(args)
+    reason = prompt_for(args) + ' Also prepare and check this box’s Mac firewall protection.'
     owner = int((INSTALL / 'owner').read_text())
     if owner <= 0 or os.stat('/dev/console').st_uid != owner:
         raise PermissionError('Sign in to the Mac account that installed MyBox to approve access.')
@@ -72,6 +148,7 @@ def serve(conn):
     if result.returncode or result.stdout != challenge.encode():
         raise PermissionError('Box access was not approved.')
     packet(conn, ['approved', challenge])
+    prepare_box(conn, args[1])
 
 
 if __name__ == '__main__':

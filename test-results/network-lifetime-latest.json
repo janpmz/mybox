@@ -1,0 +1,35 @@
+{
+  "finished_at": "2026-11-06T09:08:07.916108+00:00",
+  "plugin": "/Users/janmetz/projects/mybox/.build/network-lifetime/container-network-vmnet",
+  "cycles": 3,
+  "fixtures": [
+    {
+      "network": "mybox-lifetime-e97cc57017-a",
+      "box": "mybox-lifetime-e97cc57017-a-vm",
+      "gateway": "192.168.70.1",
+      "bridge": "bridge101"
+    },
+    {
+      "network": "mybox-lifetime-e97cc57017-b",
+      "box": "mybox-lifetime-e97cc57017-b-vm",
+      "gateway": "192.168.71.1",
+      "bridge": "bridge102"
+    }
+  ],
+  "checks": [
+    "a: bridge exists before any guest starts",
+    "b: bridge exists before any guest starts",
+    "b: bridge survives its last guest stopping",
+    "cycle 1: both boxes retain separate working networks",
+    "cycle 1: stopping b leaves a online",
+    "cycle 2: both boxes retain separate working networks",
+    "cycle 2: stopping b leaves a online",
+    "cycle 3: both boxes retain separate working networks",
+    "cycle 3: stopping b leaves a online",
+    "stopping a leaves b online",
+    "restarting a leaves b online",
+    "test networks deleted; existing bridges preserved"
+  ],
+  "passed": true,
+  "plugin_sha256": "9edf6f3b557e229bfb5d7b864de5234b76285957b5be718a1a31915c7924d207"
+}

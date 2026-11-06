@@ -1,14 +1,19 @@
 import Darwin
 import Foundation
 
-// This is a one-shot sudo operation. The broker supplies the policy. The
-// terminal supplies only the random request number, never the policy or result.
-func approveServiceFirewall(_ token: String) throws {
+// Each request is consumed once. Entry/transfer approvals arrive directly from
+// the root access service; other operations retain the terminal's sudo path.
+@discardableResult
+func approveServiceFirewall(_ token: String, accessScope: ServiceAccessScope? = nil) throws -> ServiceFirewallRequest {
     try requireFirewallAdministrator()
-    let caller = try String(contentsOfFile: serviceInstall + "/owner", encoding: .utf8)
-        .trimmingCharacters(in: .whitespacesAndNewlines)
-    guard UInt32(caller) != nil, ProcessInfo.processInfo.environment["SUDO_UID"] == caller else {
-        throw BoxError("Only the configured Mac account can approve a MyBox firewall request.")
+    if accessScope != nil {
+        guard getuid() == 0, geteuid() == 0 else { throw BoxError("Only the administrator service can use an access approval.") }
+    } else {
+        let caller = try String(contentsOfFile: serviceInstall + "/owner", encoding: .utf8)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard UInt32(caller) != nil, ProcessInfo.processInfo.environment["SUDO_UID"] == caller else {
+            throw BoxError("Only the configured Mac account can approve a MyBox firewall request.")
+        }
     }
     let uid = try privateAccountID()
     let home = try serviceDirectory(AT_FDCWD, serviceHome, owner: uid)
@@ -26,22 +31,23 @@ func approveServiceFirewall(_ token: String) throws {
           info.st_nlink == 1, info.st_size > 0, info.st_size <= 8192 else {
         throw BoxError("Invalid firewall request file.")
     }
-    // Claim the request before doing privileged work. A second sudo invocation
-    // cannot replay it after the box starts or its firewall configuration changes.
-    let claim = openat(dir, "claimed", O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o400)
-    guard claim >= 0 else { throw BoxError("This firewall request was already used.") }
-    close(claim)
     let request = try JSONDecoder().decode(ServiceFirewallRequest.self, from: file.readData(ofLength: 8193))
     guard ["apply", "verify", "update-ports", "remove"].contains(request.action), request.policy.owner == uid else {
         throw BoxError("Unsupported firewall request.")
     }
+    try accessScope?.validate(request, owner: uid)
+    // Claim only after validating the scope, before doing privileged work.
+    let claim = openat(dir, "claimed", O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o400)
+    guard claim >= 0 else { throw BoxError("This firewall request was already used.") }
+    close(claim)
     let json = String(decoding: try JSONEncoder().encode(request.policy), as: UTF8.self)
-    try firewallMain([request.action, json], serviceOwner: uid) {
+    try firewallMain([request.action, json], serviceOwner: uid, reportSuccess: accessScope == nil) {
         // Check after taking the firewall lock. A late approval cannot apply
         // an abandoned request after a newer operation restores protection.
         guard flock(fd, LOCK_EX | LOCK_NB) == -1, errno == EWOULDBLOCK else {
             throw BoxError("The box operation ended before firewall approval.")
         }
+        try accessScope?.validate(request, owner: uid)
         if request.action != "remove" {
             try checkFirewallWatcher()
         }
@@ -49,6 +55,7 @@ func approveServiceFirewall(_ token: String) throws {
     let receipt = openat(dir, "approved", O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o444)
     guard receipt >= 0 else { throw BoxError("Cannot confirm the firewall operation.") }
     close(receipt)
+    return request
 }
 
 func checkFirewallWatcher() throws {

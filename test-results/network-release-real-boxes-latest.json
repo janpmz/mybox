@@ -1,0 +1,49 @@
+{
+  "stop_released_photo_bridge": true,
+  "running_document_bridge_preserved": true,
+  "gateways": {
+    "mybox-net-document-player-box": "10.255.10.1",
+    "mybox-net-photo-box": "10.206.66.1"
+  },
+  "before_bridges": {
+    "192.168.72.1": "bridge100",
+    "192.168.73.1": "bridge101",
+    "10.255.10.1": "bridge102",
+    "10.206.66.1": "bridge103"
+  },
+  "after_stop_bridges": {
+    "192.168.72.1": "bridge100",
+    "192.168.73.1": "bridge101",
+    "10.255.10.1": "bridge102"
+  },
+  "entry_checks": [
+    {
+      "finished_at": "2026-11-06T10:15:37.055375+00:00",
+      "box": "photo-box",
+      "command": [
+        "/bin/pwd"
+      ],
+      "stdout": "/workspace\n",
+      "terminal_sudo_requests": 0,
+      "passed": true
+    },
+    {
+      "finished_at": "2026-11-06T10:15:43.012391+00:00",
+      "box": "document-player-box",
+      "command": [
+        "/bin/pwd"
+      ],
+      "stdout": "/workspace\n",
+      "terminal_sudo_requests": 0,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "after_entry_bridges": {
+    "192.168.72.1": "bridge100",
+    "192.168.73.1": "bridge101",
+    "10.255.10.1": "bridge102",
+    "10.206.66.1": "bridge103"
+  },
+  "updated_at": "2026-11-06T10:15:43.032192+00:00"
+}

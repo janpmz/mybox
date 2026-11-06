@@ -12,6 +12,25 @@ struct ServiceFirewallRequest: Codable {
     let policy: NetworkPolicy
 }
 
+// Supplied only by the root approval service over the helper's private stdin.
+struct ServiceAccessScope: Codable {
+    let box: String
+    let expires: TimeInterval
+    let actions: [String]
+    let policy: NetworkPolicy?
+
+    func validate(_ request: ServiceFirewallRequest, owner: uid_t, now: TimeInterval = Date().timeIntervalSince1970) throws {
+        guard expires > now, expires - now <= 301 else { throw BoxError("Box preparation approval expired.") }
+        guard matches(box, "^[a-z][a-z0-9-]{0,47}$"),
+              request.policy.owner == owner, request.policy.network == "mybox-net-" + box,
+              request.policy.active, ["apply", "verify", "update-ports"].contains(request.action),
+              actions.contains(request.action), policy == nil || policy == request.policy else {
+            throw BoxError("This firewall request is outside the approved box operation.")
+        }
+        try request.policy.validate()
+    }
+}
+
 func privateAccountID() throws -> uid_t {
     guard let entry = getpwnam(serviceAccount), entry.pointee.pw_uid != 0,
           String(cString: entry.pointee.pw_dir) == serviceHome else {

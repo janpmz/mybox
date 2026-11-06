@@ -118,7 +118,7 @@ func saveStore(_ store: FirewallStore) throws {
     try JSONEncoder().encode(store).write(to: URL(fileURLWithPath: firewallDirectory + "/state.json"), options: .atomic)
 }
 
-func firewallMain(_ arguments: [String], serviceOwner: UInt32? = nil, checkPending: (() throws -> Void)? = nil) throws {
+func firewallMain(_ arguments: [String], serviceOwner: UInt32? = nil, reportSuccess: Bool = true, checkPending: (() throws -> Void)? = nil) throws {
     if arguments.first == "approve" {
         guard arguments.count == 2 else { throw BoxError("Expected a firewall request number.") }
         try approveServiceFirewall(arguments[1])
@@ -227,5 +227,5 @@ func firewallMain(_ arguments: [String], serviceOwner: UInt32? = nil, checkPendi
             try files.removeItem(atPath: legacy)
         }
     }
-    print("mybox-firewall-manager-\(firewallVersion)-ok")
+    if reportSuccess { print("mybox-firewall-manager-\(firewallVersion)-ok") }
 }

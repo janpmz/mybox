@@ -1,0 +1,10 @@
+{
+  "finished_at": "2026-11-06T10:15:43.012391+00:00",
+  "box": "document-player-box",
+  "command": [
+    "/bin/pwd"
+  ],
+  "stdout": "/workspace\n",
+  "terminal_sudo_requests": 0,
+  "passed": true
+}

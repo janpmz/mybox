@@ -48,6 +48,9 @@ final class Backend {
     let executable: String
     private var needsServiceCheck: Bool
     var usesFork: Bool {
+        #if MYBOX_TESTING
+        if ProcessInfo.processInfo.environment["MYBOX_TEST_BRIDGE"] != nil { return true }
+        #endif
         #if MYBOX_SERVICE_WORKER
         return true
         #else
@@ -334,6 +337,8 @@ struct CreateOptions {
 }
 
 func createStoppedBox(_ options: CreateOptions, backend: Backend, image: String = trustedImage) throws {
+    let lock = try networkLock()
+    defer { withExtendedLifetime(lock) {} }
     let id = try containerID(options.name)
     let network = "mybox-net-" + options.name
     // A qualified alias avoids changing Apple's global DNS domain or the
@@ -343,7 +348,12 @@ func createStoppedBox(_ options: CreateOptions, backend: Backend, image: String 
                      "--dns", "1.1.1.1", "--dns", "1.0.0.1", "--network", "\(network),alias=\(options.name).box.test"]
     arguments += ["--entrypoint", "/bin/sh", image, "-c", "mkdir -p /workspace && exec sleep infinity"]
     note("Creating the box network...")
-    _ = try backend.run(["network", "create", "--label", "\(managedLabel)=true", network], capture: true)
+    var networkArguments = ["network", "create", "--label", "\(managedLabel)=true"]
+    if backend.usesFork {
+        let subnets = try backend.unusedBoxSubnets()
+        networkArguments += ["--option", "variant=reserved-on-demand", "--subnet", subnets.ipv4, "--subnet-v6", subnets.ipv6]
+    }
+    _ = try backend.run(networkArguments + [network], capture: true)
     do {
         note("Creating the Linux box...")
         _ = try backend.run(arguments, capture: true)
@@ -706,12 +716,8 @@ let serviceCommands: Set<String> = ["list", "_complete-boxes", "create", "copy",
 // or client response that can grant access.
 func approveBoxAccess(_ action: String, box: String, arguments: [String]) throws {
     #if MYBOX_SERVICE_WORKER
-    let result = try capturedCommand("/usr/bin/python3", ["-I", "-B", serviceInstall + "/access.py",
-                                                         "request", action, box] + arguments)
-    guard result.status == 0 else {
-        let explanation = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
-        throw BoxError(explanation.isEmpty ? "Box access was not approved." : explanation)
-    }
+    guard boxAccessApproval == nil else { throw BoxError("This worker already requested box access.") }
+    boxAccessApproval = try BoxAccessApproval([action, box] + arguments)
     #endif
 }
 

@@ -1,0 +1,51 @@
+{
+  "installed_plugin_sha256": "9edf6f3b557e229bfb5d7b864de5234b76285957b5be718a1a31915c7924d207",
+  "expected_bridges": {
+    "192.168.64.1": "bridge105",
+    "192.168.69.1": "bridge104"
+  },
+  "entry_checks": [
+    {
+      "finished_at": "2026-11-06T09:28:36.096112+00:00",
+      "box": "photo-box",
+      "command": [
+        "/bin/pwd"
+      ],
+      "stdout": "/workspace\n",
+      "terminal_sudo_requests": 0,
+      "passed": true
+    },
+    {
+      "finished_at": "2026-11-06T09:28:42.985819+00:00",
+      "box": "document-player-box",
+      "command": [
+        "/bin/pwd"
+      ],
+      "stdout": "/workspace\n",
+      "terminal_sudo_requests": 0,
+      "passed": true
+    },
+    {
+      "finished_at": "2026-11-06T09:28:48.717318+00:00",
+      "box": "photo-box",
+      "command": [
+        "/bin/pwd"
+      ],
+      "stdout": "/workspace\n",
+      "terminal_sudo_requests": 0,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "prior_entry_attempt": {
+    "box": "photo-box",
+    "status": "Touch ID approval not completed"
+  },
+  "network_restart_passed": true,
+  "entry_checks_passed": true,
+  "updated_at": "2026-11-06T09:28:48.751485+00:00",
+  "observed_bridges": {
+    "192.168.64.1": "bridge105",
+    "192.168.69.1": "bridge104"
+  }
+}

@@ -110,10 +110,13 @@ struct NetworkPolicy: Codable, Equatable {
 
     func bridge(in interfaces: [HostInterface]) throws -> String {
         let found = interfaces.filter { $0.ipv4.contains(gateway) }
+        guard !found.isEmpty else {
+            throw BoxError("The Mac network bridge for \(network) (\(gateway)) is missing. A running box may have lost its network connection.")
+        }
         guard found.count == 1, let item = found.first,
               matches(item.name, "^bridge[0-9]+$"), !item.members.isEmpty,
               item.members.allSatisfy({ matches($0, "^vmenet[0-9]+$") }) else {
-            throw BoxError("The dedicated network bridge is absent or cannot be identified safely.")
+            throw BoxError("The Mac network bridge for \(network) (\(gateway)) cannot be identified safely.")
         }
         return item.name
     }

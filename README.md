@@ -37,8 +37,12 @@ signed-in owner denies the request. Listing boxes requires no access prompt.
 
 An approved explicit command receives the calling program’s input and sends it
 the output. Approving a shell gives the requesting terminal control for that
-whole session. Review unexpected prompts before approving them. The separate
-firewall check can also ask for administrator authentication.
+whole session. Review unexpected prompts before approving them. The same approval
+covers the box's required firewall preparation, without a second password prompt.
+That permission is limited to this box and operation, expires after five minutes,
+and ends before MyBox opens the shell or transfers files. A failed firewall check
+still prevents access. Password authentication remains available when Touch ID
+cannot be used.
 
 The private account owns the Linux disks and runs Apple's container software,
 the box commands, and the port forwarder. Direct Apple commands under your
@@ -46,7 +50,11 @@ normal account use a different container service. An administrator who can
 become `_mybox` can still control the private boxes.
 
 The installed firewall helper uses administrator access to check and change
-Mac firewall rules. The terminal runs `sudo` when MyBox needs that work.
+Mac firewall rules. For entry, import, and export, the administrator approval
+service calls the helper directly after authenticating the operation. Other
+commands that need firewall work, such as `start`, `stop`, and port changes, still
+use the terminal's `sudo` authorization. Installing or updating the service also
+requires administrator authorization.
 The private account has no administrator membership or password-free sudo rule.
 The helper confirms each request in the private account's storage. A reply
 from the terminal alone cannot authorize a box to start.
@@ -391,7 +399,8 @@ reachable only through the default route, MyBox cannot identify it as internal.
 
 All startup paths use this sequence, including import and export. A failed
 protection check prevents startup. Operations on a running box also check its
-policy. PF changes and checks require administrator access through `sudo`.
+policy. PF changes and checks run with administrator privileges. Entry and file
+transfers use their existing access approval; other commands use `sudo`.
 No password-free sudo rule is installed.
 
 The firewall manager saves policy state in `/var/db/mybox`. A startup job runs
@@ -400,6 +409,39 @@ restores PF after a Mac reboot. MyBox still checks protection before each box st
 Stopping a box removes its active bridge rules after the VM stops. This avoids
 applying old rules if macOS reuses a bridge number. The saved policy and startup
 setup remain installed. The next start discovers the bridge again.
+
+New MyBox networks use the fork's `reserved-on-demand` variant. A stopped box
+retains its own saved IPv4 and IPv6 subnets but no live vmnet reservation or
+bridge. Preparation creates a fresh macOS network object and an idle interface;
+MyBox applies and verifies firewall rules before Linux starts. The running VM's
+connection keeps that network alive after preparation finishes. An ordinary
+stop keeps the bridge until the VM stops and its firewall rules are removed.
+The helper then waits for interface teardown and releases the network object.
+Disconnected preparation clients and stopped VMs also release their connections
+automatically. A later start never reuses the detached macOS network object.
+
+Saved networks remain separate even while stopped. Creating or copying a box
+chooses a private /24 that does not overlap another saved network or a currently
+connected Mac network. The IPv6 /64 is also saved. Entry still checks firewall
+protection before opening a shell. Firewall failures report the underlying error
+instead of describing every failure as an expired access approval.
+
+`python3 tests/network_release.py <signed-network-plugin> <signed-bridge-helper>`
+checks twelve stopped boxes without bridges, abandoned preparation, overlapping
+preparation clients, helper termination, repeated starts and stops, and Internet
+connections on two separate networks. Existing boxes are left untouched.
+See [the live network release report](test-results/network-release-latest.json).
+The older `network_lifetime.py` test covers the default `reserved` variant,
+which continues retaining its bridge for compatibility with non-MyBox clients.
+
+Existing installations can migrate saved MyBox networks with
+`service/upgrade_network_release.py`, using administrator authorization and an
+explicit `--restart-box NAME` for each running box. It checks the signed binaries
+against the successful live test report, saves root-owned backups, migrates
+network metadata while the relevant container services are stopped, and restores
+the approved boxes through the normal firewall protocol. `--apply` performs the
+migration; omitting it only prints the plan. Migration changes internal IP ranges
+but preserves box files, names, aliases, and localhost port mappings.
 
 Existing host interfaces use dynamic PF address expressions. The watcher listens
 for macOS network notifications and routing events. It also checks every five
@@ -481,8 +523,15 @@ See `project.md` and `test-results/` for earlier results. Backend integration ru
 `test-results/cli-latest.json` and leave the dated acceptance results intact.
 The older single-account checks use the test build with disposable boxes in the caller’s Apple account. They exercise backend behavior separately from the private service.
 For the private-account build, use `make service-test` after `mybox setup-service`.
-Stay at the Mac during that test. It asks for approval when it enters the disposable
-box and when it transfers a file, just as it would for a script you wrote.
+Stay at the Mac during `make service-test`. It asks for approval when it enters the
+disposable box and when it transfers a file, just as it would for a script you wrote.
+
+To check entry without a second administrator prompt, run
+`python3 tests/access_approval_live.py <box-name>` and approve the macOS prompt
+for `/bin/pwd`. The test fails if the terminal is asked to run `sudo`; it only
+reads the working directory inside the box. Use a running box to avoid starting
+a stopped one.
+
 The live tests require a Mac terminal so sudo can
 request authentication. The protected test removes its boxes and networks. It
 retains the requested persistent firewall setup and writes

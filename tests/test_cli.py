@@ -89,6 +89,8 @@ elif args[0] == "delete":
     statepath.write_text(json.dumps(state))
 elif args[:2] == ["network", "inspect"]:
     print(json.dumps([{"id": args[2], "configuration": {"mode": "nat", "labels": {"io.github.janpmz.my-container-box.managed": "true"}}, "status": {"ipv4Subnet": "192.168.65.0/24", "ipv4Gateway": "192.168.65.1", "ipv6Subnet": "fd00:1234::/64"}}]))
+elif args[:2] == ["network", "list"]:
+    print(json.dumps([{"id": "mybox-net-demo", "status": {"ipv4Subnet": "192.168.65.0/24"}}]))
 elif args[0] == "inspect":
     print(json.dumps([state[args[1]]]))
 elif args[0] == "list":

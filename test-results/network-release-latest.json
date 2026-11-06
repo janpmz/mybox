@@ -1,0 +1,18 @@
+{
+  "plugin_sha256": "1564e294ac4ff13123b7c03a5b33ba60034849c088fd7db3d29e726fc14b8beb",
+  "helper_sha256": "340d34552221320f36301ed0b168029536848510fe2e03a53a44001bd28f46c4",
+  "passed": true,
+  "checks": [
+    "12 stopped boxes retain zero bridges; existing networks are unchanged",
+    "abandoned preparation releases its bridge without starting a guest",
+    "overlapping preparation clients retain the bridge until both finish",
+    "helper termination releases the reservation; its replacement can recreate it",
+    "cycle 1: b recreates and releases its bridge; a remains online",
+    "cycle 2: b recreates and releases its bridge; a remains online",
+    "cycle 3: b recreates and releases its bridge; a remains online",
+    "automatic cleanup and recreation of a preserve b and its bridge",
+    "all 12 boxes stopped again; no box bridges or bridge leaks remain"
+  ],
+  "finished_at": "2026-11-06T10:08:45.877331+00:00",
+  "existing_bridges_preserved": true
+}

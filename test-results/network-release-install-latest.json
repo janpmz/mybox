@@ -1,0 +1,47 @@
+{
+  "installed_at": "2026-11-06T10:13:00.613444+00:00",
+  "backup": "/var/db/mybox/network-release-backup-4608e5dc319b4391861fa2d89ab66807",
+  "plan": {
+    "restart_boxes": [
+      "document-player-box",
+      "photo-box"
+    ],
+    "networks": [
+      {
+        "owner": 501,
+        "network": "mybox-net-document-player-box",
+        "ipv4_subnet": "10.174.160.0/24",
+        "ipv6_subnet": "fd1e:cb76:3020:7a52::/64"
+      },
+      {
+        "owner": 501,
+        "network": "mybox-net-photo-box",
+        "ipv4_subnet": "10.56.212.0/24",
+        "ipv6_subnet": "fdda:9449:8c87:c3ba::/64"
+      },
+      {
+        "owner": 499,
+        "network": "mybox-net-document-player-box",
+        "ipv4_subnet": "10.255.10.0/24",
+        "ipv6_subnet": "fd0c:20a3:0d7e:73df::/64"
+      },
+      {
+        "owner": 499,
+        "network": "mybox-net-photo-box",
+        "ipv4_subnet": "10.206.66.0/24",
+        "ipv6_subnet": "fd84:122e:7162:22c9::/64"
+      }
+    ]
+  },
+  "installed_sha256": {
+    "/usr/local/libexec/container/plugins/container-network-vmnet/bin/container-network-vmnet": "1564e294ac4ff13123b7c03a5b33ba60034849c088fd7db3d29e726fc14b8beb",
+    "/usr/local/libexec/container/container-mybox-bridge": "340d34552221320f36301ed0b168029536848510fe2e03a53a44001bd28f46c4",
+    "/Library/PrivilegedHelperTools/io.github.janpmz.my-container-box.service/mybox-worker": "921f226b11112ccc1627d177bdde53355eb4d0c5e7afa0f5e6c5d7c757055749"
+  },
+  "idle_networks_checked": true,
+  "restarted": [
+    "document-player-box",
+    "photo-box"
+  ],
+  "passed": true
+}

@@ -29,6 +29,28 @@ func setupNetwork() throws {
 }
 
 extension Backend {
+    func unusedBoxSubnets() throws -> (ipv4: String, ipv6: String) {
+        let data = try run(["network", "list", "--format", "json"], capture: true)
+        guard let networks = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            throw BoxError("Cannot read saved network addresses.")
+        }
+        let saved = try networks.map { network -> String in
+            guard let status = network["status"] as? [String: Any], let subnet = status["ipv4Subnet"] as? String else {
+                throw BoxError("A saved network has no IPv4 subnet.")
+            }
+            return subnet
+        }
+        let occupied = saved + (try hostInterfaces()).flatMap(\.networks4)
+        let ipv4 = try unusedPrivateSubnet(occupied)
+        // A locally generated IPv6 /64 is saved with the box, not allocated anew
+        // on every start. It consumes no macOS network resources while stopped.
+        let hex = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
+        let groups = stride(from: 0, to: 12, by: 4).map { offset in
+            String(hex.dropFirst(offset).prefix(4))
+        }
+        return (ipv4, "fd" + String(hex.suffix(2)) + ":" + groups.joined(separator: ":") + "::/64")
+    }
+
     func networkInfo(_ name: String) throws -> [String: Any] {
         let data = try run(["network", "inspect", name], capture: true)
         guard let records = try JSONSerialization.jsonObject(with: data) as? [[String: Any]], records.count == 1,
@@ -162,6 +184,9 @@ extension Backend {
         }
         _ = try run(["exec", record.id, "/bin/sh", "-c", "test -d /workspace && test ! -L /workspace"], capture: true)
         if try record.portConfiguration() != nil { try restoreForwarder(managed(name)) }
+        // End the firewall authorization before handing control to a shell or
+        // copying data. A later request needs a new operation and approval.
+        try finishBoxAccessPreparation()
         return record.id
     }
 
@@ -169,35 +194,64 @@ extension Backend {
         let lock = try networkLock()
         defer { withExtendedLifetime(lock) {} }
         let record = try managed(name)
-        try stopForwarder(record)
-        if record.state != "stopped" { _ = try run(["stop", record.id], capture: true) }
-        // Legacy boxes can still be stopped without changing their data.
-        if (record.configuration["labels"] as? [String: String])?[networkLabel] != nil {
-            let policy = try policy(for: record)
-            try firewallRequest("remove", policy: policy)
+        let stop = {
+            try self.stopForwarder(record)
+            if record.state != "stopped" { _ = try self.run(["stop", record.id], capture: true) }
+            guard try self.managed(name).state == "stopped" else {
+                throw BoxError("The box has not stopped. Its network protection remains installed.")
+            }
+            // Legacy boxes can still be stopped without changing their data.
+            if (record.configuration["labels"] as? [String: String])?[networkLabel] != nil {
+                try self.firewallAfterStop(record)
+            }
         }
+        if usesFork, record.state == "running", let network = (record.configuration["labels"] as? [String: String])?[networkLabel] {
+            // Keep the bridge until its old firewall rules have been removed.
+            // The preparation helper then waits for vmnet cleanup to complete.
+            try withPreparedBridge(network, startBox: stop)
+        } else {
+            try stop()
+        }
+    }
+
+    private func firewallAfterStop(_ record: BoxRecord) throws {
+        try firewallRequest("remove", policy: policy(for: record))
     }
 }
 
-// The fork helper holds a vmnet endpoint on the same reserved network as the guest.
-// The kernel releases the endpoint if the worker or helper exits unexpectedly.
-private func withPreparedBridge(_ network: String, startBox: () throws -> String) throws -> String {
+// A preparation connection and the VM's allocation each keep the network alive.
+// Finishing the last connection releases both the idle interface and network.
+private func withPreparedBridge<T>(_ network: String, startBox: () throws -> T) throws -> T {
     let process = Process()
     let input = Pipe()
     let output = Pipe()
     process.executableURL = URL(fileURLWithPath: forkBridgeExecutable)
+    #if MYBOX_TESTING
+    if let path = ProcessInfo.processInfo.environment["MYBOX_TEST_BRIDGE"] {
+        process.executableURL = URL(fileURLWithPath: path)
+    }
+    #endif
     process.arguments = [network]
     process.standardInput = input
     process.standardOutput = output
     process.standardError = FileHandle.standardError
     try process.run()
-    defer {
+    func finish() throws {
         input.fileHandleForWriting.closeFile()
-        // Never hold the box-operation lock forever if a network plugin stalls.
-        for _ in 0..<40 where process.isRunning { Thread.sleep(forTimeInterval: 0.05) }
-        if process.isRunning { kill(process.processIdentifier, SIGKILL) }
+        // vmnet teardown is asynchronous; wait for the helper's confirmation.
+        for _ in 0..<300 where process.isRunning { Thread.sleep(forTimeInterval: 0.05) }
+        if process.isRunning {
+            kill(process.processIdentifier, SIGKILL)
+            process.waitUntilExit()
+            throw BoxError("Timed out releasing the box's prepared network.")
+        }
         process.waitUntilExit()
+        guard process.terminationReason == .exit, process.terminationStatus == 0 else {
+            throw BoxError("The network helper could not confirm cleanup.")
+        }
     }
+    var finished = false
+    defer { if !finished { try? finish() } }
     let fd = output.fileHandleForReading.fileDescriptor
     let deadline = ProcessInfo.processInfo.systemUptime + 15
     var ready = [UInt8]()
@@ -214,5 +268,35 @@ private func withPreparedBridge(_ network: String, startBox: () throws -> String
         ready.append(contentsOf: next)
     }
     guard ready == Array("ready\n".utf8) else { throw BoxError("Unexpected reply from the fork's bridge helper.") }
-    return try startBox()
+    let value = try startBox()
+    finished = true
+    try finish()
+    return value
+}
+
+// Saved subnets must not overlap another box or a currently connected Mac network.
+// This selects an address range only; it does not create a vmnet reservation.
+func unusedPrivateSubnet(_ occupied: [String]) throws -> String {
+    let ranges = try occupied.map { cidr -> ClosedRange<UInt32> in
+        let parts = cidr.split(separator: "/")
+        guard parts.count == 2, let prefix = Int(parts[1]), (0...32).contains(prefix) else {
+            throw BoxError("Cannot read a network subnet: \(cidr)")
+        }
+        let octets = parts[0].split(separator: ".").compactMap { UInt8($0) }
+        guard octets.count == 4 else { throw BoxError("Cannot read a network subnet: \(cidr)") }
+        let address = octets.reduce(UInt32(0)) { ($0 << 8) | UInt32($1) }
+        let mask: UInt32 = prefix == 0 ? 0 : UInt32.max << (32 - prefix)
+        return (address & mask)...(address | ~mask)
+    }
+    let blocks: [(UInt32, Int)] = [(0x0a000000, 65536), (0xac100000, 4096), (0xc0a80000, 256)]
+    for (base, count) in blocks {
+        let offset = Int.random(in: 0..<count)
+        for index in 0..<count {
+            let lower = base + UInt32((offset + index) % count) * 256
+            if ranges.allSatisfy({ !$0.overlaps(lower...(lower + 255)) }) {
+                return [24, 16, 8, 0].map { String((lower >> $0) & 255) }.joined(separator: ".") + "/24"
+            }
+        }
+    }
+    throw BoxError("No unused private /24 subnet is available for this box.")
 }

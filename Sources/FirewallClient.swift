@@ -39,18 +39,23 @@ private func requestServiceApproval(_ action: String, policy: NetworkPolicy) thr
     try JSONEncoder().encode(request).write(to: directory.appendingPathComponent("request"), options: .atomic)
     let lifetime = try FileLock(directory.appendingPathComponent("request").path)
     defer { withExtendedLifetime(lifetime) {} }
-    let data = Data(token.utf8)
-    let sent = data.withUnsafeBytes { send(channel, $0.baseAddress, $0.count, 0) }
-    guard sent == data.count else { throw BoxError("Cannot send the firewall request to your terminal.") }
-    // A client that keeps its socket open cannot hold the box lock indefinitely.
-    var timeout = timeval(tv_sec: 300, tv_usec: 0)
-    guard setsockopt(channel, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size)) == 0 else {
-        throw BoxError("Cannot set the firewall approval timeout.")
+    if let approval = boxAccessApproval {
+        // Never fall back to terminal sudo after a denied or expired approval.
+        try approval.firewall(token)
+    } else {
+        let data = Data(token.utf8)
+        let sent = data.withUnsafeBytes { send(channel, $0.baseAddress, $0.count, 0) }
+        guard sent == data.count else { throw BoxError("Cannot send the firewall request to your terminal.") }
+        // A client that keeps its socket open cannot hold the box lock indefinitely.
+        var timeout = timeval(tv_sec: 300, tv_usec: 0)
+        guard setsockopt(channel, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size)) == 0 else {
+            throw BoxError("Cannot set the firewall approval timeout.")
+        }
+        var answer: UInt8 = 0
+        var count: Int
+        repeat { count = recv(channel, &answer, 1, 0) } while count < 0 && errno == EINTR
+        guard count == 1, answer == Character("Y").asciiValue else { throw BoxError("Firewall approval failed.") }
     }
-    var answer: UInt8 = 0
-    var count: Int
-    repeat { count = recv(channel, &answer, 1, 0) } while count < 0 && errno == EINTR
-    guard count == 1, answer == Character("Y").asciiValue else { throw BoxError("Firewall approval failed.") }
     // A client reply alone cannot authorize startup. Only the root helper can
     // create a root-owned file in this new, service-private directory.
     var info = stat()
