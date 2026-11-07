@@ -2,6 +2,9 @@
 
 MyBox is a command-line tool for running isolated Linux workspaces on your Mac.
 
+The [native macOS app](desktop/README.md) adds a menu bar icon and a compact box
+list. Build it with `make desktop` and open it with `make desktop-run`.
+
 ![Node.js runs inside an isolated Linux box on your Mac. It can reach the public internet. MyBox blocks direct access to Mac files, Mac services, and the local network.](docs/diagrams/mybox-concept-blueprint-v8.png)
 
 ![MyBox sits in the center with its /workspace folder inside. At upper left, mybox enter opens a shell with an arrow from Terminal into MyBox. Below it, mybox import copies Files into MyBox. On the right, mybox export copies Files out to a new Mac path. Each transfer or new shell session requires fresh approval with Touch ID or your Mac login password.](docs/diagrams/mybox-operations-blueprint-v5.png)

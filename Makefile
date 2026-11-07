@@ -1,4 +1,14 @@
-.PHONY: build test service-test service-reboot-test integration backend-integration resources-test ports-test network-test protected-test interface-test reboot-prepare reboot-test dns-test clean
+.PHONY: build test service-test service-reboot-test integration backend-integration resources-test ports-test network-test protected-test interface-test reboot-prepare reboot-test dns-test clean desktop desktop-run desktop-test
+.DEFAULT_GOAL := build
+
+desktop:
+	$(MAKE) -C desktop build
+
+desktop-run:
+	$(MAKE) -C desktop run
+
+desktop-test:
+	$(MAKE) -C desktop test
 
 COMMON = Sources/Support.swift Sources/HostProcess.swift Sources/NetworkPolicy.swift Sources/ServiceFirewall.swift
 CLI = $(COMMON) Sources/Box.swift Sources/BoxAccess.swift Sources/Resources.swift Sources/Completion.swift Sources/Network.swift Sources/FirewallClient.swift Sources/PortState.swift Sources/Ports.swift
