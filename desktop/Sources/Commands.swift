@@ -26,15 +26,13 @@ enum BoxCommand {
     static func create(name: String, cpus: String, memory: String, ports: [PortDraft], existing: [String]) throws -> [String] {
         try newName(name, existing: existing)
         guard positiveInteger(cpus) else { throw DesktopError("CPU must be a positive whole number.") }
-        guard memory.range(of: "^[1-9][0-9]*[mMgG]$", options: .regularExpression) != nil else {
-            throw DesktopError("Use a memory size such as 2g or 512m.")
-        }
+        let memoryArgument = try SizeInput.memoryArgument(memory)
         guard ports.count <= 64 else { throw DesktopError("A box supports up to 64 port mappings.") }
-        var result = ["create", name, "--cpus", cpus, "--memory", memory]
+        var result = ["create", name, "--cpus", cpus, "--memory", memoryArgument]
         var used = Set<Int>()
         for draft in ports {
             let mapping = try draft.mapping()
-            guard used.insert(mapping.outside).inserted else { throw DesktopError("Each Mac port can appear only once.") }
+            guard used.insert(mapping.outside).inserted else { throw DesktopError("Each outside port can appear only once.") }
             result += ["--inside-port", String(mapping.inside), "--outside-port", String(mapping.outside)]
         }
         return result
@@ -75,6 +73,33 @@ enum BoxCommand {
     }
 }
 
+enum SizeInput {
+    static func memoryArgument(_ input: String) throws -> String {
+        let normalized = input.replacingOccurrences(of: ",", with: ".")
+        guard normalized.count <= 32,
+              normalized.range(of: "^[0-9]+([.][0-9]+)?$", options: .regularExpression) != nil,
+              let gb = Decimal(string: normalized, locale: Locale(identifier: "en_US_POSIX")), gb > 0 else {
+            throw DesktopError("Enter a positive memory size in GB, such as 2 or 0.5.")
+        }
+        // Match CLI resize: memory uses binary GB, rounded up to a whole MiB.
+        var mib = gb * 1024
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &mib, 0, .up)
+        guard rounded <= Decimal(Int64.max >> 20) else { throw DesktopError("That memory size is too large.") }
+        return "\(NSDecimalNumber(decimal: rounded).uint64Value)m"
+    }
+
+    static func gigabytesPlaceholder(_ display: String) -> String {
+        let parts = display.split(whereSeparator: \.isWhitespace)
+        let scales: [String: Decimal] = ["TB": 1000, "GB": 1, "MB": Decimal(1) / 1000,
+                                        "kB": Decimal(1) / 1_000_000, "B": Decimal(1) / 1_000_000_000]
+        guard parts.count == 2, let scale = scales[String(parts[1])],
+              let value = Decimal(string: parts[0].replacingOccurrences(of: ",", with: "."),
+                                  locale: Locale(identifier: "en_US_POSIX")) else { return "" }
+        return NSDecimalNumber(decimal: value * scale).stringValue
+    }
+}
+
 struct PortStatus: Identifiable, Sendable {
     var id: Int { mapping.outside }
     let mapping: PortMapping
@@ -86,6 +111,9 @@ struct PortStatus: Identifiable, Sendable {
 struct PortList: Sendable {
     let ports: [PortStatus]
     let warning: String?
+    func forwardingWarning(isRunning: Bool) -> String? {
+        isRunning && ports.contains(where: { $0.owner == "MyBox" }) ? warning : nil
+    }
     static func parse(_ output: String) throws -> PortList {
         let lines = output.components(separatedBy: .newlines)
         guard let header = lines.firstIndex(where: { $0.hasPrefix("INSIDE  OUTSIDE") }) else {
@@ -101,7 +129,7 @@ struct PortList: Sendable {
                 throw DesktopError("MyBox returned an unrecognized port row.")
             }
             let mapping = try PortDraft(outside: fields[1], inside: fields[0]).mapping()
-            guard !ports.contains(where: { $0.id == mapping.outside }) else { throw DesktopError("Duplicate Mac port in the port list.") }
+            guard !ports.contains(where: { $0.id == mapping.outside }) else { throw DesktopError("Duplicate outside port in the port list.") }
             ports.append(PortStatus(mapping: mapping, owner: fields[2], state: fields[3], fixed: fields[2] == "Apple" || fields.count == 5))
         }
         return PortList(ports: ports, warning: warning)

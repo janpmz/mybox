@@ -60,16 +60,27 @@ struct DesktopTests {
         }
         expect(Date().timeIntervalSince(start) < 3, "Timeout failed to bound execution")
 
-        let create = try BoxCommand.create(name: "sample", cpus: "4", memory: "512m",
+        let create = try BoxCommand.create(name: "sample", cpus: "4", memory: "0.5",
             ports: [PortDraft(outside: "8766", inside: "3000"), PortDraft(outside: "8767", inside: "8080")], existing: [])
-        expect(create == ["create", "sample", "--cpus", "4", "--memory", "512m", "--inside-port", "3000", "--outside-port", "8766", "--inside-port", "8080", "--outside-port", "8767"], "Creation must keep port pairs in order and support memory in MB")
+        expect(create == ["create", "sample", "--cpus", "4", "--memory", "512m", "--inside-port", "3000", "--outside-port", "8766", "--inside-port", "8080", "--outside-port", "8767"], "Creation must convert numeric GB to CLI memory units and preserve port pairs")
         expectFailure("Duplicate create port") {
-            _ = try BoxCommand.create(name: "sample", cpus: "2", memory: "2g", ports: [PortDraft(outside: "80", inside: "80"), PortDraft(outside: "80", inside: "90")], existing: [])
+            _ = try BoxCommand.create(name: "sample", cpus: "2", memory: "2", ports: [PortDraft(outside: "80", inside: "80"), PortDraft(outside: "80", inside: "90")], existing: [])
         }
         expectFailure("Existing box name") { try BoxCommand.newName("demo", existing: ["demo"]) }
         expectFailure("Trailing hyphen") { try BoxCommand.newName("demo-", existing: []) }
-        expectFailure("Invalid CPU") { _ = try BoxCommand.create(name: "sample", cpus: "1.5", memory: "2g", ports: [], existing: []) }
+        expectFailure("Invalid CPU") { _ = try BoxCommand.create(name: "sample", cpus: "1.5", memory: "2", ports: [], existing: []) }
         expectFailure("Invalid memory units") { _ = try BoxCommand.create(name: "sample", cpus: "2", memory: "2GB", ports: [], existing: []) }
+        expect((try? SizeInput.memoryArgument("2")) == "2048m", "Whole GB must retain the current default memory")
+        expect((try? SizeInput.memoryArgument("0,5")) == "512m", "Accept decimal comma memory input")
+        expect((try? SizeInput.memoryArgument("0.2")) == "205m", "Round fractional memory up like CLI resize")
+        for invalid in ["2g", "512m", "0", "-2", "NaN", "1e3", "999999999999999999999"] {
+            expectFailure("Invalid numeric memory accepted") { _ = try SizeInput.memoryArgument(invalid) }
+        }
+        expect(SizeInput.gigabytesPlaceholder("8 GB") == "8", "Memory placeholder must not contain units")
+        expect(SizeInput.gigabytesPlaceholder("550,8 GB") == "550.8", "Accept localized resource values")
+        expect(SizeInput.gigabytesPlaceholder("1.2 TB") == "1200", "Convert large disk placeholders to GB")
+        expect(SizeInput.gigabytesPlaceholder("128 MB") == "0.128", "Convert small disk placeholders to GB")
+        expect(SizeInput.gigabytesPlaceholder("-").isEmpty, "Unknown sizes must stay blank")
         expectFailure("Invalid port range") { _ = try PortDraft(outside: "0", inside: "3000").mapping() }
         expectFailure("Malformed numeric port") { _ = try PortDraft(outside: "8e3", inside: "3000").mapping() }
         let copy = try BoxCommand.copy(source: "demo", name: "demo-copy", existing: ["demo"])
@@ -93,8 +104,12 @@ struct DesktopTests {
         expect(portList.ports.count == 2 && portList.ports[0].fixed && !portList.ports[1].fixed, "Fixed Apple mappings cannot offer removal")
         expect(portList.ports[1].state == "active" && portList.ports[1].mapping.outside == 8767, "Read actual forwarding status")
         expect(portList.warning == "Forwarding stopped: test failure", "Keep forwarding diagnostics")
+        expect(portList.forwardingWarning(isRunning: false) == nil, "Stopped boxes must not show old forwarding failures")
+        expect(portList.forwardingWarning(isRunning: true) == portList.warning, "Running boxes must still show forwarding failures")
         let noPorts = try PortList.parse("INSIDE  OUTSIDE  OWNER   STATE\nNo port mappings.\nOutside ports bind to 127.0.0.1 on the Mac. Mappings use TCP.")
         expect(noPorts.ports.isEmpty, "Empty port list")
+        let staleWithoutMappings = try PortList.parse("INSIDE  OUTSIDE  OWNER   STATE\nNo port mappings.\nForwarding stopped: old failure\n")
+        expect(staleWithoutMappings.forwardingWarning(isRunning: true) == nil, "Removed mappings must not show historical failures")
         expectFailure("Malformed port response") { _ = try PortList.parse("service failed") }
         expectFailure("Unknown port owner") { _ = try PortList.parse("INSIDE  OUTSIDE  OWNER   STATE\n80 8080 unknown active") }
         expectFailure("Duplicate port row") { _ = try PortList.parse("INSIDE  OUTSIDE  OWNER   STATE\n80 8080 MyBox active\n81 8080 MyBox active") }

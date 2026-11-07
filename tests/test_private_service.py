@@ -159,6 +159,10 @@ class PrivateService(unittest.TestCase):
             "print(sys.argv[-1], sys.stdin.read()); print('worker error', file=sys.stderr); sys.exit(37)")
         self.assertEqual((status, out, err), (37, b'one argument piped input\n', b'worker error\n'))
 
+    def test_delete_command_reaches_the_worker_with_confirmation_flag(self):
+        status, out, err, _ = self.session(['delete', 'demo', '--yes'], 'print(repr(sys.argv[1:]))')
+        self.assertEqual((status, out, err), (0, b"['delete', 'demo', '--yes']\n", b''))
+
     def test_worker_aborts_if_firewall_denied(self):
         status, _, _, _ = self.session(['start', 'demo'], """
 fd = int(os.environ['MYBOX_FIREWALL_CHANNEL'])

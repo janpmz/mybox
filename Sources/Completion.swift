@@ -28,6 +28,7 @@ _mybox() {
         'export:Copy files from a box'
         'start:Start a box'
         'stop:Stop a box'
+        'delete:Permanently delete a box and its files'
         'resize:Change CPU, memory, or disk size'
         'ports:Manage port mappings'
         'list:List boxes'
@@ -41,7 +42,7 @@ _mybox() {
         return
     fi
     case "${words[2]}" in
-        enter|start|stop|copy|import|export)
+        enter|start|stop|delete|copy|import|export)
             if (( CURRENT == 3 )); then
                 _mybox_box_names
             elif [[ "${words[2]}" == import ]] && (( CURRENT == 4 )); then
@@ -50,6 +51,8 @@ _mybox() {
                 _files
             elif [[ "${words[2]}" == enter ]] && (( CURRENT == 4 )); then
                 compadd -- --
+            elif [[ "${words[2]}" == delete ]] && (( CURRENT == 4 )); then
+                compadd -- --yes
             fi
             ;;
         resize)

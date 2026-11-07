@@ -2,19 +2,17 @@ import AppKit
 import SwiftUI
 
 enum AppSheet: Identifiable {
-    case create, settings
+    case create, help
     case copy(Workspace), resize(Workspace), ports(Workspace), export(Workspace), command(Workspace)
-    case output(String, [String])
     var id: String {
         switch self {
         case .create: return "create"
-        case .settings: return "settings"
+        case .help: return "help"
         case .copy(let box): return "copy-" + box.id
         case .resize(let box): return "resize-" + box.id
         case .ports(let box): return "ports-" + box.id
         case .export(let box): return "export-" + box.id
         case .command(let box): return "command-" + box.id
-        case .output(let title, _): return title
         }
     }
 }
@@ -29,6 +27,7 @@ final class AppModel: ObservableObject {
     @Published var actionError: String?
     @Published var hasLoaded = false
     @Published var sheet: AppSheet?
+    @Published var boxToDelete: Workspace?
     let isDemo: Bool
     private var refreshTask: Task<Void, Never>?
 
@@ -43,6 +42,9 @@ final class AppModel: ObservableObject {
     var showingActionError: Binding<Bool> {
         Binding(get: { self.actionError != nil }, set: { if !$0 { self.actionError = nil } })
     }
+    var showingDeleteConfirmation: Binding<Bool> {
+        Binding(get: { self.boxToDelete != nil }, set: { if !$0 { self.boxToDelete = nil } })
+    }
     func startRefreshing() {
         guard refreshTask == nil, !isDemo else { return }
         refreshTask = Task { [weak self] in
@@ -55,7 +57,7 @@ final class AppModel: ObservableObject {
     func refresh() async {
         guard !isDemo, !isRefreshing else { return }
         guard let executable = MyBoxClient.resolveExecutable() else {
-            connectionError = "Choose the MyBox CLI in Settings."
+            connectionError = "The MyBox CLI was not found. Run make build in the MyBox project folder."
             return
         }
         isRefreshing = true
@@ -71,7 +73,7 @@ final class AppModel: ObservableObject {
     func run(_ arguments: [String]) -> Bool {
         guard !isDemo else { return false }
         guard let executable = MyBoxClient.resolveExecutable() else {
-            actionError = "Choose the MyBox CLI in Settings."
+            actionError = "The MyBox CLI was not found. Run make build in the MyBox project folder."
             return false
         }
         do {
@@ -81,20 +83,11 @@ final class AppModel: ObservableObject {
     }
     func read(_ arguments: [String]) async throws -> String {
         guard let executable = MyBoxClient.resolveExecutable() else {
-            throw DesktopError("Choose the MyBox CLI in Settings.")
+            throw DesktopError("The MyBox CLI was not found. Run make build in the MyBox project folder.")
         }
         return try await Task.detached(priority: .utility) {
             try MyBoxClient.capture(executable: executable, arguments: arguments)
         }.value
-    }
-    func copyCompletion() {
-        Task {
-            do {
-                let script = try await read(["completion", "zsh"])
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(script, forType: .string)
-            } catch { actionError = error.localizedDescription }
-        }
     }
     func importFiles(to box: Workspace) {
         NSApp.activate(ignoringOtherApps: true)

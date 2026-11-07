@@ -52,6 +52,9 @@ struct MenuBarView: View {
             .onChange(of: model.actionError) { _, error in
                 if error != nil { AppController.shared.showWindow() }
             }
+            .onChange(of: model.boxToDelete?.id) { _, id in
+                if id != nil { AppController.shared.showWindow() }
+            }
     }
 }
 

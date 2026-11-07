@@ -90,6 +90,31 @@ class Ports(unittest.TestCase):
         (self.directory / "ports/mybox-demo/ports.json").write_text(json.dumps(saved))
         self.assertIn("No port mappings", self.run_box("ports", "list", "demo").stdout)
 
+    def test_historical_forwarding_failure_is_only_reported_for_running_mappings(self):
+        self.run_box("ports", "add", "demo", "--inside-port", "8080", "--outside-port", "8766")
+        directory = self.directory / "ports/mybox-demo"
+        status_path = directory / "status.json"
+        status = json.loads(status_path.read_text())
+        status.update(active=False, error="The container service did not answer. Forwarding stopped.")
+        status_path.write_text(json.dumps(status))
+        running = self.run_box("ports", "list", "demo").stdout
+        self.assertIn("Forwarding stopped:", running)
+
+        # Simulate the box stopping outside MyBox: the status file still holds
+        # the failed helper's last report with the current configuration revision.
+        self.environment["MYBOX_TEST_SCENARIO"] = "stopped"
+        stopped = self.run_box("ports", "list", "demo").stdout
+        self.assertIn("saved", stopped)
+        self.assertNotIn("Forwarding stopped:", stopped)
+
+        self.environment["MYBOX_TEST_SCENARIO"] = "normal"
+        config = self.saved()
+        config["mappings"] = []
+        (directory / "ports.json").write_text(json.dumps(config))
+        empty = self.run_box("ports", "list", "demo").stdout
+        self.assertIn("No port mappings.", empty)
+        self.assertNotIn("Forwarding stopped:", empty)
+
 
 if __name__ == "__main__":
     unittest.main()

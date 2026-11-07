@@ -25,7 +25,7 @@ HOME = Path('/private/var/db/mybox-runtime')
 INSTALL = Path('/Library/PrivilegedHelperTools/io.github.janpmz.my-container-box.service')
 SOCKET = '/private/var/db/mybox-socket/service.sock'
 FIREWALL = '/Library/PrivilegedHelperTools/mybox-firewall-manager'
-COMMANDS = {'list', 'create', 'copy', 'start', 'stop', 'enter', 'ports', 'resize',
+COMMANDS = {'list', 'create', 'copy', 'start', 'stop', 'delete', 'enter', 'ports', 'resize',
             'import', 'export', '_complete-boxes'}
 MAX_REQUEST = 128 * 1024
 

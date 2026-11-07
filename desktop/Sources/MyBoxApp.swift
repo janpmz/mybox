@@ -73,10 +73,10 @@ final class AppController: NSObject, NSWindowDelegate {
         switch kind {
         case "menu": replacement = AnyView(MenuBarView(model: model)); size = NSSize(width: MenuBarView.width, height: CGFloat(min(model.workspaces.count, 7)) * 34 + 110)
         case "create": replacement = AnyView(CreateBoxView(model: model)); size = NSSize(width: 420, height: 270)
-        case "settings": replacement = AnyView(SettingsView(model: model)); size = NSSize(width: 460, height: 240)
+        case "help": replacement = AnyView(CLIHelpView(model: model)); size = NSSize(width: 760, height: 560)
         case "copy": replacement = AnyView(CopyBoxView(model: model, box: box)); size = NSSize(width: 420, height: 220)
         case "resize": replacement = AnyView(ResizeBoxView(model: model, box: box)); size = NSSize(width: 420, height: 280)
-        case "ports": replacement = AnyView(PortsView(model: model, box: box)); size = NSSize(width: 540, height: 300)
+        case "ports": replacement = AnyView(PortsView(model: model, box: box)); size = NSSize(width: 620, height: 300)
         case "export": replacement = AnyView(ExportView(model: model, box: box)); size = NSSize(width: 420, height: 170)
         case "command": replacement = AnyView(RunCommandView(model: model, box: box)); size = NSSize(width: 480, height: 170)
         case "compact": size = NSSize(width: 960, height: 360)

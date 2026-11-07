@@ -289,8 +289,8 @@ Copying uses Apple's [`container commit`](https://github.com/apple/container/blo
 It requires Apple `container` 1.6 or later. It retains a local snapshot image as
 the new box's base and does not upload it. Apple creates the writable Linux disk
 when the copy first starts. This image contains the copied files
-and credentials. The image uses additional Mac disk space and remains after
-container deletion until you delete it separately. A failed copy attempts to
+and credentials. The image uses additional Mac disk space. `mybox delete` removes
+the copy image when no other container uses it; shared base images are kept. A failed copy attempts to
 remove its unused image. The trusted firewall helper always uses the original Debian image.
 
 The live copy from `document-player-box` to `photo-box` passed on 4 November 2026.
@@ -508,9 +508,18 @@ This is development setup. Release packaging remains deferred.
 
 ## Storage and lifecycle
 
-Stopping or restarting preserves files. Deleting the underlying container
-deletes its project files too; export anything you want to keep beforehand.
-There is no automatic delete command in this first version.
+Stopping or restarting preserves files. `mybox delete <name>` permanently removes
+the box and its files; export anything you want to keep beforehand. Use the full
+box name. MyBox asks for confirmation, with No as the default. For scripts, use
+`mybox delete <name> --yes` to skip the question.
+
+Deletion stops a running box, closes its port forwarding, removes its firewall
+rules, and deletes the box, saved port mappings, and dedicated network. It keeps
+legacy shared networks and images used by other containers. If cleanup fails
+after the box has been removed, the error explains how to retry the same command.
+The desktop app offers Delete in each box's menu, with a native Cancel/Delete alert.
+After updating MyBox, run `mybox setup-service` to install the worker and broker
+that support the new command.
 
 MyBox labels its containers and uses IDs of the form `mybox-<name>`. It only
 manages boxes bearing its own label. The earlier manually created test boxes

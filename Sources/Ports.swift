@@ -207,7 +207,10 @@ extension Backend {
                 print("\(port.inside)  \(port.outside)  MyBox   \(active ? "active" : "saved")")
             }
             if record.ports.isEmpty && (config?.mappings.isEmpty ?? true) { print("No port mappings.") }
-            if status?.revision == config?.revision, let error = status?.error { print("Forwarding stopped: \(error)") }
+            if record.state == "running", !(config?.mappings.isEmpty ?? true),
+               status?.revision == config?.revision, let error = status?.error {
+                print("Forwarding stopped: \(error)")
+            }
             print("Outside ports bind to 127.0.0.1 on the Mac. Mappings use TCP.")
             return
         }

@@ -585,6 +585,9 @@ Usage: mybox <command>
                          Relative box paths start at /workspace. Reject links.
   start <name>           Start a stopped box, keeping its files.
   stop <name>            Stop a box, keeping its files.
+  delete <name> [--yes]  Permanently delete a box and all its files. Stop it first if running.
+                         Remove its port mappings and dedicated network. Ask for confirmation.
+                         Use the full name; --yes skips confirmation.
   resize [name]          Choose a stopped box and enter CPU, memory, and disk values.
                          Press Enter to keep a value.
   resize <name> [--cpus N] [--memory-gb N] [--disk-size-gb N]
@@ -644,6 +647,9 @@ func mainCommand(_ arguments: [String]) throws {
     case "ports":
         let options = try PortOptions(rest)
         try Backend().changePorts(options)
+    case "delete":
+        let options = try DeleteOptions(rest)
+        try Backend().deleteBox(options)
     case "resize":
         if rest.count <= 1 {
             if let name = rest.first { _ = try containerID(name) }
@@ -709,7 +715,7 @@ func mainCommand(_ arguments: [String]) throws {
     }
 }
 
-let serviceCommands: Set<String> = ["list", "_complete-boxes", "create", "copy", "start", "stop", "enter",
+let serviceCommands: Set<String> = ["list", "_complete-boxes", "create", "copy", "start", "stop", "delete", "enter",
                                     "import", "export", "resize", "ports"]
 
 // The installed worker asks over a service-private socket. There is no CLI flag

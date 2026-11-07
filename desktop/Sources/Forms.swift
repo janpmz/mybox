@@ -7,13 +7,12 @@ struct AppSheetView: View {
         Group {
             switch sheet {
             case .create: CreateBoxView(model: model)
-            case .settings: SettingsView(model: model)
+            case .help: CLIHelpView(model: model)
             case .copy(let box): CopyBoxView(model: model, box: box)
             case .resize(let box): ResizeBoxView(model: model, box: box)
             case .ports(let box): PortsView(model: model, box: box)
             case .export(let box): ExportView(model: model, box: box)
             case .command(let box): RunCommandView(model: model, box: box)
-            case .output(let title, let args): CLIOutputView(model: model, title: title, arguments: args)
             }
         }.preferredColorScheme(.dark)
             .alert("MyBox", isPresented: model.showingActionError) {
@@ -27,7 +26,7 @@ struct CreateBoxView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var cpus = "2"
-    @State private var memory = "2g"
+    @State private var memory = "2"
     @State private var ports: [PortDraft] = []
     private var command: Result<[String], Error> {
         Result { try BoxCommand.create(name: name, cpus: cpus, memory: memory, ports: ports, existing: model.workspaces.map(\.name)) }
@@ -37,16 +36,16 @@ struct CreateBoxView: View {
             Form {
                 TextField("Name", text: $name, prompt: Text("my-project"))
                 TextField("CPU", text: $cpus)
-                TextField("Memory", text: $memory, prompt: Text("2g"))
+                SizeField(title: "Memory", value: $memory, placeholder: "2")
             }.textFieldStyle(.roundedBorder)
             if !ports.isEmpty {
                 ScrollView {
                     VStack(spacing: 10) {
                         ForEach($ports) { $port in
                             HStack(spacing: 8) {
-                                TextField("Mac port", text: $port.outside).accessibilityLabel("Mac port")
+                                TextField("Outside port (Mac)", text: $port.outside).accessibilityLabel("Outside port (Mac)")
                                 Image(systemName: "arrow.right").foregroundStyle(.secondary)
-                                TextField("Box port", text: $port.inside).accessibilityLabel("Box port")
+                                TextField("Inside port (box)", text: $port.inside).accessibilityLabel("Inside port (box)")
                                 Button { ports.removeAll { $0.id == port.id } } label: { Image(systemName: "minus.circle") }
                                     .buttonStyle(.borderless).accessibilityLabel("Remove port mapping")
                             }
@@ -105,8 +104,8 @@ struct ResizeBoxView: View {
         SheetFrame(title: "Resize \(box.name)") {
             Form {
                 TextField("CPU", text: $cpus, prompt: Text(box.cores))
-                TextField("Memory (GB)", text: $memory, prompt: Text(box.memory))
-                TextField("Disk (GB)", text: $disk, prompt: Text(box.diskCapacity))
+                SizeField(title: "Memory", value: $memory, placeholder: SizeInput.gigabytesPlaceholder(box.memory))
+                SizeField(title: "Disk", value: $disk, placeholder: SizeInput.gigabytesPlaceholder(box.diskCapacity))
             }.textFieldStyle(.roundedBorder)
             Text("Blank fields stay unchanged.").font(.caption).foregroundStyle(.secondary)
             if !cpus.isEmpty || !memory.isEmpty || !disk.isEmpty,
@@ -160,52 +159,22 @@ struct RunCommandView: View {
     }
 }
 
-struct SettingsView: View {
+struct CLIHelpView: View {
     @ObservedObject var model: AppModel
-    @AppStorage("cliPath") private var cliPath = ""
-    @State private var error: String?
-    var body: some View {
-        SheetFrame(title: "Settings", width: 460, dismissal: .close) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("MyBox CLI").fontWeight(.medium)
-                Text(MyBoxClient.resolveExecutable() ?? "Not found").font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-                HStack {
-                    Button("Choose…") {
-                        let panel = NSOpenPanel()
-                        panel.canChooseDirectories = false
-                        panel.allowsMultipleSelection = false
-                        if panel.runModal() == .OK, let url = panel.url {
-                            if FileManager.default.isExecutableFile(atPath: url.path) {
-                                cliPath = url.path; error = nil; Task { await model.refresh() }
-                            } else { error = "Choose an executable file." }
-                        }
-                    }
-                    Button("Use default") { cliPath = ""; Task { await model.refresh() } }
-                }
-                if let error { ValidationMessage(text: error) }
-            }
-        } actions: {}
-    }
-}
-
-struct CLIOutputView: View {
-    @ObservedObject var model: AppModel
-    let title: String
-    let arguments: [String]
     @State private var output: String?
     var body: some View {
-        SheetFrame(title: title, width: title == "CLI Help" ? 760 : 420, dismissal: .close) {
+        SheetFrame(title: "CLI Help", width: 760, dismissal: .close) {
             if let output {
-                ScrollView([.horizontal, .vertical]) {
+                ScrollView(.vertical) {
                     Text(output.trimmingCharacters(in: .whitespacesAndNewlines))
-                        .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                        .font(.system(size: 12, design: .monospaced)).lineSpacing(2).textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                }.frame(maxHeight: title == "CLI Help" ? 440 : 70)
+                }.scrollIndicators(.hidden).frame(height: 440)
             } else { ProgressView().controlSize(.small) }
         } actions: {}
             .task {
-                do { output = try await model.read(arguments) }
+                do { output = try await model.read(["help"]) }
                 catch { output = error.localizedDescription }
             }
     }
@@ -214,4 +183,20 @@ struct CLIOutputView: View {
 struct ValidationMessage: View {
     let text: String
     var body: some View { Text(text).font(.caption).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true) }
+}
+
+struct SizeField: View {
+    let title: String
+    @Binding var value: String
+    var placeholder = ""
+
+    var body: some View {
+        LabeledContent(title) {
+            HStack(spacing: 8) {
+                TextField(title, text: $value, prompt: Text(placeholder))
+                    .labelsHidden().accessibilityLabel("\(title) in gigabytes")
+                Text("GB").foregroundStyle(.secondary)
+            }
+        }
+    }
 }

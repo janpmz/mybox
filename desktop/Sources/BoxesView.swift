@@ -21,7 +21,6 @@ struct BoxesView: View {
                 HStack(alignment: .top) {
                     Text(error).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
                     Spacer()
-                    Button("Settings") { model.sheet = .settings }
                     Button("Retry") { Task { await model.refresh() } }.disabled(model.isRefreshing)
                 }.padding(14).background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 8))
             }
@@ -37,6 +36,14 @@ struct BoxesView: View {
             .alert("MyBox", isPresented: model.showingActionError) {
                 Button("OK") { model.actionError = nil }
             } message: { Text(model.actionError ?? "") }
+            .alert("Delete “\(model.boxToDelete?.name ?? "")”?", isPresented: model.showingDeleteConfirmation,
+                   presenting: model.boxToDelete) { box in
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) { model.run(["delete", box.name, "--yes"]) }
+                    .disabled(!model.canRunCommands)
+            } message: { _ in
+                Text("This permanently deletes the box and all its files. A running box will be stopped.")
+            }
     }
     private var table: some View {
         Table(model.workspaces, selection: $model.selection) {
@@ -123,25 +130,24 @@ struct BoxActions: View {
             model.run([box.isRunning ? "stop" : "start", box.name])
         }.disabled(!model.canRunCommands || !["running", "stopped"].contains(box.state))
         Divider()
-        Button("Port Mappings…", systemImage: "network") { model.sheet = .ports(box) }.disabled(!model.canOpenForms)
-        Button("Import…", systemImage: "square.and.arrow.down") { model.importFiles(to: box) }.disabled(!model.canRunCommands)
-        Button("Export…", systemImage: "square.and.arrow.up") { model.sheet = .export(box) }.disabled(!model.canOpenForms)
+        Button("Port Mappings", systemImage: "network") { model.sheet = .ports(box) }.disabled(!model.canOpenForms)
+        Button("Import", systemImage: "square.and.arrow.down") { model.importFiles(to: box) }.disabled(!model.canRunCommands)
+        Button("Export", systemImage: "square.and.arrow.up") { model.sheet = .export(box) }.disabled(!model.canOpenForms)
         Divider()
-        Button("Copy…", systemImage: "doc.on.doc") { model.sheet = .copy(box) }.disabled(!model.canOpenForms)
-        Button("Resize…", systemImage: "slider.horizontal.3") { model.sheet = .resize(box) }
+        Button("Copy", systemImage: "doc.on.doc") { model.sheet = .copy(box) }.disabled(!model.canOpenForms)
+        Button("Resize", systemImage: "slider.horizontal.3") { model.sheet = .resize(box) }
             .disabled(!model.canOpenForms || box.state != "stopped").help("Stop the box before resizing.")
-        Button("Run Command…", systemImage: "chevron.left.forwardslash.chevron.right") { model.sheet = .command(box) }.disabled(!model.canOpenForms)
+        Button("Run Command", systemImage: "chevron.left.forwardslash.chevron.right") { model.sheet = .command(box) }.disabled(!model.canOpenForms)
+        Divider()
+        Button("Delete", systemImage: "trash", role: .destructive) { model.boxToDelete = box }
+            .disabled(!model.canRunCommands || !["running", "stopped"].contains(box.state))
     }
 }
 
 struct AppActions: View {
     @ObservedObject var model: AppModel
     var body: some View {
-        Button("Settings…") { model.sheet = .settings }.keyboardShortcut(",", modifiers: .command)
-        Divider()
-        Button("CLI Help") { model.sheet = .output("CLI Help", ["help"]) }
-        Button("CLI Version") { model.sheet = .output("CLI Version", ["--version"]) }
-        Button("Copy Zsh Completion") { model.copyCompletion() }
+        Button("CLI Help") { model.sheet = .help }
         Divider()
         Button("Quit MyBox") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
     }

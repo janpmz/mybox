@@ -269,7 +269,7 @@ class CLI(unittest.TestCase):
             ("export", "demo", "/etc/passwd", "/tmp/result"),
             ("export", "demo", "../etc", "/tmp/result"),
             ("export", "demo", "/workspace/../etc", "/tmp/result"),
-            ("list", "--all"), ("delete", "demo"),
+            ("list", "--all"), ("delete", "--all"),
         ]
         for arguments in cases:
             with self.subTest(arguments=arguments):

@@ -59,6 +59,9 @@ Usage: mybox <command>
                          Relative box paths start at /workspace. Reject links.
   start <name>           Start a stopped box, keeping its files.
   stop <name>            Stop a box, keeping its files.
+  delete <name> [--yes]  Permanently delete a box and all its files. Stop it first if running.
+                         Remove its port mappings and dedicated network. Ask for confirmation.
+                         Use the full name; --yes skips confirmation.
   resize [name]          Choose a stopped box and enter CPU, memory, and disk values.
                          Press Enter to keep a value.
   resize <name> [--cpus N] [--memory-gb N] [--disk-size-gb N]

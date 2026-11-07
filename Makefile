@@ -11,7 +11,7 @@ desktop-test:
 	$(MAKE) -C desktop test
 
 COMMON = Sources/Support.swift Sources/HostProcess.swift Sources/NetworkPolicy.swift Sources/ServiceFirewall.swift
-CLI = $(COMMON) Sources/Box.swift Sources/BoxAccess.swift Sources/Resources.swift Sources/Completion.swift Sources/Network.swift Sources/FirewallClient.swift Sources/PortState.swift Sources/Ports.swift
+CLI = $(COMMON) Sources/Box.swift Sources/BoxAccess.swift Sources/Resources.swift Sources/Completion.swift Sources/Network.swift Sources/FirewallClient.swift Sources/PortState.swift Sources/Ports.swift Sources/Deletion.swift
 FIREWALL = $(COMMON) Sources/Firewall.swift Sources/FirewallRuntime.swift Sources/FirewallWatcher.swift Sources/FirewallManagerMain.swift Sources/ServiceApproval.swift
 FORWARDER = Sources/Support.swift Sources/PortState.swift Sources/GuestPortRelay.swift Sources/PortForwarder.swift
 

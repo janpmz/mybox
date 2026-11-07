@@ -11,14 +11,15 @@ struct PortsView: View {
     @State private var hasLoaded = false
 
     private var mapping: PortMapping? { try? draft.mapping() }
+    private var current: Workspace { model.workspaces.first { $0.id == box.id } ?? box }
     private var duplicate: Bool { mapping.map { port in ports.contains { $0.id == port.outside } } ?? false }
     var body: some View {
-        SheetFrame(title: "Ports · \(box.name)", width: 540, dismissal: .close) {
+        SheetFrame(title: "Port Mappings · \(box.name)", width: 620, dismissal: .close) {
             Table(ports) {
-                TableColumn("Mac") { port in
+                TableColumn("Outside port (Mac)") { port in
                     LocalhostLink(mapping: port.mapping, isEnabled: !model.isDemo)
-                }.width(min: 140, ideal: 150)
-                TableColumn("Box") { Text(String($0.mapping.inside)).monospacedDigit() }.width(55)
+                }.width(min: 150, ideal: 170)
+                TableColumn("Inside port (box)") { Text(String($0.mapping.inside)).monospacedDigit() }.width(135)
                 TableColumn("State") { Text($0.state.capitalized).foregroundStyle(.secondary) }.width(65)
                 TableColumn("Owner", value: \.owner).width(55)
                 TableColumn("") { port in
@@ -28,7 +29,7 @@ struct PortsView: View {
                         Button { model.run(["ports", "remove", box.name, "--outside-port", String(port.mapping.outside)]) } label: {
                             Image(systemName: "minus.circle")
                         }.buttonStyle(.borderless).disabled(!model.canRunCommands)
-                            .help("Remove port \(port.mapping.outside)").accessibilityLabel("Remove port \(port.mapping.outside)")
+                            .help("Remove outside port \(port.mapping.outside)").accessibilityLabel("Remove outside port \(port.mapping.outside)")
                     }
                 }.width(25)
             }.tableStyle(.inset(alternatesRowBackgrounds: false)).scrollContentBackground(.hidden)
@@ -47,18 +48,18 @@ struct PortsView: View {
                     Button("Retry") { Task { await refresh() } }.disabled(isLoading)
                 }
             }
-            if let warning { ValidationMessage(text: warning) }
+            if current.isRunning, let warning { ValidationMessage(text: warning) }
             HStack(spacing: 10) {
-                TextField("Mac port", text: $draft.outside).accessibilityLabel("Mac port")
+                TextField("Outside port (Mac)", text: $draft.outside).accessibilityLabel("Outside port (Mac)")
                 Image(systemName: "arrow.right").foregroundStyle(.secondary)
-                TextField("Box port", text: $draft.inside).accessibilityLabel("Box port")
+                TextField("Inside port (box)", text: $draft.inside).accessibilityLabel("Inside port (box)")
                 Button("Add") {
                     if let mapping, model.run(["ports", "add", box.name, "--inside-port", String(mapping.inside), "--outside-port", String(mapping.outside)]) {
                         draft = PortDraft()
                     }
                 }.disabled(mapping == nil || duplicate || !model.canRunCommands || !hasLoaded || error != nil)
             }.textFieldStyle(.roundedBorder)
-            if duplicate { ValidationMessage(text: "That Mac port is already mapped.") }
+            if duplicate { ValidationMessage(text: "That outside port is already mapped.") }
             else if !draft.outside.isEmpty && !draft.inside.isEmpty && mapping == nil {
                 ValidationMessage(text: "Ports must be between 1 and 65535.")
             }
@@ -81,7 +82,7 @@ struct PortsView: View {
         }
         do {
             let list = try PortList.parse(await model.read(["ports", "list", box.name]))
-            ports = list.ports; warning = list.warning; error = nil; hasLoaded = true
+            ports = list.ports; warning = list.forwardingWarning(isRunning: current.isRunning); error = nil; hasLoaded = true
         } catch { self.error = error.localizedDescription }
     }
 }

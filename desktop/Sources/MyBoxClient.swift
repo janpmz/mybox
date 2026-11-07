@@ -3,12 +3,9 @@ import Foundation
 
 enum MyBoxClient {
     static func resolveExecutable() -> String? {
-        let override = UserDefaults.standard.string(forKey: "cliPath") ?? ""
         let bundled = Bundle.main.url(forResource: "cli-location", withExtension: "txt")
             .flatMap { try? String(contentsOf: $0, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines) }
-        let candidates = override.isEmpty
-            ? [bundled, "/usr/local/bin/mybox", "/opt/homebrew/bin/mybox"].compactMap { $0 }
-            : [override]
+        let candidates = [bundled, "/usr/local/bin/mybox", "/opt/homebrew/bin/mybox"].compactMap { $0 }
         return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 

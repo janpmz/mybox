@@ -193,7 +193,12 @@ extension Backend {
     func protectedStop(_ name: String) throws {
         let lock = try networkLock()
         defer { withExtendedLifetime(lock) {} }
-        let record = try managed(name)
+        try stopManagedBox(managed(name))
+    }
+
+    // Callers hold the network lock throughout stopping and any later deletion.
+    func stopManagedBox(_ record: BoxRecord) throws {
+        let name = String(record.id.dropFirst(namePrefix.count))
         let stop = {
             try self.stopForwarder(record)
             if record.state != "stopped" { _ = try self.run(["stop", record.id], capture: true) }

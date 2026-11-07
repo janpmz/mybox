@@ -114,6 +114,9 @@ class Completion(unittest.TestCase):
             "mybox enter doc": "mybox enter document-player-box ",
             "mybox enter player": "mybox enter document-player-box ",
             "mybox start doc": "mybox start document-player-box ",
+            "mybox del": "mybox delete ",
+            "mybox delete doc": "mybox delete document-player-box ",
+            "mybox delete web --y": "mybox delete web --yes ",
             "mybox resize doc": "mybox resize document-player-box ",
             "mybox resize web --disk": "mybox resize web --disk-size-gb ",
             "mybox resize web --mem": "mybox resize web --memory-gb ",
@@ -127,7 +130,7 @@ class Completion(unittest.TestCase):
             with self.subTest(command=command):
                 buffer, output = self.complete(command)
                 self.assertEqual(buffer, expected, output)
-        self.assertEqual(self.calls(), [["list", "--all", "--format", "json"]] * 6)
+        self.assertEqual(self.calls(), [["list", "--all", "--format", "json"]] * 7)
 
     def test_tab_lists_multiple_matches_and_handles_no_matches(self):
         self.save_names("document-player-box", "docs")
