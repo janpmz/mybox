@@ -1,0 +1,39 @@
+Tool: built-in imagegen
+Edit target: mybox-concept-blueprint-v4.png
+
+Use case: precise-object-edit.
+Asset type: MyBox README blueprint concept diagram.
+Input image: mybox-concept-blueprint-v4.png is the edit target and blueprint style reference.
+
+Improve the ENTIRE layout, spacing, alignment and relative sizes, and relocate the protection shield. Keep the same information, icons and classic deep blue blueprint appearance. This is a deliberate layout refinement; you may reposition and resize every diagram element. The current image has too much empty space above and inconsistent icon placement: fix that.
+
+COMPOSITION
+Use a balanced, centered three-column composition on a 1536 by 1024 landscape canvas.
+- Central column: one prominent double-line MyBox rectangle, approximately x=548..988, y=250..774.
+- Left column: Mac Files folder above Mac host laptop. Both centered on exactly the same vertical axis near x=280.
+- Right column: Internet cloud above LAN router. Both centered on exactly the same vertical axis near x=1256.
+- Align the folder and cloud as an upper row, centered near y=370. Align the laptop and router as a lower row, centered near y=660.
+- The four external icons should each occupy a comparable visual footprint, approximately 200..220 pixels wide and 120..140 pixels high. Keep optical weight consistent: do not let the router look tiny, the folder too large, or the laptop too small.
+- Use equal horizontal gaps from the central box to the left and right icons, and matching vertical separation on the left and right.
+- Center the overall drawing in the canvas, with balanced top and bottom margins. No giant empty region above the diagram.
+
+CAPTIONS
+Use consistently sized white sans-serif captions centered BELOW each of the FOUR external icons, with the same 22..28 pixel gap from the bottom of each icon:
+"Mac Files" under the folder, "Mac host" under the laptop, "Internet" under the cloud, and "LAN" under the router.
+All four captions use exactly the same font family, weight and size, approximately 36 pixels. The two upper captions share a baseline; the two lower captions share a baseline. No text inside these four icons.
+Inside the central box, preserve "MyBox" as a slightly larger title and "e.g. Node.js" beneath it, both horizontally centered, with comfortable vertical spacing.
+
+SHIELD
+Move the small protection shield from the RIGHT edge to the exact CENTER of the TOP edge of the MyBox rectangle.
+The shield must physically OVERLAP BOTH horizontal border lines, straddling the top edge, partly above and partly inside the rectangle. NOT floating above the box. Use a crisp white outline, about 60 pixels wide and 72 pixels tall. Its dark blue opaque interior must mask both border lines behind it, so the shield is visibly in the foreground. Keep the border lines on either side. Remove the old shield from the right border and make that border continuous.
+
+CONNECTIONS
+Preserve the original access meaning with exactly four outward arrows:
+- From the upper left edge of MyBox toward Mac Files: straight horizontal dashed pale cyan arrow, pointing left, with a white X close to MyBox.
+- From the lower left edge of MyBox toward Mac host: straight horizontal dashed pale cyan arrow, pointing left, with a white X close to MyBox.
+- From the upper right edge of MyBox toward Internet: straight horizontal solid white arrow, pointing right, with NO X.
+- From the lower right edge of MyBox toward LAN: straight horizontal dashed pale cyan arrow, pointing right, with a white X close to MyBox.
+Align upper arrows on the same horizontal level and lower arrows on the same horizontal level. Match arrowhead sizes, dash lengths, line weights and the X sizes. Give the three X symbols identical spacing from the central box border. Arrowheads end just short of each target icon. Keep connector lines clear of captions.
+
+STYLE AND CONTENT
+Preserve the deep Prussian blue background, subtle cyan drafting grid, restrained paper texture, clean white / pale cyan technical linework and flat blueprint style. Keep the grid subtle enough that icons and text are immediately legible. No red markup, no extra annotations, no legend, no outer Mac boundary, no title block, no new content. Exact visible text: "Mac Files", "Mac host", "MyBox", "e.g. Node.js", "Internet", "LAN".

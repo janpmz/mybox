@@ -99,7 +99,8 @@ Capture views: `window` (including the native title bar), `menu`, `create`, `cop
 `resize`, `ports`, `export`, `command`, `help`, and `compact`.
 Add `--demo-scenario stopped`, `many`, `empty`, `unknown`, or `error` to inspect
 edge cases. Scenarios only apply with `--demo`. Each capture process exits after writing its PNG.
-Preview mode is labeled and disables operations against real boxes.
+Interactive preview mode is labeled and disables operations against real boxes.
+Screenshot captures omit the preview labels.
 
 The CLI and desktop app stay in one repository, and the planned installer includes both. `desktop/` owns the
 app's sources, resources, icon generator, build, and tests. `Shared/BoxList.swift`

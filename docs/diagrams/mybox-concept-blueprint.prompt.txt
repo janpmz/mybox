@@ -1,0 +1,28 @@
+Tool: built-in imagegen
+Edit target: mybox-concept-v4.png
+
+Use case: style-transfer.
+Asset type: MyBox README concept diagram.
+Input image: /Users/janmetz/projects/mybox/docs/diagrams/mybox-concept-v4.png is the edit target.
+
+Restyle this exact diagram as a classic architectural / engineering blueprint. Keep its information, composition, positions, and generous spacing unchanged. Preserve the landscape 1536 by 1024 aspect ratio.
+
+Style: deep Prussian blue paper background, a subtle regular cyan drafting grid, crisp thin ivory-white and pale cyan technical linework. Very restrained paper texture. Precise engineered outlines instead of the existing soft antique illustration. Use clear technical drafting typography with excellent legibility, consistently sized according to the original hierarchy. Make the three blocked-path X marks bold bright white so they remain unmistakable on blue. Keep the shield as an outline, not a filled emblem.
+
+Preserve ALL of these:
+- Large rectangular Mac boundary on the left and center, labeled "Mac" at its upper left.
+- Folder inside its upper left area labeled "Files".
+- Laptop inside its lower left area with "Mac" on its screen.
+- Double-line MyBox rectangle inside the right portion of the Mac boundary, labeled "MyBox", with "e.g. Node.js" centered below it.
+- Small shield on the MyBox right boundary.
+- Internet cloud outside the Mac boundary at upper right, labeled "Internet".
+- LAN router outside the Mac boundary at lower right, labeled "LAN".
+- One solid arrow from MyBox right edge to the Internet cloud, pointing toward the Internet.
+- One dashed arrow from MyBox left edge toward Files, pointing left, with an X near MyBox.
+- One dashed arrow from MyBox left edge toward the laptop, pointing left, with an X near MyBox.
+- One dashed arrow from MyBox right edge toward the LAN router, pointing toward LAN, with an X near MyBox.
+Keep arrow direction, line routes, line styles, endpoints, icons, boundaries, and content unchanged.
+
+Exact visible text only: "Mac", "Files", "Mac", "MyBox", "e.g. Node.js", "Internet", "LAN".
+Avoid new captions, title blocks, dimensions, measurements, numbers, legends, decorative labels, watermarks, extra objects, glow, heavy gradients, drop shadows, 3D effects, and distressed or blurry lettering.
+This is a styling change only: make the existing drawing convincingly look like a carefully drawn blueprint.

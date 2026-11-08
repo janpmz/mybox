@@ -1,0 +1,42 @@
+Tool: built-in imagegen
+Edit target: mybox-operations-blueprint-v3.png
+
+Use case: precise-object-edit.
+Asset type: MyBox README operations blueprint.
+Input image: mybox-operations-blueprint-v3.png is the edit target.
+
+Refine this diagram's overall proportions and spacing, and make two caption changes. Preserve the established layout and meaning: enter at upper left, import below it at lower left, a single MyBox rectangle with one folder in the center, export on the right. Keep the deep blue blueprint paper, subtle cyan grid and white linework.
+
+LABEL CHANGES:
+- Change "Mac Terminal" to exactly "Terminal".
+- Change "New Copy" to exactly "Files".
+- Keep the lower-left caption "Files" and the central folder caption "/workspace".
+
+CONSISTENT ICON SIZING — ESSENTIAL:
+Use the SAME folder outline geometry, width, height and stroke thickness for ALL THREE folders: lower left, inside MyBox, and right. Treat them as three instances of the SAME icon, approximately 160 pixels wide by 106 pixels tall, including the folder tab. The central /workspace folder MUST NOT be larger than the other folders. Their outlines should visibly match.
+The terminal window should also occupy approximately 160 by 106 pixels, with the same outline stroke weight, so it has comparable visual weight to the folders.
+Keep a modest plus sign inside the right folder, as in the original.
+Use identical caption typography beneath all FOUR endpoint icons: "Terminal", "Files", "/workspace", "Files", approximately 30 pixels, regular/medium white sans-serif, centered, with identical 20-pixel gaps beneath icons. The central folder and right folder must share a horizontal centerline, and their captions must share a baseline.
+Reduce the three oversized fingerprint symbols to identical compact white icons, approximately 44 pixels wide by 54 pixels tall. Use the same 15-pixel gap between each fingerprint and the adjacent connector segments. They should be secondary to the folder and terminal icons.
+
+LAYOUT AND PROPORTIONS:
+Keep the canvas 1536 by 1024.
+Make the central double-border MyBox rectangle a little wider and less tall, approximately x=576..960, y=320..752 (384 by 432 pixels).
+Center the white shield on its top border, physically overlapping and masking BOTH border strokes, approximately 52 by 60 pixels.
+Keep "MyBox" centered near the top inside, but reduce its oversized title to approximately 44 pixels. Put only one folder below it, with "/workspace" beneath that folder.
+The left terminal and left folder should share a center axis near x=224. Upper terminal centered near y=412, lower folder near y=658. Keep comfortable separation between the upper caption and lower command.
+Central folder and right folder should be centered near y=558; right folder centered near x=1312. All three folders have the same dimensions.
+Use equal horizontal connector lengths to the left and right of MyBox where practical. Keep generous and consistent gaps between icons, arrows and borders. Everything should feel precisely aligned and optically balanced.
+
+COMMANDS AND CONNECTIONS:
+All three commands must use identical white monospace typography, approximately 30 pixels, centered above their arrows with the same vertical gap:
+"mybox enter" — upper left, one solid arrow pointing RIGHT into MyBox.
+"mybox import" — lower left, one solid arrow pointing RIGHT into MyBox.
+"mybox export" — right, one solid arrow pointing RIGHT out of MyBox toward the right Files folder.
+Exactly one right-pointing arrowhead per connector. No bidirectional arrows.
+Each connector has one small fingerprint centered on it, with clean line breaks around the fingerprint. Match line thickness and arrowhead sizes across all three.
+
+SHARED SECURITY HEADING:
+Keep "Touch ID or Password" above "Approve Each Operation", centered above the diagram, but reduce BOTH lines to approximately 30 pixels with comfortable line spacing. It should be a modest explanatory heading, not a huge title. Leave generous separation from the shield.
+
+Preserve the content and icon placement relationships while correcting the proportions. No red X, denial note, run-commands title, extra captions, extra icons, new arrows or extra folders. Do not introduce cyan diagram icons or arrows: only the background grid is cyan, while all diagram content is white.

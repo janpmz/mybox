@@ -1,0 +1,17 @@
+Tool: built-in imagegen
+Edit target: mybox-concept-blueprint-v5.png
+
+Use case: precise-object-edit.
+Asset type: MyBox README blueprint concept diagram.
+Input image: mybox-concept-blueprint-v5.png is the edit target.
+
+Make only these color and spacing refinements:
+1. Change the Mac Files folder outline from pale cyan to the exact same clean white used by the laptop, Internet cloud, router and MyBox border. Keep its shape, size and position unchanged.
+2. Make ALL four arrows pure white, matching the other diagram linework. The three blocked routes must remain dashed, and the Internet route must remain solid. All arrowheads must also be white. Preserve their current directions and horizontal alignment.
+3. Change the THREE X marks from white to a clear vivid red, approximately #FF5555. Keep the three X marks identical in size and stroke weight, about 30 by 30 pixels.
+4. Move those X marks farther away from the MyBox border, outward along their existing dashed paths. Put each X center approximately 72 pixels outside the nearest outer box edge, instead of the current cramped gap. On this 1536 by 1024 image, use approximate X centers (498,410), (498,649), (1037,649). The left two X marks must align vertically. Give all three X marks the same generous separation from the box.
+5. Leave a clean gap of about 15 pixels between each red X's outer edge and the neighboring white dashed segments on BOTH sides of the X. The X sits on the route but white strokes must not run behind or touch it. Continue the dashed path on its box side to the box edge, and on its icon side toward the arrowhead. Preserve a readable arrowhead at each icon.
+
+Keep everything else unchanged: the balanced three-column composition; all icon positions and sizes; every caption and its typography; "Mac Files", "Mac host", "MyBox", "e.g. Node.js", "Internet", "LAN"; the shield centered over and overlapping both top border lines; the double MyBox rectangle; the deep blue background, blue drafting grid and paper texture; and the 1536 by 1024 landscape dimensions.
+Only the BACKGROUND GRID remains blue/cyan. All diagram icons, labels, borders, arrows and the shield are WHITE, except the THREE X marks which are RED.
+No new text, icons, decorative elements, glow or redesign.

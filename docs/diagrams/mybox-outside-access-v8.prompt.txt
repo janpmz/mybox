@@ -1,0 +1,3 @@
+Reference: mybox-outside-access-v7.png
+
+One localized edit only. In the middle-left disk-access row remove the abstract green app tile and its “App” text. In its place duplicate the FIRST ROW'S exact outlined terminal window icon (three small dots in title bar and >_ prompt). Both rows should have visually identical terminal symbols at the same horizontal position and size. No caption beneath the second terminal. Keep “mybox enter” beneath the first terminal, and keep “Disk access” on the second row's dashed path. Preserve the rest of this image exactly, including visual style, all other labels, background, layout, line directions and colors.

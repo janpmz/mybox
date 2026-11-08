@@ -1,0 +1,14 @@
+Tool: built-in imagegen
+Edit target: mybox-concept-blueprint-v2.png
+
+Use case: precise-object-edit.
+Asset type: MyBox README blueprint concept diagram.
+Input image: mybox-concept-blueprint-v2.png is the edit target.
+
+Make exactly two edits, following the user's requested layout changes:
+1. Remove the standalone "Mac" label in the upper left around x=116, y=295. Restore the blue background and cyan grid seamlessly. Keep the other "Mac" label INSIDE the laptop unchanged.
+2. Move the entire Internet cloud, including the word "Internet", straight down by about 230 pixels. Keep the cloud's size, shape, horizontal position, white outline and typography unchanged. Its new bounds should be approximately x=1233..1462 and y=352..491, with its label centered around y=440. Connect MyBox to the relocated cloud with one straight horizontal solid white arrow at y=440 from the MyBox right edge (x=1020) to the cloud's left edge (x=1230), pointing right into the cloud. Completely remove the old elbow-shaped Internet connector and old cloud from the upper right, restoring their background and grid.
+
+Preserve EVERYTHING ELSE: the MyBox double border and shield, the labels "MyBox" and "e.g. Node.js", the Files folder and label, the laptop and its "Mac" label, the LAN router and "LAN" label, all three blocked-path X marks, all three dashed arrows and their directions and endpoints. Preserve all these objects' positions and sizes. Keep the deep blue background, cyan drafting grid, subtle paper texture, line weights and overall style unchanged. Keep 1536 by 1024 landscape dimensions.
+
+No red annotation marks, no extra labels, no extra arrows or objects, and no outer Mac boundary. This is a minimal layout edit, not a redesign.

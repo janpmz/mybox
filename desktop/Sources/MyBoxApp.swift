@@ -38,13 +38,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @MainActor
+private final class BoxesWindow: NSWindow {
+    override func resignKey() {
+        super.resignKey()
+        // The custom filter outline should also disappear when another window is clicked.
+        if let editor = firstResponder as? NSTextView, editor.isFieldEditor {
+            makeFirstResponder(nil)
+        }
+    }
+
+    override func sendEvent(_ event: NSEvent) {
+        // Blank areas and buttons don't necessarily take keyboard focus on macOS.
+        // End filter editing before forwarding an outside click to its normal target.
+        if [.leftMouseDown, .rightMouseDown, .otherMouseDown].contains(event.type),
+           let editor = firstResponder as? NSTextView, editor.isFieldEditor,
+           let field = editor.delegate as? NSTextField, field.window === self,
+           !field.bounds.contains(field.convert(event.locationInWindow, from: nil)) {
+            makeFirstResponder(nil)
+        }
+        super.sendEvent(event)
+    }
+}
+
+@MainActor
 final class AppController: NSObject, NSWindowDelegate {
     static let shared = AppController()
     private var window: NSWindow?
     func showWindow() {
         if window == nil {
             let view = NSHostingView(rootView: BoxesView(model: AppModel.shared))
-            let created = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1160, height: 370),
+            let created = BoxesWindow(contentRect: NSRect(x: 0, y: 0, width: 1160, height: 370),
                                    styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
             created.title = "MyBox"
             created.titlebarAppearsTransparent = true
@@ -65,6 +88,8 @@ final class AppController: NSObject, NSWindowDelegate {
         }
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
+        // Opening the list shouldn't automatically start editing the filter.
+        window?.makeFirstResponder(nil)
     }
 
     private func centerTitle(in window: NSWindow) {

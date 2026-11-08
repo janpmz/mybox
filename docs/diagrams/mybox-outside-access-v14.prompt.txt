@@ -1,0 +1,3 @@
+Reference: mybox-outside-access-v13.png
+
+Edit the supplied README diagram. In the right-hand double-lined rectangle, erase the disk and its “virtual disk” label and center the single word “MyBox” in their place in the original serif type. Completely remove the two ownership lines ABOVE the rectangle; leave clean paper there. The rest of the drawing stays as in the reference, including the Your Mac frame, terminals, labels and connections. The only text inside the double-lined rectangle must be “MyBox”.

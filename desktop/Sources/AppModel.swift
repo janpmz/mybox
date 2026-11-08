@@ -30,6 +30,7 @@ final class AppModel: ObservableObject {
     @Published var boxToDelete: Workspace?
     @Published private(set) var pendingLifecycle: [String: String] = [:]
     let isDemo: Bool
+    var showsPreviewLabels: Bool { isDemo && !CommandLine.arguments.contains("--screenshot") }
     private var refreshTask: Task<Void, Never>?
 
     init(demo: Bool = CommandLine.arguments.contains("--demo")) {

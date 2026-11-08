@@ -1,0 +1,3 @@
+Reference: mybox-outside-access-v6.png
+
+Make one local edit to the supplied README figure: replace the folded-corner script document and its “script.sh” caption (left of the dashed Disk access line) with a generic standalone macOS application icon and the simple caption “App”. Use a muted sage rounded-square app tile with a small abstract geometric glyph, matching the technical pen strokes. No window around the tile, no Finder face, no file or code glyph. Keep its scale and position. Preserve all other ink, lettering, diagram arrows, crosses, boundaries, spacing, aspect ratio, colors and ivory paper texture exactly. Do not add text.

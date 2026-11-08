@@ -1,0 +1,47 @@
+Tool: built-in imagegen
+Edit target: mybox-browser-blueprint-v2.png
+
+Use case: precise-object-edit.
+Asset type: MyBox README browser blueprint.
+Input image: mybox-browser-blueprint-v2.png is the edit target.
+
+Correct the port explanation and simplify the arrows, with a cleaner layout. Keep the existing deep blue paper, subtle cyan drafting grid, crisp white outlines, white text and white arrows. Keep 1536 by 1024 landscape dimensions.
+
+ESSENTIAL CHANGES
+1. Restore BOTH strokes of the MyBox border to a continuous CLOSED rectangle. No port opening, gap, gate, notch or cutout. The permitted arrow simply crosses the uninterrupted border. Preserve only the intentional shield overlay at the top center.
+2. Replace "Allowed: 8080" with the exact label "Allowed: 8766". This label describes the OUTSIDE browser port and must sit OUTSIDE MyBox, over the arrow between Browser and MyBox. Port 8080 appears only inside MyBox and in the exact command example.
+3. Keep only ONE solid connection arrow, pointing RIGHT from Browser into App. Completely REMOVE the left-pointing response arrow. No bidirectional arrow.
+4. Completely REMOVE the existing elbow-shaped blocked path from beneath the Browser and remove its "Other Inside Ports" caption. Replace it with the clean separate straight path specified below.
+
+REBALANCE SPACING
+Make Browser and App windows exactly the same size, about 340 pixels wide by 230 pixels high, with matching strokes, corner radii and title bars.
+Browser approximately x=140..480, y=400..630.
+App approximately x=1010..1350, y=400..630.
+MyBox approximately x=910..1450, y=285..775. Keep its two border strokes continuous along all four sides. White shield centered over the TOP border, overlapping both strokes; "MyBox" centered inside above App.
+This leaves ample space between Browser and MyBox for two clearly separated connection rows and their labels.
+
+APPROVED CONNECTION — UPPER ROW
+One straight solid WHITE arrow around y=505, starting just outside the Browser right edge and ending just before the App left edge, pointing RIGHT. It crosses the intact MyBox border without erasing any of the border.
+Place "Allowed: 8766" above this arrow, centered in the free area OUTSIDE the box, around x=695, y=460. No label overlaps any window or border.
+
+BLOCKED CONNECTION — LOWER ROW
+A completely separate straight horizontal dashed WHITE path around y=605, starting just outside the Browser right edge and pointing toward MyBox.
+It STOPS at a RED X centered near x=830, y=605, approximately 80 pixels BEFORE the left MyBox border. Use a 32-pixel red #FF5555 X. Leave a clear gap between the last dash and the X.
+No continuation beyond the X, no penetration of the box border, and no connection to App. Do not bend this path beneath Browser. Do not place it near the outside-port caption.
+Place the exact label "Other Ports" above the dashed path, centered around x=680, y=565, with clean separation from both the solid arrow and the dashed path. This path refers to other unconfigured routes to MyBox, not a claim that unrelated Mac services are blocked.
+The two connection rows should read clearly: allowed outside port 8766 reaches the app; other unconfigured ports stop before the box.
+
+PRESERVE ALL EXISTING CORRECT INFORMATION
+- The exact top command, centered on one line:
+"mybox create my-project --inside-port 8080 --outside-port 8766"
+- Browser window title "Browser".
+- Browser address "localhost:8766".
+- Two modest page-content lines inside Browser.
+- Below Browser: "--outside-port 8766", then the smaller note "Bound to 127.0.0.1".
+- MyBox title "MyBox".
+- App window title "App".
+- Address "0.0.0.0:8080" inside App.
+- Below App but inside MyBox: "--inside-port 8080".
+Match option-caption baselines and font sizes. Keep titles, addresses and captions readable and well spaced. Use white sans-serif for labels and white monospace for commands and addresses.
+
+No new title, approval/fingerprint symbols, gate, open border, return arrow, extra paths, fake port numbers, outer Mac frame, green accents, or extra explanatory text. The only red element is the one blocked-path X.

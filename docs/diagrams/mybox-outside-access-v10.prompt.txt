@@ -1,0 +1,7 @@
+Reference: mybox-outside-access-v9.png
+
+Precisely edit the right-hand box in this technical diagram. Above its double-line border, arrange exactly TWO centered lines in this order: first the small lowercase words "owned by", then below them the existing larger "macOS user: _mybox". Both lines must be OUTSIDE and ABOVE the inner rectangle; the underscore must be visible. Allow enough space for the two lines by shifting the top of the inner rectangle down slightly if needed.
+
+Inside that rectangle, erase the title "MyBox", the old mechanical hard-drive drawing and the old ownership caption entirely. The ONLY content inside the rectangle is ONE centered, simple, completely flat 2D floppy-disk pictogram: straight-on square silhouette with one clipped upper corner, two small flat rectangular cutouts suggesting its shutter and label, drawn in uniform graphite pen strokes on paper. Icon only, no writing on it, no word Disk, no caption, no side faces, thickness, shadows, stacked lines, cylinder, mechanical platter, perspective or 3D effects.
+
+Keep the shield on the border. Keep the entire rest of the figure as in the reference: Your Mac, both identical terminal icons, mybox enter, fingerprint, Touch ID or password, Disk access, arrows, blocked paths, LAN / internet, pale ivory paper, thin linework and original landscape aspect. Do not add text.

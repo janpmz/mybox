@@ -1,0 +1,3 @@
+Reference: mybox-outside-access-v12.png
+
+Change only the interior of the right-hand double-outlined box in this exact diagram. Reduce the existing flat top-view mechanical hard-drive symbol to roughly 60% of its current width and height (about one-sixth of the box width). Keep the same casing, platter and read/write arm. Add the exact lowercase text “virtual disk” centered immediately ABOVE the icon, with a small comfortable gap. Use the same serif lettering as the diagram labels. Center the icon and label together as a compact group inside the box, with ample surrounding blank paper. Retain the equal-size two-line ownership label above the box and every other element of the original figure exactly. No additional text or graphics.

@@ -1,0 +1,54 @@
+Tool: built-in imagegen
+Edit target: mybox-browser-v3.png
+Style reference: mybox-operations-blueprint-v4.png
+
+Use case: style-transfer.
+Asset type: MyBox README browser and port-forwarding blueprint.
+Input image 1: mybox-browser-v3.png is the EDIT TARGET and source of the information.
+Input image 2: mybox-operations-blueprint-v4.png is the STYLE REFERENCE ONLY. Do not copy its commands, fingerprints, folders, approval heading or layout.
+
+Restyle and refine the browser figure to match the new blueprint figures. Preserve the original browser/app connection information and exact port numbers and command text. Use 1536 by 1024 landscape dimensions.
+
+STYLE
+Match image 2's deep Prussian blue paper, subtle cyan drafting grid and restrained paper texture, crisp WHITE icons, white arrows, consistent white sans-serif labels, and white double-line MyBox rectangle. Command options, addresses and the command example use clean white monospace. The background grid may be cyan; all diagram content is WHITE. No old ivory paper, gray/green ink, serif lettering, red X marks or colored arrows.
+
+LAYOUT AND PROPORTIONS
+Use a balanced two-sided layout with a Browser window on the LEFT and an equally sized App window INSIDE MyBox on the RIGHT.
+Remove the large outer Mac boundary and its "Mac" label, consistent with the newer diagrams. No outer host frame and no main title.
+The Browser and App windows must be identical in width, height, outline weight, corner radius and title-bar size, approximately 320 by 220 pixels. Their tops, bottoms, and title bars must align horizontally.
+Place the Browser around x=150..470, y=400..620.
+Place the App around x=1030..1350, y=400..620.
+Place the MyBox double-line rectangle around x=940..1440, y=275..755, enclosing the App and its port option comfortably.
+Center "MyBox" at the top INSIDE the box, using a modest 44-pixel white title.
+Move the existing shield to the CENTER of MyBox's TOP edge, physically overlapping and masking BOTH border strokes. It must sit across the lines, partly above and partly inside, not float above. Use the same white outlined shield style and scale as image 2.
+Keep comfortable margins and generous gaps around every label. Balance the overall composition without excess empty space above.
+
+BROWSER
+Retain a simple browser-window outline with three small white title-bar dots and the exact title "Browser".
+Show the exact address "localhost:8766" in a clearly legible address field inside the browser.
+Below the address field, use only two or three short fine white lines to suggest a web page, matching the linework style.
+Below the Browser window, centered, show the exact option "--outside-port 8766".
+Below that, in slightly smaller white type, show the exact note "Bound to 127.0.0.1".
+The binding note must clearly belong to the Browser side.
+
+APP
+Retain a matching window outline with three small white title-bar dots and the exact title "App".
+Show the exact address "0.0.0.0:8080" centered inside this window, using the SAME monospace font size as the browser's address.
+Below the App window, but still INSIDE the MyBox border, centered, show the exact option "--inside-port 8080".
+The two port-option captions must have the same font size, weight and aligned baselines.
+
+CONNECTIONS
+Preserve TWO distinct parallel solid white horizontal arrows between Browser and App:
+- Upper arrow points RIGHT from the Browser toward the App.
+- Lower arrow points LEFT from the App toward the Browser.
+These show request and response. Use matching white line weights, matching arrowhead sizes, and generous separation between arrows.
+The arrows cross the left boundary of the MyBox rectangle and terminate just short of the window edges. Do not put the shield on either arrow.
+Do not add fingerprints, approval symbols or Touch ID text: this figure depicts the configured browser connection.
+
+COMMAND EXAMPLE
+In the lower margin, centered around y=865, include this EXACT command on ONE readable line:
+"mybox create my-project --inside-port 8080 --outside-port 8766"
+Use modest white monospace, approximately 26 pixels, with comfortable horizontal margins. Do not wrap or change any flag, space, name or port number.
+
+Exact visible text only: "Browser", "localhost:8766", "--outside-port 8766", "Bound to 127.0.0.1", "MyBox", "App", "0.0.0.0:8080", "--inside-port 8080", and the specified complete command.
+No added headings, explanatory paragraphs, LAN or Internet icons, folders, legend, denial notes or other content.

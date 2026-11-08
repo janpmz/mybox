@@ -1,0 +1,39 @@
+Tool: built-in imagegen
+Edit target: mybox-browser-blueprint.png
+
+Use case: precise-object-edit.
+Asset type: MyBox README browser blueprint, making allowed inside ports explicit.
+Input image: mybox-browser-blueprint.png is the edit target.
+
+Revise this blueprint to move the command to the top and make the difference between an allowed inside port and other blocked inside ports visually obvious. Preserve its deep blue paper, subtle cyan drafting grid, white sans-serif labels, white icons and arrows, double MyBox border and shield overlapping the top border. Red is used ONLY for a blocked-path X. Keep 1536 by 1024 landscape dimensions.
+
+1. COMMAND AT TOP
+Move the entire bottom command to the TOP of the figure, centered around y=130, on a single line. Exact text:
+"mybox create my-project --inside-port 8080 --outside-port 8766"
+Use readable white monospace, roughly 26 pixels. Remove the old bottom copy completely, restoring the blue grid. Leave generous space between the command and the diagram.
+
+2. CONSISTENT WINDOWS AND SPACING
+Use equally sized Browser and App windows, the same width, height, stroke weight, title-bar height and corner radius, approximately 350 by 230 pixels. Place Browser left around x=130..480 and App right around x=1010..1360, aligned at top y=380 and bottom y=610.
+Keep "Browser" in the left title bar, "localhost:8766" in its address field, and two short white page-content lines.
+Keep "App" in the right title bar and "0.0.0.0:8080" centered inside.
+Keep MyBox enclosing the right window, approximately x=860..1440, y=285..800, with "MyBox" above the App. Keep the shield centered across both top border lines.
+Below the Browser retain "--outside-port 8766" and the smaller note "Bound to 127.0.0.1". Below the App, inside the box, retain "--inside-port 8080". Match port-option font sizes and baselines.
+
+3. A VISIBLE ALLOWED PORT OPENING
+Make a deliberate opening in BOTH vertical strokes of the MyBox LEFT boundary where the two permitted arrows cross, approximately y=450..560. Terminate the two border strokes neatly above and below this opening, so it visibly reads as an intentional passage through the protected boundary.
+Draw two solid WHITE horizontal arrows through this SAME opening:
+- Upper arrow from Browser RIGHT into App.
+- Lower arrow from App LEFT back into Browser.
+Maintain clear separation and equal arrowhead sizes. They must be connected from the Browser to the App, not point to an unrelated symbol.
+Place the exact white label "Allowed: 8080" above this opening and the upper arrow, clearly associated with the opening, without covering the border, windows, arrow or other labels. Use modest roughly 27-pixel white type.
+This is the INSIDE port explicitly enabled by --inside-port 8080. The outside browser port remains 8766. Do not swap them.
+
+4. OTHER INSIDE PORTS ARE BLOCKED
+Below the two solid arrows, draw a separate dashed WHITE path originating from the lower-right edge of Browser. Route it down through the space between Browser and MyBox, then right toward a CLOSED part of MyBox's left boundary, around y=735.
+The path must STOP at a RED X before the CLOSED border, leaving a clearly visible gap from the border. The X should be about 30 by 30 pixels, #FF5555. No continuation through the border and no line into the App.
+Label this separate blocked path exactly "Other Inside Ports", with clear spacing from the dashed line, browser port caption, MyBox boundary and red X. Use the same modest white type as "Allowed: 8080".
+Do not put an X on the permitted 8080 connection.
+
+The visual story is: localhost:8766 forwards to the configured inside port 8080; requests to other unconfigured INSIDE ports are blocked. Do not imply every other port on the Mac is blocked, and do not imply the browser requires Touch ID.
+
+Keep all text readable and prevent collisions. Do not add fingerprints, approval text, padlocks, router/cloud icons, extra windows, fake port numbers, outer Mac boundaries, green lines, oversized titles or footer text. The only new labels are "Allowed: 8080" and "Other Inside Ports".

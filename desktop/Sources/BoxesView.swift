@@ -67,7 +67,7 @@ struct BoxesView: View {
             Text("Boxes").font(.system(size: 16, weight: .semibold))
             Text("\(model.workspaces.filter(\.isRunning).count) running")
                 .font(.system(size: 13)).foregroundStyle(AppTheme.secondary)
-            if model.isDemo { Text("Preview").font(.caption).foregroundStyle(AppTheme.secondary) }
+            if model.showsPreviewLabels { Text("Preview").font(.caption).foregroundStyle(AppTheme.secondary) }
             Spacer(minLength: 24)
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").font(.system(size: 15)).accessibilityHidden(true)
@@ -188,9 +188,9 @@ struct BoxesView: View {
         VStack(spacing: 0) {
             Hairline()
             HStack(spacing: 12) {
-                Circle().fill(model.connectionError != nil || !model.hasLoaded || model.isDemo ? AppTheme.stopped : AppTheme.running)
+                Circle().fill(model.connectionError != nil || !model.hasLoaded || model.showsPreviewLabels ? AppTheme.stopped : AppTheme.running)
                     .frame(width: 6, height: 6).accessibilityHidden(true)
-                Text(model.isDemo ? "Preview data" : model.connectionError != nil ? "Connection unavailable" : model.hasLoaded ? "Connected to MyBox" : "Connecting…")
+                Text(model.showsPreviewLabels ? "Preview data" : model.connectionError != nil ? "Connection unavailable" : model.hasLoaded ? "Connected to MyBox" : "Connecting…")
                 Spacer()
                 Text("Running boxes: \(model.hasLoaded ? WorkspaceTotals(boxes: model.workspaces).runningMemory : "—") RAM")
                     .help("Configured memory assigned to running boxes, not measured memory use.")
@@ -221,18 +221,29 @@ struct PortTag: View {
     let isRunning: Bool
     var isEnabled: Bool
     var body: some View {
-        Link(destination: mapping.url) {
-            HStack(spacing: 5) {
-                Text("localhost:\(String(mapping.outside))").foregroundStyle(isRunning ? AppTheme.accent : AppTheme.secondary)
-                Text("→ \(String(mapping.inside))").foregroundStyle(AppTheme.secondary)
-                if isRunning { Image(systemName: "arrow.up.right.square").foregroundStyle(AppTheme.accent) }
-            }.font(.system(size: 12, design: .monospaced)).fixedSize()
-                .padding(.horizontal, 8).padding(.vertical, 5)
-                .background(isRunning ? AppTheme.activePort : AppTheme.inactivePort, in: RoundedRectangle(cornerRadius: 5))
-                .contentShape(RoundedRectangle(cornerRadius: 5))
-        }.buttonStyle(FlatActionStyle()).disabled(!isEnabled)
-            .help("Open \(mapping.url.absoluteString)\(isRunning ? "" : " (box is stopped)")")
-            .accessibilityLabel("Open localhost:\(mapping.outside), forwarded to port \(mapping.inside)")
+        Group {
+            if isEnabled {
+                Link(destination: mapping.url) { tag }
+                    .buttonStyle(FlatActionStyle())
+                    .help("Open \(mapping.url.absoluteString)\(isRunning ? "" : " (box is stopped)")")
+                    .accessibilityLabel("Open localhost:\(mapping.outside), forwarded to port \(mapping.inside)")
+            } else {
+                // Preview mappings remain legible without enabling browser actions.
+                tag.accessibilityElement(children: .ignore)
+                    .accessibilityLabel("localhost:\(mapping.outside), forwarded to port \(mapping.inside)")
+            }
+        }
+    }
+
+    private var tag: some View {
+        HStack(spacing: 5) {
+            Text("localhost:\(String(mapping.outside))").foregroundStyle(isRunning ? AppTheme.accent : AppTheme.secondary)
+            Text("→ \(String(mapping.inside))").foregroundStyle(AppTheme.secondary)
+            if isRunning { Image(systemName: "arrow.up.right.square").foregroundStyle(AppTheme.accent) }
+        }.font(.system(size: 12, design: .monospaced)).fixedSize()
+            .padding(.horizontal, 8).padding(.vertical, 5)
+            .background(isRunning ? AppTheme.activePort : AppTheme.inactivePort, in: RoundedRectangle(cornerRadius: 5))
+            .contentShape(RoundedRectangle(cornerRadius: 5))
     }
 }
 

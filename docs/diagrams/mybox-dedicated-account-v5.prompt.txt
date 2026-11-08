@@ -1,0 +1,7 @@
+Reference: mybox-dedicated-account-v4.png
+
+Edit the supplied MyBox README figure. Preserve its quiet cream paper, fine olive-black linework, serif text, wide proportions and overall three-part layout. The picture shows a program, the service it calls and the disk the service manages.
+
+Use the exact left boundary label “Your macOS user”. Inside that boundary keep the terminal pictogram and shorten its command to “> mybox”. Retain a single arrow from the terminal to the outside edge of the central service rectangle. The right boundary label stays “macOS user _mybox”, with the underscore clearly visible.
+
+Redraw the inside of the central rectangle as a collection of three equally important, independent functions. Keep the heading “MyBox service”. Below it, arrange three evenly spaced pictograms like items on a shelf: (1) a front-facing square box with a small power symbol, with the label “Start / stop boxes”; (2) a terminal prompt symbol with the label “Open shells”; (3) a file with a small pair of opposing transfer indicators, with the label “Transfer files”. Leave clear blank space between the functions: NO connecting lines, arrows, step numbers, bullets, or progression inside the service. Put each short label directly below its icon. Do not add numbers to the illustration. Keep the small flat hard-drive icon, with its lowercase “virtual disk” label above it, to the right of the service in the same _mybox frame. Preserve the simple service-to-disk connector outside the service. No other text.

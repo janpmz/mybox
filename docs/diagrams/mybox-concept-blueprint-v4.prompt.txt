@@ -1,0 +1,14 @@
+Tool: built-in imagegen
+Edit target: mybox-concept-blueprint-v3.png
+
+Use case: text-localization.
+Asset type: MyBox README blueprint concept diagram.
+Input image: mybox-concept-blueprint-v3.png is the edit target.
+
+Change only the labels associated with the folder and laptop on the left:
+1. Remove the word "Files" from INSIDE the folder, restoring the blue background and cyan grid there. Add the exact text "Mac Files" centered immediately BELOW the folder outline, with a comfortable small gap. The folder ends around y=526, so place the new label around y=555..587, centered at x=273.
+2. Remove the word "Mac" from INSIDE the laptop screen, restoring the blue background and cyan grid there. Add the exact text "Mac host" centered immediately BELOW the laptop, with a comfortable small gap. The laptop ends around y=756, so place the new label around y=781..813, centered at x=288.
+
+Use the existing white sans-serif blueprint typography, approximately the same font size as the "LAN" caption. Match the style and spacing of that caption. Exact capitalization: "Mac Files" and "Mac host". Each new label must be a single line OUTSIDE and BELOW its icon. The folder interior and laptop screen should have no text.
+
+Keep every other element unchanged: icon shapes, sizes and locations; the MyBox double border and shield; "MyBox", "e.g. Node.js", "Internet" and "LAN"; all three blocked-path X marks; all dashed and solid arrows, their routes, arrowheads and endpoints; the deep blue background, cyan drafting grid and paper texture. Keep the 1536 by 1024 landscape dimensions and current overall composition. Do not add any other content or reintroduce the outer Mac boundary.

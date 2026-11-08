@@ -1,0 +1,12 @@
+Tool: built-in imagegen
+Edit target: mybox-concept-blueprint.png
+
+Use case: precise-object-edit.
+Asset type: MyBox README blueprint concept diagram.
+Input image: mybox-concept-blueprint.png is the edit target.
+
+Remove ONLY the large outer rectangular Mac boundary: the white rectangle extending approximately from x=93 to x=1080 and y=256 to y=833 on this 1536 by 1024 image. Remove all four sides of this single outer rectangle completely. Seamlessly restore the blue paper and continuous cyan grid behind those strokes.
+
+Keep the standalone "Mac" label at the upper left exactly as it is. Preserve the smaller double-line MyBox rectangle, shield, folder, laptop, router, Internet cloud, all seven existing text labels, all three X marks, and all four arrows exactly as shown. Do not remove or alter any portion of the solid Internet arrow or dashed LAN arrow where it crosses the removed outer boundary.
+
+Keep all object positions, text, dimensions, typography, colors, line weights, background, and grid unchanged. This is a minimal removal edit only. Do not rearrange anything, do not add anything, and do not remove the MyBox rectangle.

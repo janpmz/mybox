@@ -1,0 +1,12 @@
+Tool: built-in imagegen
+Edit target: mybox-operations-blueprint-v2.png
+
+Use case: text-localization.
+Asset type: MyBox README operations blueprint.
+Input image: mybox-operations-blueprint-v2.png is the edit target.
+
+Make exactly two label edits:
+1. Replace "Original Files" beneath the lower-left folder with the exact text "Files". Keep the caption centered beneath the folder at its existing baseline, using exactly the same white typeface, size and weight.
+2. Add the exact caption "/workspace" centered BELOW the single folder INSIDE MyBox. Use the same white caption font size and weight as "Files" and "New Copy". Keep it on one line, with a small gap beneath the folder matching the other folder captions. Spell it exactly "/workspace", all lowercase with the leading slash. This is the actual directory name inside the box.
+
+Keep everything else unchanged: all icon positions and sizes; the central MyBox double border and top-overlay shield; "MyBox"; the approval heading; all three command labels and fingerprint icons; "Mac Terminal" and "New Copy"; all three right-pointing one-way arrows; the white linework; the deep blue background, cyan grid and texture; and the 1536 by 1024 dimensions. Do not add any other content, rearrange the layout, reintroduce removed titles or denial notes, or add arrowheads.

@@ -1,0 +1,12 @@
+Tool: built-in imagegen
+Edit target: mybox-concept-blueprint-v6.png
+
+Use case: text-localization.
+Asset type: MyBox README blueprint concept diagram.
+Input image: mybox-concept-blueprint-v6.png is the edit target.
+
+Make exactly ONE text correction: change the caption "Mac host" below the laptop at lower left to "Mac Host", capitalizing the H in Host. The exact replacement text is "Mac Host".
+
+Preserve that caption's font family, size, weight, white color, baseline and horizontal centering. Match the capitalization style of the existing "Mac Files" caption. Do not change "Mac Files" or any other text.
+
+Keep EVERYTHING else unchanged: all icon shapes, positions, sizes, white linework and arrows, red X marks and their spacing, the double-line MyBox border, the shield overlapping the top center of the border, all other labels, the deep blue blueprint background, grid and texture, and the 1536 by 1024 landscape dimensions. This is a single-letter capitalization correction only.

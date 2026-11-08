@@ -65,7 +65,7 @@ struct MenuBarView: View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Text("MyBox").font(.system(size: 14, weight: .semibold))
-                if model.isDemo { Text("Preview").font(.caption).foregroundStyle(AppTheme.secondary) }
+                if model.showsPreviewLabels { Text("Preview").font(.caption).foregroundStyle(AppTheme.secondary) }
                 Spacer()
                 Button { AppController.shared.showWindow(); model.sheet = .create } label: { ActionIcon(symbol: "plus") }
                     .buttonStyle(FlatActionStyle()).foregroundStyle(AppTheme.accent)
@@ -103,7 +103,9 @@ struct MenuBarView: View {
             Hairline()
             HStack {
                 Button { AppController.shared.showWindow() } label: {
-                    Label("Open MyBox", systemImage: "macwindow").padding(.vertical, 6)
+                    Label("Open MyBox", systemImage: "macwindow")
+                        .padding(.horizontal, 8).frame(height: 28)
+                        .contentShape(RoundedRectangle(cornerRadius: 4))
                 }.buttonStyle(FlatActionStyle()).help("Open the full MyBox window")
                 Spacer()
                 Menu { AppActions(model: model) } label: { ActionIcon(symbol: "ellipsis.circle") }

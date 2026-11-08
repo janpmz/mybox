@@ -1,0 +1,18 @@
+Style reference: mybox-dedicated-account.png
+
+Create a completely redrawn horizontal technical figure for the MyBox README. The reference image supplies only the paper color, serif typography, modest accent ink and fine rules. This drawing must explain which programs run under a dedicated macOS account and distinguish them from the files it owns. Flat, clean, legible editorial diagram, ~1.9:1 aspect. Generous margins, strong orderly typesetting, no title banner.
+
+On the LEFT, a narrow area: label “Your Mac account” above one small flat terminal icon labeled “mybox”. One thin rightwards arrow from that terminal goes specifically to the MyBox service on the right. The left terminal remains OUTSIDE the account frame.
+
+On the RIGHT, taking up about 76% of the figure, make one thin double-line account frame, titled exactly “Dedicated macOS account  _mybox”. Retain the visible underscore. Arrange three carefully aligned rows within it, legible when reduced to README width. First two rows are simple typographic groupings with a heading and a short set of separate lines. The last row is a narrow storage strip, visually distinct. Use the EXACT copy below; semantically group the labels as specified. Use line breaks where needed. No additional copy.
+
+First row heading “Background services”. Under it two columns:
+“MyBox service” with subordinate text “Receives commands”
+“Container services” with subordinate text on two lines “Containers and machines” and “Images and virtual networks”.
+
+Second row heading “When needed”. Under it two columns of labels:
+left: “Box commands and file transfers” / “Access approval requests”
+right: “Network bridge at startup” / “Linux virtual machine for each box” / “Port forwarding on enabled ports”
+These are five separate functions; render as neat parallel items with no inserted slashes or numbering. The Linux VM refers to its host process; don't draw any Linux apps.
+
+Bottom row, divided by a thin horizontal line: a small FLAT hard-drive pictogram and the text “Owns the virtual disks”. Outside the frame, a separate dashed route from Your Mac account labelled “Direct disk access” ends in a muted red X just BEFORE it could reach this disk row. Distinguish it clearly from the command arrow at the top. Put all labels in their own whitespace without crossing any connector. Two small pictograms total (terminal and disk), no clipart, no decorative UI, no other text.

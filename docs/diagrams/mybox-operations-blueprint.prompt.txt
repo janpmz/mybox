@@ -1,0 +1,49 @@
+Tool: built-in imagegen
+Style reference: mybox-concept-blueprint-v7.png
+
+Use case: style-transfer.
+Asset type: second MyBox README blueprint diagram, explaining import, export and enter with mandatory approval.
+Input image: mybox-concept-blueprint-v7.png is the STYLE REFERENCE. Create a companion figure using its exact visual language, replacing the diagram's subject and layout with the specification below.
+
+STYLE
+Match the reference's deep Prussian blue paper, subtle cyan square drafting grid and restrained texture, clean WHITE outline icons, white sans-serif labels, white arrows, double-line MyBox rectangle and white shield overlapping both top border lines. Use red #FF5555 only for one denial X. All diagram linework must be WHITE, never cyan. All comparable labels have consistent capitalization, size, weight and spacing. Preserve the 1536 by 1024 landscape format. Crisp, balanced and spacious; no giant empty top margin.
+
+CONTENT AND STRUCTURE
+This figure explains three separate operations, in three aligned horizontal rows, with the Mac on the LEFT and one tall protected MyBox on the RIGHT. These are alternative operations, not a three-step sequence. All three commands are run on the Mac. A fresh Touch ID or Mac login password approval is required before each file transfer or each new shell session.
+Use three columns:
+LEFT: centered near x=250, heading "Mac Host", with a source/destination icon per row.
+CENTER: broad connector area x=370..1120, with command labels and an individual fingerprint symbol on each connector to indicate approval.
+RIGHT: a tall double-line rectangle about x=1090..1440, y=170..900. Title "MyBox" centered inside near the top. Shield centered on the TOP edge, physically overlapping and masking BOTH border strokes. Three icons inside this rectangle, aligned to the left icons.
+Do not draw any large outer Mac boundary.
+
+At the very top, centered in modest white type: "Run These Commands on Your Mac".
+Above the center column, clear two-line security heading: "Touch ID or Password" / "Approve Each Operation".
+Keep this heading outside the box, not overlapping other headings.
+
+ROW 1 — IMPORT
+Row center around y=350.
+Left: white outline folder, caption "Original Files" centered below it.
+Center: exact command "mybox import" above a solid WHITE arrow pointing RIGHT, from the Mac folder to the folder inside MyBox. Put a small white fingerprint icon in the middle of the connector, with the connector interrupted cleanly behind the fingerprint, leaving equal gaps.
+Right inside MyBox: matching white folder, caption "Imported Copy" centered below it.
+This arrow shows a COPY going FROM MAC TO BOX.
+
+ROW 2 — EXPORT
+Row center around y=565.
+Left: white outline folder with a small plus symbol, caption "New Copy".
+Center: exact command "mybox export" above a solid WHITE arrow pointing LEFT, from the box folder toward the Mac folder. Individual white fingerprint symbol centered on this connector, identical in size to the first, with the same clean gaps.
+Right inside MyBox: matching white folder, caption "Box Files".
+This arrow shows a COPY going FROM BOX TO MAC. It is still initiated by running mybox export on the Mac.
+
+ROW 3 — ENTER
+Row center around y=780.
+Left: white outline terminal window with a small >_ prompt, caption "Mac Terminal".
+Center: exact command "mybox enter" above a solid WHITE double-headed horizontal arrow, pointing both LEFT and RIGHT, between the two terminal icons. Individual white fingerprint symbol centered on this connector, identical to the other two, with clean gaps.
+Right inside MyBox: matching white terminal window with >_ prompt, caption "Linux Shell".
+The two arrowheads show the interactive shell's input and output, NOT file copying.
+
+Make all six endpoint icons about 125..145 pixels wide with comparable visual weight. Their captions have the same white font, roughly 28..30 pixels, the same distance below their icon, and aligned baselines within each row. All three command labels have the same readable monospace size, roughly 32 pixels, and share one center axis. All three fingerprint symbols share one center axis and scale. No arrow or fingerprint may touch text.
+
+BOTTOM SECURITY NOTE
+Below the three rows and outside the MyBox rectangle, a small red X followed by the white words "No Approval = No Access", centered around y=960. This applies to all three operations. Do not put red X marks on the approved operation arrows.
+
+Keep the composition clean enough to read in a README. Do not add Internet, LAN, Node.js, operating-system internals, private-account names, disk-access claims, file-persistence notes, step numbers, extra commands, green accents, photographs or decorative symbols. No main title beyond the specified modest instruction. Exact captions and commands as written, no spelling changes.

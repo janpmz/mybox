@@ -1,0 +1,7 @@
+Reference: mybox-outside-access-v2.png
+
+Edit this exact README diagram, typesetting surgical corrections. Maintain its light cream drafting-paper texture, fine olive outlines, terracotta X marks, old-style serif text, dimensions and composition.
+On the right, the interior of the double-line MyBox rectangle should be blank paper except for the existing word “MyBox”. Center this one word nicely inside the empty rectangle. Remove the interior text “Mac owner: _mybox”, “Linux shell”, “Web app”, “Box files” and remove the little folder icon. Keep the shield on the outer edge. Above the rectangle, OUTSIDE its top edge but inside the larger Your Mac frame, set a small external caption “Owned by _mybox”, with the underscore visible. The line of the top edge must clearly lie below that caption, so the owner is shown externally.
+On the middle browser path, change “Only on a port you enable” to the exact words “On enabled ports”. Keep “localhost” beneath the line.
+At the start of the lower dashed Direct disk access path, replace the caption “Mac program” with “Finder” and change the gear icon above that caption to a simple monochrome outlined two-face macOS Finder icon, matching the other line-drawn icons. Retain “Direct disk access” above the dashed blocked path.
+Everything else must stay visually identical, including “Your login account”, the terminal icon, “mybox enter”, fingerprint and “Touch ID or Mac password”, Mac browser, network group, the four access paths and all arrow directions. No additional text or new contents inside the MyBox rectangle.

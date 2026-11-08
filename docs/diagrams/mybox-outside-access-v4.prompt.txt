@@ -1,0 +1,6 @@
+Reference: mybox-outside-access-v3.png
+
+Make exactly one text change to this existing MyBox diagram. Replace the caption “Owned by _mybox” above the right-hand double-outlined box with this exact natural sentence: “Runs under a separate macOS user account named _mybox”. Set it as two balanced, centered lines above the rectangle:
+Runs under a separate macOS
+user account named _mybox
+Use plain serif lettering, with the actual account name _mybox in the same dark typewriter face as before. The initial underscore must be visible; lowercase m y b o x. Remove the old “Owned by” wording. The label describes the macOS user that runs the box. Let the rectangle's top edge sit slightly lower to accommodate the second line at legible size. Both lines must be OUTSIDE the rectangle. Keep only “MyBox” inside it. Preserve the title, remaining labels, icons, horizontal and vertical arrows, colors, shield, crosses, aspect ratio, and paper texture exactly as in the input.

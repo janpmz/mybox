@@ -17,7 +17,7 @@ struct Workspace: Identifiable, Equatable, Sendable {
 
     static let examples = [
         Workspace(name: "document-player-box", state: "running", cores: "6", memory: "8 GB", diskUsed: "2.3 GB", diskCapacity: "550.8 GB", ports: [PortMapping(inside: 8080, outside: 8766)], memoryBytes: 8 * bytesPerMemoryGB, diskUsedBytes: 2_300_000_000),
-        Workspace(name: "photo-box", state: "stopped", cores: "6", memory: "6 GB", diskUsed: "3.2 GB", diskCapacity: "550.8 GB", ports: [PortMapping(inside: 8080, outside: 8767)], memoryBytes: 6 * bytesPerMemoryGB, diskUsedBytes: 3_200_000_000)
+        Workspace(name: "experiment-box", state: "stopped", cores: "6", memory: "6 GB", diskUsed: "3.2 GB", diskCapacity: "550.8 GB", ports: [PortMapping(inside: 8080, outside: 8767)], memoryBytes: 6 * bytesPerMemoryGB, diskUsedBytes: 3_200_000_000)
     ]
 }
 

@@ -1,0 +1,46 @@
+Tool: built-in imagegen
+Edit target: mybox-operations-blueprint.png
+
+Use case: precise-object-edit.
+Asset type: MyBox README operations blueprint.
+Input image: mybox-operations-blueprint.png is the edit target.
+
+Recompose this figure into the layout requested below. Preserve the exact blueprint style: deep blue paper, subtle cyan grid and texture, WHITE outlines and arrows, consistent white typography, double-line MyBox rectangle and white shield physically overlapping both top border lines. Maintain 1536 by 1024 landscape dimensions. Make the diagram balanced, with consistent icon sizing and comfortable spacing.
+
+REMOVE completely:
+- The top title "Run These Commands on Your Mac".
+- The bottom red X and the entire phrase "No Approval = No Access".
+- The "Mac Host" column heading, since there is no longer a single host column.
+- The repeated folders and the Linux Shell terminal inside the old right-hand box.
+
+NEW LAYOUT:
+A single MyBox rectangle in the CENTER, with ONLY the "MyBox" name and ONE folder icon inside it. No terminal, extra folders, extra internal captions or other content inside. Keep the small white shield centered over and overlapping BOTH top border lines. Use a moderately tall rectangle approximately x=600..960, y=305..790. Place the MyBox title near its top and the folder below, centered with generous whitespace.
+
+UPPER LEFT — ENTER:
+- Place one white terminal-window icon with >_ prompt in the upper-left area, centered near x=225, y=445.
+- Caption below it: "Mac Terminal".
+- From that terminal, draw ONE horizontal white arrow going RIGHT INTO the upper-left side of MyBox. There is exactly ONE arrowhead, at the MyBox end. NO left-pointing arrowhead and NO bidirectional arrow.
+- Above this connector: exact command "mybox enter".
+- Place one small white fingerprint symbol midway along the connector, with equal clean breaks in the line on each side.
+
+LOWER LEFT — IMPORT:
+- Place one white folder icon below the terminal, centered on the SAME vertical axis near x=225, y=690.
+- Caption below it: "Original Files".
+- Draw ONE horizontal white arrow going RIGHT INTO the lower-left side of MyBox.
+- Above this connector: exact command "mybox import".
+- Put one matching fingerprint symbol midway along this connector, vertically aligned with the upper-left fingerprint.
+
+RIGHT — EXPORT:
+- Place one white folder with a small plus symbol on the RIGHT, centered near x=1310, y=610.
+- Caption below it: "New Copy".
+- Draw ONE horizontal white arrow from the RIGHT edge of the central MyBox pointing RIGHT OUTWARD to this folder. Align it with the folder inside MyBox as closely as practical.
+- Above this connector: exact command "mybox export".
+- Put one matching white fingerprint symbol midway along the connector.
+
+SECURITY:
+Keep one shared two-line label above the diagram: "Touch ID or Password" / "Approve Each Operation". Set it in modest white sans-serif type centered above MyBox with clear space before the shield. The three fingerprints refer to this label. No red marks anywhere in this revised figure.
+
+SPACING AND CONSISTENCY:
+Left terminal and folder have the same width and comparable visual weight. Right folder matches their scale. All endpoint captions share font size, weight and spacing below icons. All three commands share the same monospace font and size, approximately 28..30 pixels, and sit above their respective arrows without touching any border or icon. The three fingerprints are the same size. Arrows must be visible on both sides of each fingerprint and have ample space for their arrowheads. Keep the box centered horizontally and balance the composition vertically; no large empty top region.
+
+Exact text only: "Touch ID or Password", "Approve Each Operation", "MyBox", "mybox enter", "mybox import", "mybox export", "Mac Terminal", "Original Files", "New Copy", and the small >_ prompt inside the left terminal. Do not retain the removed title or denial note. Do not add explanatory prose, other connections, decorations or extra icons.

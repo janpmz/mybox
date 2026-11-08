@@ -1,0 +1,9 @@
+Reference: mybox-outside-access.png
+
+Precisely edit the supplied paper-style README figure “Access from outside the box”. Make the two macOS accounts legible, especially WHO OWNS THE BOX. Match the original layout, ivory drafting paper, muted sage linework, warm graphite serif lettering, and terracotta crosses. Keep every existing access rule, icon, label, line, and arrow direction.
+
+Two edits only:
+1. On the right, make a clear heading group for the MyBox enclosure. Just beneath the bold “MyBox” heading, add the exact line “Mac owner: _mybox”. Set the account name in readable typewriter lettering with a clear literal leading underscore, all lowercase, spelled _ m y b o x without spaces. This line identifies the host macOS account that owns the box, not a Linux username. Leave ample separation before “Linux shell” so the ownership line clearly labels the entire box. Extend the box upward or widen it slightly to fit if needed. The new text must be readable at README size. Do not add decorative quotes, Markdown backticks, or any extra text.
+2. Immediately above the terminal icon on the left add a modest label “Your login account”. Keep “mybox enter” under the terminal. This describes the user initiating the shell request.
+
+Retain the outer “Your Mac” boundary, and the three distinct original rows for touch ID, localhost port and direct disk access, as well as the bottom blocked LAN or internet path. Do not add connections between users or a legend. The figures remain flat, neat, and generous with white space; do not change the paper style or heading of the figure.
