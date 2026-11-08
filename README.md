@@ -15,15 +15,7 @@ Build the app with `make desktop` and open it with `make desktop-run`.
 
 ![MyBox service architecture: your macOS user runs mybox in a terminal and sends requests to the MyBox service running as the macOS user _mybox. The service starts and stops boxes, opens shells, and transfers files. The virtual disk is owned by _mybox, and direct disk access from your regular Mac account is blocked.](docs/diagrams/mybox-dedicated-account-v7.png)
 
-```mermaid
-flowchart LR
-    A["Linux box A"] --> BA["Mac bridge A"]
-    B["Linux box B"] --> BB["Mac bridge B"]
-    BA --> M["Mac firewall and internet sharing"]
-    BB --> M
-    M --> W["Wi-Fi / Ethernet"]
-    W --> I["Internet"]
-```
+![Each Linux box connects through its own Mac bridge. Both bridges connect through the Mac firewall and internet sharing, then Wi-Fi or Ethernet, to the internet.](docs/diagrams/mybox-network.png)
 
 [![MyBox terminal demo at 2× speed: create a box, list boxes, approve shell access with Touch ID, and confirm Debian inside the box.](docs/media/mybox-demo.gif)](docs/media/mybox-demo.mp4)
 
