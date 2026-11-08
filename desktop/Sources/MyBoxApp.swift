@@ -44,14 +44,15 @@ final class AppController: NSObject, NSWindowDelegate {
     func showWindow() {
         if window == nil {
             let view = NSHostingView(rootView: BoxesView(model: AppModel.shared))
-            let created = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1080, height: 420),
+            let created = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1160, height: 370),
                                    styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
             created.title = "MyBox"
             created.titlebarAppearsTransparent = true
-            created.titleVisibility = .hidden
-            created.backgroundColor = NSColor(red: 0.135, green: 0.143, blue: 0.158, alpha: 1)
+            created.titleVisibility = .visible
+            created.backgroundColor = AppTheme.headerColor
             created.contentView = view
-            created.minSize = NSSize(width: 960, height: 382)
+            centerTitle(in: created)
+            created.contentMinSize = NSSize(width: 1040, height: 330)
             created.isReleasedWhenClosed = false
             created.delegate = self
             if CommandLine.arguments.contains("--screenshot") {
@@ -65,13 +66,31 @@ final class AppController: NSObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
     }
+
+    private func centerTitle(in window: NSWindow) {
+        // Recent macOS versions left-align the standard title. Place a native
+        // label in the existing title bar, retaining its traffic lights and drag area.
+        guard let close = window.standardWindowButton(.closeButton), let titlebar = close.superview else { return }
+        let title = NSTextField(labelWithString: window.title)
+        title.font = .systemFont(ofSize: 13, weight: .semibold)
+        title.textColor = .secondaryLabelColor
+        title.alignment = .center
+        title.translatesAutoresizingMaskIntoConstraints = false
+        window.titleVisibility = .hidden
+        titlebar.addSubview(title)
+        NSLayoutConstraint.activate([
+            title.centerXAnchor.constraint(equalTo: titlebar.centerXAnchor),
+            title.centerYAnchor.constraint(equalTo: close.centerYAnchor)
+        ])
+    }
+
     func capture(to path: String, kind: String) {
         let model = AppModel.shared
         var replacement: AnyView?
-        var size = NSSize(width: 1080, height: 420)
+        var size = NSSize(width: 1160, height: 370)
         let box = model.workspaces.first ?? Workspace.examples[0]
         switch kind {
-        case "menu": replacement = AnyView(MenuBarView(model: model)); size = NSSize(width: MenuBarView.width, height: CGFloat(min(model.workspaces.count, 7)) * 34 + 110)
+        case "menu": replacement = AnyView(MenuBarView(model: model)); size = NSSize(width: MenuBarView.width, height: MenuBarView.height(boxCount: model.workspaces.count))
         case "create": replacement = AnyView(CreateBoxView(model: model)); size = NSSize(width: 420, height: 270)
         case "help": replacement = AnyView(CLIHelpView(model: model)); size = NSSize(width: 760, height: 560)
         case "copy": replacement = AnyView(CopyBoxView(model: model, box: box)); size = NSSize(width: 420, height: 220)
@@ -79,14 +98,15 @@ final class AppController: NSObject, NSWindowDelegate {
         case "ports": replacement = AnyView(PortsView(model: model, box: box)); size = NSSize(width: 620, height: 300)
         case "export": replacement = AnyView(ExportView(model: model, box: box)); size = NSSize(width: 420, height: 170)
         case "command": replacement = AnyView(RunCommandView(model: model, box: box)); size = NSSize(width: 480, height: 170)
-        case "compact": size = NSSize(width: 960, height: 360)
+        case "compact": size = NSSize(width: 1040, height: 330)
         default: break
         }
         if let replacement { window?.contentView = NSHostingView(rootView: replacement.preferredColorScheme(.dark)) }
         window?.minSize = .zero
         window?.setContentSize(size)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            guard let view = self.window?.contentView,
+            let captureView = kind == "window" ? self.window?.contentView?.superview : self.window?.contentView
+            guard let view = captureView,
                   let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { NSApp.terminate(nil); return }
             view.layoutSubtreeIfNeeded()
             view.cacheDisplay(in: view.bounds, to: bitmap)

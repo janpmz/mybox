@@ -35,6 +35,17 @@ struct DesktopTests {
         let unknown = try WorkspaceParser.parse(json.replacingOccurrences(of: "\"cpus\":4", with: "\"cpus\":null")
             .replacingOccurrences(of: "\"memoryBytes\":4294967296", with: "\"memoryBytes\":null"))
         expect(unknown[0].cores == "-" && unknown[0].memory == "-", "Unknown resources must not become zero")
+        expect(boxes[0].memoryBytes == 4_294_967_296 && boxes[0].diskUsedBytes == 2_800_000_000, "Preserve exact byte values for summaries")
+        expect(WorkspaceTotals(boxes: boxes).runningMemory == "4 GB", "Running RAM excludes stopped boxes")
+        expect(WorkspaceTotals(boxes: boxes).diskUsed == "Unavailable", "Missing disk usage must not become a partial total")
+        expect(WorkspaceTotals(boxes: unknown).runningMemory == "Unavailable", "Missing running RAM must remain unknown")
+        expect(WorkspaceTotals(boxes: []).runningMemory == "0 GB" && WorkspaceTotals(boxes: []).diskUsed == "0 B", "Empty list has zero totals")
+        expect(WorkspaceTotals(boxes: [boxes[1]]).runningMemory == "0 GB", "Stopped-only list has no assigned running RAM")
+        expect(WorkspaceTotals(boxes: Workspace.examples).diskUsed.replacingOccurrences(of: ",", with: ".") == "5.5 GB", "Disk total includes stopped boxes")
+        var largeBox = boxes[0]
+        largeBox.memoryBytes = UInt64.max
+        largeBox.diskUsedBytes = UInt64.max
+        expect(WorkspaceTotals(boxes: [largeBox, boxes[0]]).runningMemory == "Unavailable", "Resource sum cannot overflow")
         let extended = try WorkspaceParser.parse(json.replacingOccurrences(of: "\"state\":\"running\"", with: "\"futureField\":true,\"state\":\"running\""))
         expect(extended == boxes, "Additional JSON fields must be tolerated")
         expectFailure("Malformed output must not become an empty list") { _ = try WorkspaceParser.parse("permission denied") }
@@ -83,6 +94,24 @@ struct DesktopTests {
             _ = try MyBoxClient.capture(executable: "/bin/sleep", arguments: ["10"], timeout: 0.1)
         }
         expect(Date().timeIntervalSince(start) < 3, "Timeout failed to bound execution")
+
+        // Exercise the actual Terminal script without opening Terminal or touching boxes.
+        for (shellBody, expectedExit) in [("exit 0", 0), ("exit 7", 7), ("exit 129", 129)] {
+            let commandDirectory = cliDirectory.appendingPathComponent("terminal's command")
+            try FileManager.default.createDirectory(at: commandDirectory, withIntermediateDirectories: false)
+            let commandFile = commandDirectory.appendingPathComponent("MyBox.command")
+            let completion = commandDirectory.appendingPathComponent("exit-status")
+            let terminalScript = MyBoxClient.terminalScript(executable: "/bin/sh", arguments: ["-c", shellBody], file: commandFile, completion: completion)
+            try terminalScript.write(to: commandFile, atomically: true, encoding: .utf8)
+            do {
+                _ = try MyBoxClient.capture(executable: "/bin/sh", arguments: [commandFile.path])
+                expect(expectedExit == 0, "Terminal script must preserve failures")
+            } catch { expect(expectedExit != 0, "Terminal script must preserve success") }
+            let exitStatus = try String(contentsOf: completion, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
+            expect(exitStatus == String(expectedExit), "Terminal completion must report the command's exit status")
+            expect(!FileManager.default.fileExists(atPath: commandFile.path), "Terminal command script removes itself")
+            try FileManager.default.removeItem(at: commandDirectory)
+        }
 
         let create = try BoxCommand.create(name: "sample", cpus: "4", memory: "0.5",
             ports: [PortDraft(outside: "8766", inside: "3000"), PortDraft(outside: "8767", inside: "8080")], existing: [])

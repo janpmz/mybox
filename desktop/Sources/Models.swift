@@ -9,14 +9,33 @@ struct Workspace: Identifiable, Equatable, Sendable {
     let diskUsed: String
     let diskCapacity: String
     let ports: [PortMapping]
+    // Keep authoritative numbers for totals instead of parsing rounded display strings.
+    var memoryBytes: UInt64? = nil
+    var diskUsedBytes: UInt64? = nil
     var isRunning: Bool { state == "running" }
     var stateLabel: String { state.capitalized }
 
     static let examples = [
-        Workspace(name: "little-universe", state: "running", cores: "4", memory: "4 GB", diskUsed: "2.8 GB", diskCapacity: "20 GB", ports: [PortMapping(inside: 3000, outside: 8766)]),
-        Workspace(name: "weekend-project", state: "running", cores: "2", memory: "2 GB", diskUsed: "1.4 GB", diskCapacity: "20 GB", ports: [PortMapping(inside: 8080, outside: 8080)]),
-        Workspace(name: "a-fresh-start", state: "stopped", cores: "2", memory: "2 GB", diskUsed: "864 MB", diskCapacity: "20 GB", ports: [])
+        Workspace(name: "document-player-box", state: "running", cores: "6", memory: "8 GB", diskUsed: "2.3 GB", diskCapacity: "550.8 GB", ports: [PortMapping(inside: 8080, outside: 8766)], memoryBytes: 8 * bytesPerMemoryGB, diskUsedBytes: 2_300_000_000),
+        Workspace(name: "photo-box", state: "stopped", cores: "6", memory: "6 GB", diskUsed: "3.2 GB", diskCapacity: "550.8 GB", ports: [PortMapping(inside: 8080, outside: 8767)], memoryBytes: 6 * bytesPerMemoryGB, diskUsedBytes: 3_200_000_000)
     ]
+}
+
+struct WorkspaceTotals {
+    let boxes: [Workspace]
+    var runningMemory: String { total(boxes.filter(\.isRunning).map(\.memoryBytes)).map(memorySize) ?? "Unavailable" }
+    var diskUsed: String { total(boxes.map(\.diskUsedBytes)).map(diskSize) ?? "Unavailable" }
+
+    private func total(_ values: [UInt64?]) -> UInt64? {
+        var sum: UInt64 = 0
+        for value in values {
+            guard let value else { return nil }
+            let addition = sum.addingReportingOverflow(value)
+            guard !addition.overflow else { return nil }
+            sum = addition.partialValue
+        }
+        return sum
+    }
 }
 
 struct PortMapping: Identifiable, Equatable, Sendable {
@@ -63,7 +82,8 @@ enum WorkspaceParser {
                              memory: box.memoryBytes.map(memorySize) ?? "-",
                              diskUsed: box.diskUsedBytes.map(diskSize) ?? "-",
                              diskCapacity: box.diskCapacityBytes.map(diskSize) ?? "-",
-                             ports: box.ports.map { PortMapping(inside: $0.inside, outside: $0.outside) })
+                             ports: box.ports.map { PortMapping(inside: $0.inside, outside: $0.outside) },
+                             memoryBytes: box.memoryBytes, diskUsedBytes: box.diskUsedBytes)
         }
     }
 

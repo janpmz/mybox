@@ -60,24 +60,14 @@ enum MyBoxClient {
     }
 
     @MainActor
-    static func openTerminal(executable: String, arguments: [String]) throws {
+    static func openTerminal(executable: String, arguments: [String], observeCompletion: Bool = false) throws -> URL? {
         // Launch Services opens a private .command file in Terminal without an
         // Apple Events entitlement. Arguments are always POSIX shell quoted.
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("mybox-command-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
         let file = directory.appendingPathComponent("MyBox.command")
-        let command = ShellCommand.line(executable: executable, arguments: arguments)
-        let script = """
-        #!/bin/sh
-        export PATH=/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
-        /bin/rm -f -- \(ShellCommand.quote(file.path))
-        /bin/rmdir -- \(ShellCommand.quote(directory.path))
-        printf '\\033]0;MyBox\\007'
-        \(command)
-        mybox_exit=$?
-        printf '\\nMyBox command finished (exit %s). You can close this window.\\n' "$mybox_exit"
-        exit "$mybox_exit"
-        """
+        let completion = observeCompletion ? directory.appendingPathComponent("exit-status") : nil
+        let script = terminalScript(executable: executable, arguments: arguments, file: file, completion: completion)
         try script.write(to: file, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: file.path)
         let opener = Process()
@@ -89,5 +79,30 @@ enum MyBoxClient {
             try? FileManager.default.removeItem(at: directory)
             throw DesktopError("Terminal could not open the MyBox command.")
         }
+        return completion
+    }
+
+    static func terminalScript(executable: String, arguments: [String], file: URL, completion: URL?) -> String {
+        let directory = file.deletingLastPathComponent()
+        let command = ShellCommand.line(executable: executable, arguments: arguments)
+        let completionTrap: String
+        if let completion {
+            // Observe completion without moving execution or approvals out of Terminal.
+            let writeStatus = "printf '%s\\n' \"$?\" > " + ShellCommand.quote(completion.path)
+            completionTrap = "trap " + ShellCommand.quote(writeStatus) + " EXIT\ntrap 'exit 130' INT\ntrap 'exit 143' TERM\ntrap 'exit 129' HUP"
+        } else {
+            completionTrap = "/bin/rmdir -- " + ShellCommand.quote(directory.path)
+        }
+        return """
+        #!/bin/sh
+        export PATH=/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
+        /bin/rm -f -- \(ShellCommand.quote(file.path))
+        \(completionTrap)
+        printf '\\033]0;MyBox\\007'
+        \(command)
+        mybox_exit=$?
+        printf '\\nMyBox command finished (exit %s). You can close this window.\\n' "$mybox_exit"
+        exit "$mybox_exit"
+        """
     }
 }

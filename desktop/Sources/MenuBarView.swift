@@ -1,52 +1,45 @@
 import SwiftUI
 
 struct MenuBarView: View {
-    static let width: CGFloat = 324
+    static let width: CGFloat = 400
+    static let rowHeight: CGFloat = 56
+    private static let headerAndFooterHeight: CGFloat = 80
+    private static var availableListHeight: CGFloat {
+        let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
+        // Leave space for the popover shell and keep the footer on screen.
+        let available = (screen?.visibleFrame.height ?? 600) - headerAndFooterHeight - 32
+        return max(rowHeight, floor(available / rowHeight) * rowHeight)
+    }
+    static func height(boxCount: Int) -> CGFloat {
+        min(CGFloat(max(1, boxCount)) * rowHeight, availableListHeight) + headerAndFooterHeight
+    }
     @ObservedObject var model: AppModel
+    @State private var maximumListHeight = MenuBarView.availableListHeight
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("MyBox").font(.system(size: 14, weight: .semibold))
-                if model.isDemo { Text("Preview").font(.caption).foregroundStyle(.secondary) }
-                Spacer()
-                Button { AppController.shared.showWindow(); model.sheet = .create } label: { Image(systemName: "plus") }
-                    .buttonStyle(.borderless).disabled(!model.canOpenForms).help("New box").accessibilityLabel("New box")
-            }
+        VStack(spacing: 0) {
+            header
             if model.connectionError != nil {
-                Button("Connection unavailable") { AppController.shared.showWindow() }.buttonStyle(.plain).foregroundStyle(.secondary)
+                Button("Connection unavailable") { AppController.shared.showWindow() }
+                    .buttonStyle(FlatActionStyle()).foregroundStyle(AppTheme.secondary)
+                    .frame(maxWidth: .infinity).frame(height: Self.rowHeight)
             } else if model.workspaces.isEmpty {
-                Text(model.hasLoaded ? "No boxes" : "Loading…").font(.callout).foregroundStyle(.secondary)
+                Text(model.hasLoaded ? "No boxes" : "Loading…")
+                    .font(.callout).foregroundStyle(AppTheme.secondary)
+                    .frame(maxWidth: .infinity).frame(height: Self.rowHeight)
             } else {
-                ScrollView {
-                    VStack(spacing: 2) {
-                        ForEach(model.workspaces) { box in
-                            HStack(spacing: 10) {
-                                Circle().fill(box.isRunning ? AppTheme.running : Color.secondary).frame(width: 5, height: 5)
-                                BoxStartStopButton(model: model, box: box)
-                                Button {
-                                    model.selection = box.id
-                                    AppController.shared.showWindow()
-                                } label: { Text(box.name).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()) }
-                                    .buttonStyle(.plain).lineLimit(1).help("\(box.name) · \(box.stateLabel)")
-                                BoxBrowserButton(box: box, isEnabled: !model.isDemo)
-                                BoxTerminalButton(model: model, box: box)
-                                Menu { BoxActions(model: model, box: box) } label: { Image(systemName: "ellipsis") }
-                                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().accessibilityLabel("Actions for \(box.name)")
-                            }.font(.system(size: 12)).padding(.vertical, 4)
-                        }
-                    }
-                }.frame(height: CGFloat(min(model.workspaces.count, 7)) * 34)
+                if CGFloat(model.workspaces.count) * Self.rowHeight <= maximumListHeight {
+                    rows
+                } else {
+                    ScrollView(.vertical) { rows }
+                        .scrollIndicators(.automatic)
+                        .frame(height: maximumListHeight)
+                }
             }
-            Divider()
-            HStack {
-                Button { AppController.shared.showWindow() } label: {
-                    Label("Open MyBox", systemImage: "macwindow")
-                }.buttonStyle(.borderless).help("Open the full MyBox window")
-                Spacer()
-                Menu { AppActions(model: model) } label: { Image(systemName: "ellipsis") }
-                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().accessibilityLabel("MyBox menu")
-            }.font(.system(size: 12))
-        }.padding(16).frame(width: Self.width).background(AppTheme.background).preferredColorScheme(.dark).tint(AppTheme.accent)
+            footer
+        }.frame(width: Self.width).background(AppTheme.background).foregroundStyle(AppTheme.primary)
+            .preferredColorScheme(.dark).tint(AppTheme.accent)
+            .onAppear { maximumListHeight = Self.availableListHeight }
             .onChange(of: model.sheet?.id) { _, id in
                 if id != nil { AppController.shared.showWindow() }
             }
@@ -57,6 +50,69 @@ struct MenuBarView: View {
                 if id != nil { AppController.shared.showWindow() }
             }
     }
+
+    private var rows: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(model.workspaces.enumerated()), id: \.element.id) { index, box in
+                row(box).overlay(alignment: .top) {
+                    if index > 0 { Hairline() }
+                }
+            }
+        }.padding(.horizontal, 16)
+    }
+
+    private var header: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Text("MyBox").font(.system(size: 14, weight: .semibold))
+                if model.isDemo { Text("Preview").font(.caption).foregroundStyle(AppTheme.secondary) }
+                Spacer()
+                Button { AppController.shared.showWindow(); model.sheet = .create } label: { ActionIcon(symbol: "plus") }
+                    .buttonStyle(FlatActionStyle()).foregroundStyle(AppTheme.accent)
+                    .disabled(!model.canOpenForms).help("New box").accessibilityLabel("New box")
+            }.padding(.horizontal, 16).frame(height: 38)
+            Hairline()
+        }.background(AppTheme.header)
+    }
+
+    private func row(_ box: Workspace) -> some View {
+        HStack(spacing: 8) {
+            StateDot(box: box)
+            BoxStartStopButton(model: model, box: box).foregroundStyle(AppTheme.accent)
+            Button {
+                model.selection = box.id
+                AppController.shared.showWindow()
+            } label: {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(box.name).font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                    BoxStatusLabel(model: model, box: box)
+                }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+            }.buttonStyle(FlatActionStyle()).help("\(box.name) · \(box.stateLabel)")
+                .accessibilityLabel("Open \(box.name), \(box.stateLabel), in MyBox")
+            HStack(spacing: 4) {
+                BoxBrowserButton(box: box, isEnabled: !model.isDemo).foregroundStyle(AppTheme.accent)
+                BoxTerminalButton(model: model, box: box)
+                BoxOverflowMenu(model: model, box: box).foregroundStyle(AppTheme.accent)
+            }
+        }.frame(height: Self.rowHeight)
+            .contextMenu { BoxActions(model: model, box: box) }
+    }
+
+    private var footer: some View {
+        VStack(spacing: 0) {
+            Hairline()
+            HStack {
+                Button { AppController.shared.showWindow() } label: {
+                    Label("Open MyBox", systemImage: "macwindow").padding(.vertical, 6)
+                }.buttonStyle(FlatActionStyle()).help("Open the full MyBox window")
+                Spacer()
+                Menu { AppActions(model: model) } label: { ActionIcon(symbol: "ellipsis.circle") }
+                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                    .help("MyBox menu").accessibilityLabel("MyBox menu")
+            }.font(AppTheme.footerFont).foregroundStyle(AppTheme.accent)
+                .padding(.horizontal, 16).frame(height: 40)
+        }.background(AppTheme.footer)
+    }
 }
 
 struct BoxBrowserButton: View {
@@ -66,7 +122,7 @@ struct BoxBrowserButton: View {
         Group {
             if box.ports.count == 1, let port = box.ports.first {
                 Link(destination: port.url) { icon }
-                    .buttonStyle(.borderless).help("Open \(port.url.absoluteString)")
+                    .buttonStyle(FlatActionStyle()).help("Open \(port.url.absoluteString)")
                     .accessibilityLabel("Open \(box.name) in your browser at localhost:\(port.outside)")
             } else if !box.ports.isEmpty {
                 Menu {
@@ -78,12 +134,11 @@ struct BoxBrowserButton: View {
                     .help("Open a website in \(box.name)")
                     .accessibilityLabel("Choose a localhost address for \(box.name)")
             } else {
-                Color.clear.frame(width: 24, height: 24).accessibilityHidden(true)
+                icon.foregroundStyle(AppTheme.secondary).opacity(0.4)
+                    .help("No port mappings for \(box.name)")
+                    .accessibilityLabel("No browser address for \(box.name)")
             }
         }.disabled(!isEnabled)
     }
-    private var icon: some View {
-        Image(systemName: "safari").font(.system(size: 14))
-            .frame(width: 24, height: 24).contentShape(Rectangle())
-    }
+    private var icon: some View { ActionIcon(symbol: "arrow.up.right.square") }
 }
