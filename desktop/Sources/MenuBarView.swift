@@ -22,6 +22,7 @@ struct MenuBarView: View {
                         ForEach(model.workspaces) { box in
                             HStack(spacing: 10) {
                                 Circle().fill(box.isRunning ? AppTheme.running : Color.secondary).frame(width: 5, height: 5)
+                                BoxStartStopButton(model: model, box: box)
                                 Button {
                                     model.selection = box.id
                                     AppController.shared.showWindow()

@@ -49,7 +49,7 @@ struct BoxesView: View {
         Table(model.workspaces, selection: $model.selection) {
             TableColumn("Name") { box in
                 HStack(spacing: 10) {
-                    Image(systemName: "shippingbox").foregroundStyle(.secondary)
+                    BoxStartStopButton(model: model, box: box)
                     Text(box.name).fontWeight(.medium).lineLimit(1).help(box.name)
                 }.padding(.vertical, 10)
             }.width(min: 165, ideal: 230)
@@ -106,6 +106,21 @@ struct LocalhostLink: View {
         }.foregroundStyle(AppTheme.accent).disabled(!isEnabled)
             .help("Open \(mapping.url.absoluteString)")
             .accessibilityLabel("Open \(mapping.url.absoluteString) in your browser")
+    }
+}
+
+struct BoxStartStopButton: View {
+    @ObservedObject var model: AppModel
+    let box: Workspace
+    var body: some View {
+        Button { model.run([box.isRunning ? "stop" : "start", box.name]) } label: {
+            Image(systemName: box.isRunning ? "stop" : "play")
+                .font(.system(size: 11, weight: .semibold))
+                .frame(width: 24, height: 24).contentShape(Rectangle())
+        }.buttonStyle(.borderless)
+            .disabled(!model.canRunCommands || !["running", "stopped"].contains(box.state))
+            .help("\(box.isRunning ? "Stop" : "Start") \(box.name)")
+            .accessibilityLabel("\(box.isRunning ? "Stop" : "Start") \(box.name)")
     }
 }
 

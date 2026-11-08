@@ -26,6 +26,8 @@ Links are available for every saved mapping; opening one does not start a stoppe
 box. Each box has a dedicated
 Terminal button in both the table and the menu bar panel. Double-clicking a row
 also enters that box. Other actions are in the row menu and right-click menu.
+The button before each box name starts a stopped box (play icon) or stops a
+running box (stop icon), in both the table and the menu bar panel.
 
 Forms have a Cancel button; Port Mappings and CLI Help have a Close
 button. Escape dismisses every sheet. File pickers use the standard macOS controls.
@@ -38,7 +40,7 @@ accepts fractional memory values such as 0.5 GB; both decimal points and commas 
 | `create` | New Box, with CPU, memory, and optional port mappings |
 | `enter` | Dedicated Terminal button in both box lists |
 | `enter … -- …` | Run Command; the shell command runs inside Linux |
-| `start`, `stop` | Row menu |
+| `start`, `stop` | Play/stop button before the name, or row menu |
 | `delete` | Delete in the row and menu bar menus, with a native confirmation alert |
 | `copy` | Copy, with a new box name |
 | `resize` | Resize on stopped boxes; blank values remain unchanged |
