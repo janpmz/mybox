@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>MyBox</title>
+    <options customize="never" require-scripts="false" hostArchitectures="arm64"/>
+    <!-- Present the standard destination step with only the supported choice.
+         The privileged services cannot run from a home directory or other disk. -->
+    <domains enable_localSystem="true" enable_currentUserHome="false" enable_anywhere="false"/>
+    <volume-check>
+        <allowed-os-versions><os-version min="26.0"/></allowed-os-versions>
+    </volume-check>
+    <welcome file="Welcome.html" mime-type="text/html"/>
+    <choices-outline><line choice="mybox"/></choices-outline>
+    <choice id="mybox" title="MyBox" visible="false" start_selected="true">
+        <pkg-ref id="io.github.janpmz.mybox"/>
+    </choice>
+    <pkg-ref id="io.github.janpmz.mybox" version="0.1.0" onConclusion="none">MyBox-component.pkg</pkg-ref>
+</installer-gui-script>

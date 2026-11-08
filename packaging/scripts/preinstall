@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+script_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+exec "$script_directory/mybox-setup" --package-preflight "${3:-/}"

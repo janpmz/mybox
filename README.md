@@ -95,7 +95,13 @@ Run setup-service once in a Mac terminal. PF changes require administrator acces
 
 ## Install
 
-Installation currently uses this source checkout. Requires an Apple silicon Mac,
+A local test installer can be built with `make package`; it includes the desktop
+app, CLI, runtime, and native helpers. The resulting
+`dist/MyBox-0.1.0-arm64.pkg` targets Apple silicon and macOS 26 or later. Signing,
+notarization, and testing the actual installation are still pending. See the
+[package build and test instructions](packaging/README.md).
+
+For source-based development, use this checkout. Requires an Apple silicon Mac,
 the Swift compiler, and the `janpmz/my-container-box` fork of Apple's `container`
 installed in `/Library/Application Support/MyBox/Runtime` (version `1.6.1-mybox.5`
 or later). Apple's original `container` can remain installed in `/usr/local`.

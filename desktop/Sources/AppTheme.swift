@@ -30,6 +30,24 @@ struct Hairline: View {
     }
 }
 
+struct PrimaryActionStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 12).frame(height: 32)
+            .background(AppTheme.primaryButton, in: RoundedRectangle(cornerRadius: 8))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 8))
+            .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.4)
+    }
+}
+
 /// Native buttons retain keyboard activation and focus; only hover/press draws a fill.
 struct FlatActionStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {

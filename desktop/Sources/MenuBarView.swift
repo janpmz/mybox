@@ -87,7 +87,7 @@ struct MenuBarView: View {
                     Text(box.name).font(.system(size: 12, weight: .semibold)).lineLimit(1)
                     BoxStatusLabel(model: model, box: box)
                 }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
-            }.buttonStyle(FlatActionStyle()).help("\(box.name) · \(box.stateLabel)")
+            }.buttonStyle(.plain).help("\(box.name) · \(box.stateLabel)")
                 .accessibilityLabel("Open \(box.name), \(box.stateLabel), in MyBox")
             HStack(spacing: 4) {
                 BoxBrowserButton(box: box, isEnabled: !model.isDemo).foregroundStyle(AppTheme.accent)

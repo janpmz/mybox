@@ -81,8 +81,13 @@ struct BoxesView: View {
                 .buttonStyle(FlatActionStyle()).disabled(model.isRefreshing || model.isDemo)
                 .help("Refresh boxes").accessibilityLabel("Refresh boxes").keyboardShortcut("r", modifiers: .command)
             Button { model.sheet = .create } label: {
-                Label("New Box", systemImage: "plus").font(.system(size: 14)).padding(.horizontal, 4)
-            }.buttonStyle(.borderedProminent).tint(AppTheme.primaryButton).controlSize(.large)
+                HStack(spacing: 7) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 12, weight: .semibold))
+                        .frame(width: 14, height: 14).accessibilityHidden(true)
+                    Text("New Box")
+                }.fixedSize()
+            }.buttonStyle(PrimaryActionStyle())
                 .disabled(!model.canOpenForms).keyboardShortcut("n", modifiers: .command)
         }.padding(.horizontal, AppTheme.contentInset).frame(height: 52).background(AppTheme.header)
     }

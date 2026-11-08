@@ -17,7 +17,7 @@ FORWARDER = Sources/Support.swift Sources/PortState.swift Sources/GuestPortRelay
 SERVICE_COMMON = Shared/RuntimeLocation.swift Sources/Support.swift service/ServiceSupport.swift
 SERVICE = $(SERVICE_COMMON) service/Transfer.swift service/Broker.swift service/BrokerMain.swift
 ACCESS = $(SERVICE_COMMON) service/Access.swift service/AccessMain.swift
-SETUP = $(SERVICE_COMMON) service/Install.swift service/InstallMain.swift
+SETUP = $(SERVICE_COMMON) service/Install.swift service/PackageInstall.swift service/InstallMain.swift
 
 build: .build/mybox .build/mybox-worker .build/mybox-firewall-manager .build/mybox-port-forwarder .build/mybox-authenticate .build/mybox-service .build/mybox-access .build/mybox-setup
 
@@ -33,7 +33,7 @@ build: .build/mybox .build/mybox-worker .build/mybox-firewall-manager .build/myb
 	mkdir -p .build/module-cache
 	xcrun swiftc -O -module-cache-path .build/module-cache $(SETUP) -o $@
 
-.build/mybox-service-tests: $(SERVICE_COMMON) service/Transfer.swift service/Broker.swift service/Access.swift service/Install.swift Sources/BoxAccess.swift tests/ServiceTestsMain.swift
+.build/mybox-service-tests: $(SERVICE_COMMON) service/Transfer.swift service/Broker.swift service/Access.swift service/Install.swift service/PackageInstall.swift Sources/BoxAccess.swift tests/ServiceTestsMain.swift
 	mkdir -p .build/module-cache
 	xcrun swiftc -module-cache-path .build/module-cache $^ -o $@
 
@@ -104,3 +104,10 @@ dns-test:
 
 clean:
 	rm -rf .build
+
+.PHONY: package package-test
+package:
+	./packaging/build-package.sh
+
+package-test:
+	python3 tests/package_layout.py dist/MyBox-0.1.0-arm64.pkg

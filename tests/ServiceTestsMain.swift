@@ -22,6 +22,47 @@ import Foundation
             case "check-id":
                 let pairs = try json(2) as! [[Any]]
                 try checkServiceID(UInt32(args[1])!, accounts: pairs.map { ($0[0] as! String, UInt32(($0[1] as! NSNumber).uint32Value)) })
+            case "package-owner":
+                let values = try json(1) as! [String: UInt32]
+                print(try selectPackageOwner(existing: values["existing"], console: values["console"]))
+            case "package-target":
+                try requirePackageStartupDisk(args[1])
+            case "install-directory":
+                try installDirectory(args[1], uid: UInt32(args[2])!, gid: UInt32(args[3])!, mode: 0o755,
+                                     allowStickyBit: args[4] == "sticky")
+            case "package-personal":
+                let active = args[1]
+                try requirePersonalForksStopped([501, 502], command: { executable, arguments in
+                    guard executable == "/bin/launchctl", arguments.count == 2, arguments[0] == "print",
+                          arguments[1].hasSuffix("/" + forkServicePrefix + "apiserver") else { throw BoxError("Unexpected personal service operation.") }
+                    return ServiceCommandResult(status: arguments[1] == active ? 0 : 113, output: Data(), error: Data())
+                })
+            case "package-runtime":
+                let mode = args[1]
+                let temporary = try TemporaryDirectory()
+                defer { withExtendedLifetime(temporary) {} }
+                let command: InstallCommand = { executable, arguments in
+                    guard executable == "/bin/launchctl" else { throw BoxError("Unexpected package command.") }
+                    if arguments == ["print", "user/499/com.apple.container.apiserver"] {
+                        return ServiceCommandResult(status: mode == "legacy" ? 0 : 113, output: Data(), error: Data())
+                    }
+                    if arguments == ["print", "user/499/" + forkServicePrefix + "apiserver"] {
+                        return ServiceCommandResult(status: mode == "absent" ? 113 : 0, output: Data(), error: Data())
+                    }
+                    let prefix = ["asuser", "499", "/usr/bin/sudo", "-n", "-H", "-u", "#499", "--", forkInstallRoot + "/bin/container"]
+                    guard Array(arguments.prefix(prefix.count)) == prefix else { throw BoxError("Package checked another account or runtime.") }
+                    let operation = Array(arguments.dropFirst(prefix.count))
+                    let value: Any
+                    if operation == ["system", "status", "--format", "json"] {
+                        value = ["status": "running", "paths": ["appRoot": mode == "wrong-root" ? "/tmp/foreign/" : temporary.path + "/",
+                            "installRoot": mode == "wrong-install" ? "/usr/local/" : forkInstallRoot + "/"]]
+                    } else if operation == ["list", "--all", "--format", "json"] {
+                        value = [["status": ["state": mode == "running" ? "running" : mode == "unknown" ? "unknown" : "stopped"]]]
+                    } else { throw BoxError("Package preflight attempted a mutation.") }
+                    return ServiceCommandResult(status: mode == "broken" ? 1 : 0,
+                        output: try JSONSerialization.data(withJSONObject: value), error: Data())
+                }
+                print(try checkPackageRuntimeCanStop(499, command: command, expectedDataRoot: temporary.path))
             case "identity":
                 let config = try json(1) as! [String: Any]
                 let identity = ServiceIdentity(number: 499, user: "11111111-1111-4111-8111-111111111111", group: "22222222-1111-4111-8111-111111111111")

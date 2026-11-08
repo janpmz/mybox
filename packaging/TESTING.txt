@@ -1,0 +1,40 @@
+MyBox 0.1.0 — local installer test
+
+This package has not been installed or tested on a clean Mac yet. It is built for
+Apple silicon and requires macOS 26 or later. Public signing and notarization
+are intentionally deferred.
+
+Before testing on the development Mac:
+1. Stop your MyBox boxes and quit the MyBox desktop app.
+2. Run: my-container system stop
+3. Open MyBox-0.1.0-arm64.pkg and follow macOS Installer.
+4. At Destination Select, choose "Install for all users of this computer".
+   "Install only for me" and other disks must not be selectable. Check that
+   Go Back and Continue preserve the selection. The welcome page explains why
+   macOS asks for Touch ID or an administrator password before installation.
+
+Installer sets up the signed-in Mac account as MyBox's owner. An upgrade preserves
+the existing owner. It installs both the desktop app and CLI, the private runtime,
+and the Swift helpers. It does not delete box data or replace Apple's container.
+
+After installation:
+1. Open /Applications/MyBox.app and verify your boxes and saved port mappings.
+2. Run /usr/local/bin/mybox list --json and /usr/local/bin/my-container --version.
+3. On this development Mac, use /usr/local/bin/mybox for package testing. The older
+   /opt/homebrew/bin/mybox link still points at the source checkout and may appear
+   earlier on PATH. A clean Mac does not have that development link.
+4. Create a disposable box, enter it, transfer a sample file, and test a localhost
+   port. First use may download a Linux kernel and image.
+5. Stop the test box, restart the Mac, and check that the app and CLI can reach it.
+6. Stop boxes and quit the app, then reinstall the package to check upgrades.
+
+If Installer fails, choose Window > Installer Log > Show All Logs. A failed
+post-install may leave installed files but incomplete services; retrying the same
+package after addressing the error is supported. Do not use the old standalone
+fork uninstaller to remove this combined installation. A tested removal workflow
+will be prepared separately.
+
+The package build verified payload layout, architecture, signatures needed for
+local execution, runtime entitlements, helper permissions, installed CLI location,
+system-library dependencies, and basic commands after extracting the package.
+Those checks do not replace the installation and guest/network tests above.

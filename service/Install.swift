@@ -81,13 +81,16 @@ func configureServiceIdentity(_ identity: ServiceIdentity, command: InstallComma
     return identity.number
 }
 
-func installDirectory(_ path: String, uid: uid_t, gid: gid_t, mode: mode_t) throws {
+func installDirectory(_ path: String, uid: uid_t, gid: gid_t, mode: mode_t, allowStickyBit: Bool = false) throws {
     if mkdir(path, mode) == 0 {
         guard chown(path, uid, gid) == 0, chmod(path, mode) == 0 else { throw systemError("Cannot set directory permissions") }
     } else {
         var info = stat()
         guard errno == EEXIST, lstat(path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR,
-              info.st_uid == uid, info.st_gid == gid, info.st_mode & 0o7777 == mode else { throw BoxError("Unexpected owner or permissions on \(path).") }
+              info.st_uid == uid, info.st_gid == gid,
+              (info.st_mode & 0o7777 == mode || (allowStickyBit && info.st_mode & 0o7777 == mode | mode_t(S_ISVTX))) else {
+            throw BoxError("Unexpected owner or permissions on \(path).")
+        }
     }
 }
 
@@ -179,12 +182,17 @@ func stopLegacyPrivateRuntime(_ uid: uid_t,
     }
 }
 
-func installMyBoxService(artifactDirectory: String) throws {
-    guard geteuid() == 0, let owner = UInt32(ProcessInfo.processInfo.environment["SUDO_UID"] ?? ""), owner > 0 else {
+func installMyBoxService(artifactDirectory: String, packageOwner: uid_t? = nil, reloadServices: Bool = false) throws {
+    guard geteuid() == 0, let owner = packageOwner ?? UInt32(ProcessInfo.processInfo.environment["SUDO_UID"] ?? ""), owner > 0 else {
         throw BoxError("Run mybox setup-service from your normal Mac account.")
     }
     umask(0o077)
-    try checkedInstallCommand("/usr/sbin/pkgutil", ["--pkg-info", forkPackageIdentifier])
+    // Installer writes its receipt after postinstall. That root-only entry point
+    // instead validates the prepared owner and the installed runtime files below.
+    if packageOwner == nil {
+        let combined = try runInstallCommand("/usr/sbin/pkgutil", ["--pkg-info", myboxPackageIdentifier])
+        if combined.status != 0 { try checkedInstallCommand("/usr/sbin/pkgutil", ["--pkg-info", forkPackageIdentifier]) }
+    }
     func verifyRuntime(_ path: String) throws {
         var info = stat()
         guard lstat(path, &info) == 0, info.st_uid == 0, info.st_mode & S_IFMT != S_IFLNK,
@@ -222,9 +230,9 @@ func installMyBoxService(artifactDirectory: String) throws {
         if try storeInstalledFile(helperDirectory + "/" + name, content: artifacts[name]!, mode: 0o755) { changed.insert(name) }
     }
     try storeInstalledFile(ownerPath, content: Data("\(owner)\n".utf8), mode: 0o644)
-    try installSocketService(uid, suffix: "verify-boot", socketName: "verify.sock", program: [firewallProgram, "verify-runtime-boot"])
-    try installSocketService(uid, suffix: "approve-access", socketName: "access.sock", program: [helperDirectory + "/mybox-access", "serve"], reload: changed.contains("mybox-access"))
-    if try !currentInstalledFile(firewallProgram, content: artifacts["mybox-firewall-manager"]!, mode: 0o755) || runInstallCommand("/bin/launchctl", ["print", "system/io.github.janpmz.my-container-box.firewall"]).status != 0 {
+    try installSocketService(uid, suffix: "verify-boot", socketName: "verify.sock", program: [firewallProgram, "verify-runtime-boot"], reload: reloadServices)
+    try installSocketService(uid, suffix: "approve-access", socketName: "access.sock", program: [helperDirectory + "/mybox-access", "serve"], reload: reloadServices || changed.contains("mybox-access"))
+    if try reloadServices || !currentInstalledFile(firewallProgram, content: artifacts["mybox-firewall-manager"]!, mode: 0o755) || runInstallCommand("/bin/launchctl", ["print", "system/io.github.janpmz.my-container-box.firewall"]).status != 0 {
         try checkedInstallCommand(firewallSource, ["install"])
     }
     let label = "io.github.janpmz.my-container-box.service"
@@ -241,7 +249,7 @@ func installMyBoxService(artifactDirectory: String) throws {
         "ProgramArguments": ["/bin/launchctl", "asuser", String(uid), "/bin/launchctl", "bootstrap", domain, agent]])
     let registered = try runInstallCommand("/bin/launchctl", ["print", domain + "/" + label]).status == 0
     let bootRegistered = try runInstallCommand("/bin/launchctl", ["print", "system/" + bootstrapLabel]).status == 0
-    if changedAgent || changedBoot || changed.contains("mybox-service") || !registered || !bootRegistered {
+    if reloadServices || changedAgent || changedBoot || changed.contains("mybox-service") || !registered || !bootRegistered {
         _ = try runInstallCommand("/bin/launchctl", ["bootout", "system/" + bootstrapLabel])
         _ = try runInstallCommand("/bin/launchctl", ["bootout", domain + "/" + label])
         try checkedInstallCommand("/bin/launchctl", ["bootstrap", "system", bootstrapPath])

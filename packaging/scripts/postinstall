@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+exec /Library/PrivilegedHelperTools/io.github.janpmz.my-container-box.service/mybox-setup --package-install "${3:-/}"

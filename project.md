@@ -956,6 +956,14 @@ Other-box checks and reliable automatic rule ownership remain necessary.
 
 ## Distribution
 
+- A combined local test package is built by `make package` as
+  `dist/MyBox-0.1.0-arm64.pkg`. It includes the desktop UI from the build's source
+  snapshot, compiled CLI and helpers, and the separate fork runtime. Native
+  preinstall/postinstall support checks the owner and stopped workloads and sets
+  up the private services without a terminal-only setup step. It targets Apple
+  silicon and macOS 26+. The package has not yet been installed for validation;
+  Developer ID signing, notarization, and public release remain deferred. See
+  [packaging documentation](packaging/README.md) and the generated verification report.
 - The current `/opt/homebrew/bin/mybox` link is a development convenience tied to
   this checkout. It is not the release installation method, and Homebrew must
   not become a requirement just because that folder is used on this Mac.
