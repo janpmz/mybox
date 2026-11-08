@@ -39,6 +39,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 @MainActor
 private final class BoxesWindow: NSWindow {
+    override var backingScaleFactor: CGFloat {
+        // Keep demo captures at Retina resolution even on a 1× display.
+        CommandLine.arguments.contains("--screenshot") ? 2 : super.backingScaleFactor
+    }
+
     override func resignKey() {
         super.resignKey()
         // The custom filter outline should also disappear when another window is clicked.
@@ -131,12 +136,47 @@ final class AppController: NSObject, NSWindowDelegate {
         window?.setContentSize(size)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             let captureView = kind == "window" ? self.window?.contentView?.superview : self.window?.contentView
-            guard let view = captureView,
-                  let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { NSApp.terminate(nil); return }
+            guard let view = captureView else { NSApp.terminate(nil); return }
             view.layoutSubtreeIfNeeded()
-            view.cacheDisplay(in: view.bounds, to: bitmap)
-            try? bitmap.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
+            guard let bitmap = self.screenshotBitmap(of: view) else { NSApp.terminate(nil); return }
+            let output = kind == "window" ? self.windowScreenshot(bitmap, size: view.bounds.size) : bitmap
+            try? output?.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
             NSApp.terminate(nil)
         }
+    }
+
+    private func screenshotBitmap(of view: NSView) -> NSBitmapImageRep? {
+        guard let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil,
+                                           pixelsWide: Int((view.bounds.width * 2).rounded()),
+                                           pixelsHigh: Int((view.bounds.height * 2).rounded()),
+                                           bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                                           isPlanar: false, colorSpaceName: .deviceRGB,
+                                           bytesPerRow: 0, bitsPerPixel: 0) else { return nil }
+        bitmap.size = view.bounds.size
+        view.cacheDisplay(in: view.bounds, to: bitmap)
+        return bitmap
+    }
+
+    private func windowScreenshot(_ bitmap: NSBitmapImageRep, size: NSSize) -> NSBitmapImageRep? {
+        // View caching includes the rectangular backing behind the native window corners.
+        // Clip the export on a transparent canvas so it fits both light and dark READMEs.
+        let margin: CGFloat = 12
+        let scale = CGFloat(bitmap.pixelsWide) / size.width
+        let canvas = CGSize(width: size.width + 2 * margin, height: size.height + 2 * margin)
+        guard let source = bitmap.cgImage,
+              let context = CGContext(data: nil, width: Int((canvas.width * scale).rounded()),
+                                      height: Int((canvas.height * scale).rounded()),
+                                      bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: source.colorSpace ?? CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        context.scaleBy(x: scale, y: scale)
+        let frame = CGRect(origin: CGPoint(x: margin, y: margin), size: size)
+        context.addPath(CGPath(roundedRect: frame, cornerWidth: 12, cornerHeight: 12, transform: nil))
+        context.clip()
+        context.draw(source, in: frame)
+        guard let image = context.makeImage() else { return nil }
+        let output = NSBitmapImageRep(cgImage: image)
+        output.size = canvas
+        return output
     }
 }
