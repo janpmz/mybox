@@ -2,10 +2,6 @@
 
 MyBox is a command-line tool for running isolated Linux workspaces on your Mac.
 
-The [native macOS app](desktop/README.md) adds a menu bar icon and a compact
-box list. The CLI and app share this repository; the CLI works without opening the app.
-The installer includes both.
-
 ![MyBox main app showing boxes, resource usage, and port mappings.](docs/screenshots/mybox-main-window.png)
 
 ## Install
