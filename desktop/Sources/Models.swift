@@ -32,56 +32,44 @@ struct DesktopError: LocalizedError {
     var errorDescription: String? { message }
 }
 
-/// Reads the installed CLI's table, so launching the app needs no privileged
-/// service upgrade. Header offsets preserve spaces in sizes and port mappings.
+/// Decode numeric values from the CLI; table layout and terminal links are not an API.
 enum WorkspaceParser {
     static func parse(_ output: String) throws -> [Workspace] {
-        let lines = output.components(separatedBy: .newlines)
-        if lines.contains(where: { $0.hasPrefix("No MyBox boxes yet.") }) { return [] }
-        let titles = ["NAME", "STATE", "CORES", "MEMORY", "DISK USED", "DISK MAX", "PORTS"]
-        guard let headerIndex = lines.firstIndex(where: { $0.hasPrefix("NAME ") }) else {
-            throw DesktopError("MyBox returned an unrecognized workspace list. Check that the CLI is up to date.")
+        let list: BoxList
+        do {
+            list = try JSONDecoder().decode(BoxList.self, from: Data(output.utf8))
+        } catch {
+            throw DesktopError("MyBox returned an invalid JSON workspace list. Update the CLI and run mybox setup-service.")
         }
-        let header = lines[headerIndex] as NSString
-        let offsets = titles.map { header.range(of: $0).location }
-        guard !offsets.contains(NSNotFound), offsets == offsets.sorted() else {
-            throw DesktopError("The MyBox list is missing expected columns.")
+        guard list.schemaVersion == BoxList.currentSchemaVersion else {
+            throw DesktopError("MyBox returned an unsupported workspace list version. Update the desktop app and CLI together.")
         }
-        var result: [Workspace] = []
-        for line in lines.dropFirst(headerIndex + 1) {
-            if line.trimmingCharacters(in: .whitespaces).isEmpty { break }
-            let row = line as NSString
-            guard row.length >= offsets.last! else { throw DesktopError("MyBox returned an incomplete workspace row.") }
-            let cells = offsets.enumerated().map { index, start -> String in
-                let end = index + 1 < offsets.count ? offsets[index + 1] : row.length
-                return row.substring(with: NSRange(location: start, length: end - start)).trimmingCharacters(in: .whitespaces)
-            }
-            guard validName(cells[0]), !cells[1].isEmpty, !result.contains(where: { $0.name == cells[0] }) else {
+        var names = Set<String>()
+        return try list.boxes.map { box in
+            guard validName(box.name), !box.state.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  names.insert(box.name).inserted else {
                 throw DesktopError("MyBox returned an invalid or duplicate workspace name.")
             }
-            result.append(Workspace(name: cells[0], state: cells[1], cores: cells[2], memory: cells[3],
-                                    diskUsed: cells[4], diskCapacity: cells[5], ports: try parsePorts(cells[6])))
+            guard box.cpus.map({ $0 > 0 }) ?? true,
+                  box.memoryBytes.map({ $0 > 0 }) ?? true,
+                  box.diskCapacityBytes.map({ $0 > 0 }) ?? true else {
+                throw DesktopError("MyBox returned invalid workspace resources.")
+            }
+            guard Set(box.ports.map(\.outside)).count == box.ports.count,
+                  box.ports.allSatisfy({ (1...65535).contains($0.inside) && (1...65535).contains($0.outside) }) else {
+                throw DesktopError("MyBox returned an invalid or duplicate port mapping.")
+            }
+            return Workspace(name: box.name, state: box.state, cores: box.cpus.map(String.init) ?? "-",
+                             memory: box.memoryBytes.map(memorySize) ?? "-",
+                             diskUsed: box.diskUsedBytes.map(diskSize) ?? "-",
+                             diskCapacity: box.diskCapacityBytes.map(diskSize) ?? "-",
+                             ports: box.ports.map { PortMapping(inside: $0.inside, outside: $0.outside) })
         }
-        return result
     }
 
     static func validName(_ value: String) -> Bool {
-        value.range(of: "^[a-z][a-z0-9-]{0,47}$", options: .regularExpression) != nil
-    }
-
-    static func parsePorts(_ value: String) throws -> [PortMapping] {
-        if value == "-" || value.isEmpty { return [] }
-        let expression = try NSRegularExpression(pattern: "^inside ([0-9]+) / outside (?:http://localhost:)?([0-9]+)(?: \\(localhost\\))?$")
-        return try value.components(separatedBy: ", ").map { mapping in
-            let ns = mapping as NSString
-            guard let match = expression.firstMatch(in: mapping, range: NSRange(location: 0, length: ns.length)),
-                  let inside = Int(ns.substring(with: match.range(at: 1))),
-                  let outside = Int(ns.substring(with: match.range(at: 2))),
-                  (1...65535).contains(inside), (1...65535).contains(outside) else {
-                throw DesktopError("MyBox returned an unrecognized port mapping: \(mapping)")
-            }
-            return PortMapping(inside: inside, outside: outside)
-        }
+        guard let range = value.range(of: "^[a-z][a-z0-9-]{0,47}$", options: .regularExpression) else { return false }
+        return range == value.startIndex..<value.endIndex
     }
 }
 

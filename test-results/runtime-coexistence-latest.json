@@ -1,0 +1,14 @@
+{
+  "temporary_directory": "/private/var/folders/w7/_qnyzjmd5y7c0vpcgnrf0rq80000gn/T/mybox-coexistence-x91v583_",
+  "versions": {
+    "original": "container CLI version 1.6.1 (build: release, commit: aa8d76b)",
+    "fork": "container CLI version 1.6.1-mybox.5 (build: release, commit: 6d53b49)"
+  },
+  "checks": [
+    "Both runtimes list their own empty stores while running together.",
+    "Stopping the fork leaves the original service running.",
+    "Stopping the original leaves the fork service running."
+  ],
+  "passed": true,
+  "cleanup_complete": true
+}

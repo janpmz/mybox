@@ -17,11 +17,10 @@ import time
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / 'service'))
-import broker
+import service_protocol as broker
 
 BOX = str(ROOT / 'mybox')
-APPLE = '/usr/local/bin/container'
+RUNTIME = '/Library/Application Support/MyBox/Runtime/bin/container'
 
 
 def run(*args, check=True):
@@ -82,13 +81,13 @@ def main():
         raise RuntimeError('Run make service-test from your normal Mac terminal.')
     if options.after_reboot:
         check_reboot()
-        # The direct-access control below also needs a working *personal* Apple service.
+        # The direct-access control below also needs a working personal fork service.
         # Starting that service cannot start the private broker or any test workload.
-        if run(APPLE, 'system', 'status', '--format', 'json', check=False).returncode:
-            run(APPLE, 'system', 'start', '--disable-kernel-install')
-    # Confirm the normal account has a working Apple service. A broken CLI is
+        if run(RUNTIME, 'system', 'status', '--format', 'json', check=False).returncode:
+            run(RUNTIME, 'system', 'start', '--disable-kernel-install')
+    # Confirm the normal account has a working fork service. A broken CLI is
     # insufficient evidence that it cannot reach the private service.
-    run(APPLE, 'list', '--all', '--format', 'json')
+    run(RUNTIME, 'list', '--all', '--format', 'json')
     run(BOX, 'list')
     name = 'access-test-' + uuid.uuid4().hex[:12]
     cid = 'mybox-' + name
@@ -96,7 +95,7 @@ def main():
     print('Testing one disposable box:', name, flush=True)
     # Only cleanup uses administrator access to Apple's private test fixtures.
     runtime = ['/usr/bin/sudo', '/bin/launchctl', 'asuser', str(account.pw_uid),
-               '/usr/bin/sudo', '-H', '-u', '_mybox', '--', APPLE]
+               '/usr/bin/sudo', '-H', '-u', '_mybox', '--', RUNTIME]
     created = False
     try:
         run(BOX, 'create', name)
@@ -106,8 +105,8 @@ def main():
             subprocess.run([BOX, 'enter', name, '--', '/bin/sh', '-c', 'test -t 0 && test -t 1'],
                            check=True, timeout=120)
         assert name in run(BOX, 'list').stdout
-        assert cid not in run(APPLE, 'list', '--all', '--format', 'json').stdout
-        assert run(APPLE, 'exec', cid, '/bin/true', check=False).returncode != 0
+        assert cid not in run(RUNTIME, 'list', '--all', '--format', 'json').stdout
+        assert run(RUNTIME, 'exec', cid, '/bin/true', check=False).returncode != 0
         with tempfile.TemporaryDirectory() as tmp:
             source = Path(tmp) / 'sample'
             source.write_bytes(b'MyBox file transfer\0')
@@ -116,7 +115,7 @@ def main():
             run(BOX, 'export', name, 'sample', str(dest))
             assert dest.read_bytes() == source.read_bytes()
         run(BOX, 'stop', name)
-        assert run(APPLE, 'start', cid, check=False).returncode != 0
+        assert run(RUNTIME, 'start', cid, check=False).returncode != 0
         disk = Path(account.pw_dir) / 'Library/Application Support/com.apple.container/containers' / cid / 'rootfs.ext4'
         try:
             with disk.open('rb'):
@@ -137,7 +136,7 @@ def main():
         if run(*runtime, 'network', 'inspect', network, check=False).returncode == 0:
             run(*runtime, 'network', 'delete', network)
     report = {'finished_at': datetime.now(timezone.utc).isoformat(), 'box': name, 'service_uid': account.pw_uid,
-              'backend': run(APPLE, '--version').stdout.strip(), 'after_reboot': options.after_reboot,
+              'backend': run(RUNTIME, '--version').stdout.strip(), 'after_reboot': options.after_reboot,
               'terminal_checked': sys.stdout.isatty(),
               'passed': ['private shell', 'direct exec denied', 'direct start denied', 'stopped disk private',
                          'file transfer', 'forged firewall approval rejected', 'expired firewall approval rejected',

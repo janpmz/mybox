@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "boxes_unchanged": {
+    "boxes": [
+      {
+        "cpus": 6,
+        "diskCapacityBytes": 550829555712,
+        "diskUsedBytes": 2279817216,
+        "memoryBytes": 8589934592,
+        "name": "document-player-box",
+        "ports": [
+          {
+            "inside": 8080,
+            "outside": 8766
+          }
+        ],
+        "state": "stopped"
+      },
+      {
+        "cpus": 6,
+        "diskCapacityBytes": 550829555712,
+        "diskUsedBytes": 3207266304,
+        "memoryBytes": 6442450944,
+        "name": "photo-box",
+        "ports": [
+          {
+            "inside": 8080,
+            "outside": 8767
+          }
+        ],
+        "state": "stopped"
+      }
+    ],
+    "schemaVersion": 1
+  },
+  "private_helpers_match_build": true,
+  "private_runtime": "/Library/Application Support/MyBox/Runtime",
+  "backup": "/private/var/db/mybox-runtime-backup.zlm5xD"
+}

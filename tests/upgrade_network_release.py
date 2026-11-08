@@ -24,13 +24,37 @@ import tempfile
 import time
 import uuid
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import install
+INSTALL = Path('/Library/PrivilegedHelperTools/io.github.janpmz.my-container-box.service')
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = Path('/usr/local/libexec/container/plugins/container-network-vmnet/bin/container-network-vmnet')
 BRIDGE = Path('/usr/local/libexec/container/container-mybox-bridge')
-WORKER = install.INSTALL / 'mybox-worker'
+WORKER = INSTALL / 'mybox-worker'
+
+
+def current_file(path, content, mode):
+    try:
+        info = path.lstat()
+    except FileNotFoundError:
+        return False
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_nlink != 1:
+        raise ValueError(f'Unexpected ownership or file type at {path}.')
+    return stat.S_IMODE(info.st_mode) == mode and path.read_bytes() == content
+
+
+def store(path, content, mode):
+    if current_file(path, content, mode):
+        return False
+    with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as out:
+        temp = Path(out.name)
+        try:
+            out.write(content)
+            out.flush()
+            os.fchmod(out.fileno(), mode)
+            os.replace(temp, path)
+        finally:
+            temp.unlink(missing_ok=True)
+    return True
 
 
 def run(*args, check=True, timeout=120):
@@ -125,7 +149,7 @@ def main():
     args = parser.parse_args()
     owner = int(os.environ.get('SUDO_UID', '0'))
     private = pwd.getpwnam('_mybox').pw_uid
-    if os.geteuid() != 0 or owner <= 0 or owner != int((install.INSTALL / 'owner').read_text()):
+    if os.geteuid() != 0 or owner <= 0 or owner != int((INSTALL / 'owner').read_text()):
         raise PermissionError('Administrator authorization from the installing owner is required.')
     allowed = {'mybox-' + box for box in args.restart_box}
     evidence = json.loads((ROOT / 'test-results/network-release-latest.json').read_text())
@@ -209,10 +233,10 @@ def main():
     backup.mkdir(mode=0o700)
     artifacts = {path: path.read_bytes() for path in sources}
     for index, (path, data) in enumerate(artifacts.items()):
-        install.store(backup / f'binary-{index}', data, 0o700)
+        store(backup / f'binary-{index}', data, 0o700)
     for index, update in enumerate(updates):
-        install.store(backup / f'network-{index}.json', update['original'], 0o600)
-    install.store(backup / 'manifest.json', json.dumps(dict(plan=plan, binaries=[str(p) for p in sources],
+        store(backup / f'network-{index}.json', update['original'], 0o600)
+    store(backup / 'manifest.json', json.dumps(dict(plan=plan, binaries=[str(p) for p in sources],
         metadata=[str(item['path']) for item in updates]), indent=2).encode(), 0o600)
     try:
         for name in restart:
@@ -240,7 +264,7 @@ def main():
                 mutation_started = True
                 runtime(account['uid'], 'system', 'stop')
             for destination, source in sources.items():
-                install.store(destination, source.read_bytes(), 0o755)
+                store(destination, source.read_bytes(), 0o755)
             for item in updates:
                 replace_metadata(item['path'], json.dumps(item['saved']).encode(), item['uid'], item['gid'], item['mode'])
             for account in accounts:
@@ -260,7 +284,7 @@ def main():
                 raise RuntimeError('A container started during maintenance; automatic rollback was refused. Backups: ' + str(backup))
             runtime(account['uid'], 'system', 'stop', check=False)
         for destination, data in artifacts.items():
-            install.store(destination, data, 0o755)
+            store(destination, data, 0o755)
         for item in updates:
             replace_metadata(item['path'], item['original'], item['uid'], item['gid'], item['mode'])
         for account in accounts:

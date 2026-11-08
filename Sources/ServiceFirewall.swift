@@ -4,7 +4,6 @@ import Foundation
 let serviceHome = "/private/var/db/mybox-runtime"
 let serviceInstall = "/Library/PrivilegedHelperTools/io.github.janpmz.my-container-box.service"
 let serviceAccount = "_mybox"
-let forkInstallRoot = "/usr/local"
 let forkBridgeExecutable = forkInstallRoot + "/libexec/container/container-mybox-bridge"
 
 struct ServiceFirewallRequest: Codable {

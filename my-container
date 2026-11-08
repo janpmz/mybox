@@ -1,0 +1,28 @@
+#!/bin/sh
+set -eu
+
+# Invoke the real executable so its helpers resolve relative to the runtime,
+# rather than relative to this launcher's location on PATH.
+runtime_root='/Library/Application Support/MyBox/Runtime'
+runtime="$runtime_root/bin/container"
+
+if [ ! -x "$runtime" ]; then
+    printf '%s\n' 'my-container: Install the my-container-box fork package first.' >&2
+    exit 1
+fi
+
+CONTAINER_INSTALL_ROOT=$runtime_root
+export CONTAINER_INSTALL_ROOT
+if ! version=$("$runtime" --version); then
+    printf '%s\n' 'my-container: Cannot identify the installed container runtime.' >&2
+    exit 1
+fi
+case "$version" in
+    'container CLI version '*'-mybox.'*) ;;
+    *)
+        printf '%s\n' 'my-container: The installed runtime is not the MyBox fork. Install the my-container-box fork package.' >&2
+        exit 1
+        ;;
+esac
+
+exec "$runtime" "$@"

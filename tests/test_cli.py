@@ -231,7 +231,7 @@ class CLI(unittest.TestCase):
                     "id": "mybox-demo", "configuration": configuration, "status": {"state": "stopped"}
                 }}))
                 row = re.split(r"\s{2,}", self.run_box("list").stdout.splitlines()[1].replace(",", "."))
-                self.assertEqual(row, ["demo", "stopped", "6", expected, "-", "-", "inside 8080 / outside 8766 (localhost)"])
+                self.assertEqual(row, ["demo", "stopped", "6", expected, "-", "-", "inside 8080 / outside http://localhost:8766"])
 
     def test_list_shows_unknown_resources_without_inventing_defaults(self):
         self.log.with_suffix(".state").write_text(json.dumps({"mybox-demo": {

@@ -1,4 +1,4 @@
-"""Transfer ordinary files and directories through an already-open file descriptor."""
+"""Independent legacy transfer encoder/decoder, used only to check wire compatibility."""
 import json
 import os
 from pathlib import Path

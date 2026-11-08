@@ -27,14 +27,21 @@ See [the recorded results and limits](../project.md#current-implementation-trust
 
 | When | Programs | What they do |
 | --- | --- | --- |
-| In the background | `broker.py serve` | Accepts MyBox requests from the Mac account that installed MyBox. |
+| In the background | `mybox-service serve` | Accepts MyBox requests from the Mac account that installed MyBox. |
 | While the container service is up | `container-apiserver`, `machine-apiserver`, `container-core-images`, `container-network-vmnet` | Provide the container and machine APIs, store Linux images, and manage virtual networks. |
-| For each command | `broker.py session`, `mybox-worker` | Handle one request, including the private account’s side of file transfers. The worker calls `container` for box operations and connects to the administrator approval service when it needs your approval. |
+| For each command | `mybox-service session`, `mybox-worker` | Handle one request, including the private account’s side of file transfers. The worker calls `container` for box operations and connects to the administrator approval service when it needs your approval. |
 | When starting a box | `container-mybox-bridge` | Prepares the box’s network connection before Linux starts. |
 | While a box runs | `container-runtime-linux` | Hosts that box’s Linux virtual machine. Programs inside the box run as Linux users. |
 | While a running box has enabled ports | `mybox-port-forwarder` | Forwards connections from ports on the Mac’s loopback address (`127.0.0.1`) into the box. |
 
 The access approval service and firewall manager run as `root`. The Touch ID or password prompt runs in your signed-in Mac account.
+
+`mybox-service` handles commands and file transfers. `mybox-access` checks fresh
+Touch ID/password approval and limits the firewall work authorized by that approval.
+`mybox-setup` creates or verifies the private account and registers these services.
+All three programs are compiled Swift. After upgrading from the Python helpers,
+run `mybox setup-service` to install the native programs and update the service jobs.
+Setup removes the replaced Python scripts after the native command service starts.
 
 </details>
 
@@ -87,17 +94,21 @@ After the next Mac restart, run `make service-reboot-test` before running setup 
 
 Requires the `janpmz/my-container-box` fork of Apple’s `container`, macOS with supported Apple
 silicon hardware, and the installed Swift compiler. Uses Foundation, Darwin,
-SystemConfiguration, Network, and the Python 3 standard library included with the Mac developer tools.
+SystemConfiguration and Network. The CLI, setup program, and installed helpers are compiled Swift programs.
+Python 3 is used only for development tests and the one-off network migration tool; it is not needed by installed MyBox.
 
 The checkout and auto-building launcher below are for development. The planned
 public release will ship a precompiled executable with an installer, so users
-will not need this checkout or a Swift compiler. Both accounts use the fork’s `/usr/local/bin/container`. See the [distribution plan](../project.md#distribution).
+will not need this checkout or a Swift compiler. Both MyBox accounts use the fork
+in `/Library/Application Support/MyBox/Runtime`. Apple's original package can
+remain in `/usr/local`. See the [distribution plan](../project.md#distribution).
 
 One-time setup from this project folder on this Mac:
 
 ```sh
 make build
 ln -s "$PWD/mybox" /opt/homebrew/bin/mybox
+ln -s "$PWD/my-container" /opt/homebrew/bin/my-container
 ```
 
 `/opt/homebrew/bin` is already on this Mac's `PATH`. The link makes `mybox`
@@ -117,10 +128,54 @@ mybox enter demo
 `setup-service` uses your Mac password to create the account, install the programs,
 and register the background services. Run it again after changing the service or worker.
 On first use, Apple's runtime obtains its recommended Linux kernel and initial image
-for the new account if necessary. Install the fork package once in `/usr/local` before running setup.
-Running `container` directly uses your Mac account’s containers. MyBox runs the same executables
-as `_mybox`, whose home directory holds the MyBox disks.
+for the new account if necessary. Install the fork package (`1.6.1-mybox.5` or
+later) in its private installation directory before running setup.
+`my-container` invokes the installed fork directly and accepts its ordinary CLI
+arguments, such as `my-container list --all`. The launcher verifies the fork's
+version and uses the runtime at `/Library/Application Support/MyBox/Runtime`.
+The runtime's own help text still calls the command `container`.
+Running `container` uses Apple's original runtime and existing personal containers.
+Running `my-container` uses the fork's own personal store at
+`~/Library/Application Support/io.github.janpmz.mybox.runtime`; its configuration
+is in `~/.config/my-container` (or `$XDG_CONFIG_HOME/my-container`).
+MyBox runs the fork as `_mybox`, whose home directory holds the MyBox disks.
 If the private service is unavailable, box commands stop and report that problem.
+
+### Runtime migration
+
+The older development package installed the fork over `/usr/local/bin/container`.
+The new fork package uses its own installation directory, package receipt,
+background service names, registry credential identifier, DNS ports and resolver
+files. Updating Apple's package therefore does not replace the MyBox fork.
+
+For that older development installation, build MyBox and the fork's release
+package, stop all MyBox boxes, and stop any personal `container` service. Then run:
+
+```sh
+make build
+sudo ./scripts/migrate-isolated-runtime.sh /absolute/path/my-container-box-installer.pkg /absolute/path/container-1.6.1-installer-signed.pkg
+```
+
+The migration verifies Apple's installer, backs up the installed program files,
+installs the private fork, updates MyBox's services, compares the box inventory,
+and restores Apple's original command. It installs `my-container` in
+`/usr/local/bin`. It keeps MyBox's existing private data directory so disks and
+images do not move. The script prints the backup location. This is a development
+migration for version `1.6.1-mybox.5`, not the future combined app installer.
+It also refuses to restore Apple over personal networks that use the fork-only
+`reserved-on-demand` option. Unused definitions must be archived first; networks
+still used by personal containers need to move with those containers to the fork.
+
+To test both runtimes without booting Linux, stop both personal services and run:
+
+```sh
+python3 tests/runtime_coexistence.py /usr/local/bin/container '/Library/Application Support/MyBox/Runtime/bin/container' --report test-results/runtime-coexistence-latest.json
+```
+
+The test uses temporary empty stores, checks that stopping either service leaves
+the other running, and stops its services when finished. Existing stores are untouched.
+
+### First box
 
 Inside Linux, the imported folder is `/workspace/website`. Edit and run your
 project there. A server on `127.0.0.1:8080` or `0.0.0.0:8080` can be viewed on the Mac at
@@ -209,6 +264,37 @@ and project files. It excludes cached images and other container files.
 Deleting files inside the box might not immediately reduce this value.
 `DISK MAX` is the virtual disk's capacity. Disk growth needs free space on the
 Mac. A dash in a resource column means the value is unavailable.
+
+For scripts and the desktop app, use `mybox list --json`. It writes one JSON
+object to stdout, with diagnostics on stderr. It lists the same managed boxes,
+sorted by name, without starting stopped boxes. For example:
+
+```json
+{
+  "schemaVersion": 1,
+  "boxes": [
+    {
+      "name": "demo",
+      "state": "stopped",
+      "cpus": 2,
+      "memoryBytes": 2147483648,
+      "diskUsedBytes": 1048576,
+      "diskCapacityBytes": 20000000000,
+      "ports": [{"inside": 8080, "outside": 8766}]
+    }
+  ]
+}
+```
+
+CPU counts and ports are integers; all sizes are integer byte counts. Unknown
+resource values are `null`. An empty list is `{"schemaVersion":1,"boxes":[]}`.
+Port entries include saved Apple and MyBox mappings; their presence does not
+mean a server is listening or forwarding is healthy. Consumers should check
+`schemaVersion` and ignore additional fields within a supported version.
+The CLI and desktop app share the schema in `Shared/BoxList.swift`.
+After building this update, run `mybox setup-service` once to install the worker
+that produces JSON. The desktop app reports an update instruction if the
+installed worker is older.
 
 ## Change CPU, memory, or disk size
 
@@ -452,7 +538,7 @@ The older `network_lifetime.py` test covers the default `reserved` variant,
 which continues retaining its bridge for compatibility with non-MyBox clients.
 
 Existing installations can migrate saved MyBox networks with
-`service/upgrade_network_release.py`, using administrator authorization and an
+`tests/upgrade_network_release.py`, using administrator authorization and an
 explicit `--restart-box NAME` for each running box. It checks the signed binaries
 against the successful live test report, saves root-owned backups, migrates
 network metadata while the relevant container services are stopped, and restores

@@ -18,7 +18,7 @@ MyBox CLI and private service manage the boxes. The app finds the CLI automatica
 
 ## Interface
 
-The Boxes table displays the same fields as `mybox list`: name, state, CPU,
+The Boxes table reads `mybox list --json` and displays name, state, CPU,
 memory, disk use, disk capacity, and ports. Port arrows run from the outside port
 (Mac) to the inside port (box), matching the CLI's names.
 Click a `localhost:PORT` link to open that address in your default browser.
@@ -36,7 +36,7 @@ accepts fractional memory values such as 0.5 GB; both decimal points and commas 
 
 | CLI operation | App |
 | --- | --- |
-| `list` | Boxes table; refreshes every eight seconds |
+| `list --json` | Boxes table; refreshes every eight seconds |
 | `create` | New Box, with CPU, memory, and optional port mappings |
 | `enter` | Dedicated Terminal button in both box lists |
 | `enter … -- …` | Run Command; the shell command runs inside Linux |
@@ -66,11 +66,11 @@ Delete permanently removes the box and its files, saved port mappings, and dedic
 network. Running boxes stop first. Escape cancels; Return does not trigger deletion.
 The app passes `--yes` after confirmation so Terminal does not ask a second time.
 After updating the CLI, run `mybox setup-service` to update the installed worker
-and broker before using new commands such as Delete.
+and broker before using new commands such as Delete or JSON lists.
 
 ## Verification
 
-`make test` checks CLI table parsing, creation and resize arguments, copy names,
+`make test` checks CLI JSON parsing, creation and resize arguments, copy names,
 port status and fixed mappings, export paths, host-shell argument quoting,
 process failures, and timeouts. These tests do not change real boxes.
 
@@ -86,7 +86,7 @@ Capture views: `menu`, `create`, `copy`, `resize`, `ports`, `export`, `command`,
 `help`, and `compact`. Each capture process exits after writing its PNG.
 Preview mode is labeled and disables operations against real boxes.
 
-`desktop/` owns the app's sources, resources, icon generator, build, and tests.
-The CLI and service remain in the parent checkout. The app reads the installed
-CLI's table by header positions and rejects unrecognized formats; it does not
-require a privileged service upgrade.
+The CLI and desktop app stay in one repository, and the planned installer includes both. `desktop/` owns the
+app's sources, resources, icon generator, build, and tests. `Shared/BoxList.swift`
+defines their JSON contract and resource formatting. The app rejects malformed
+data and unsupported schema versions. The CLI works without opening the desktop app.

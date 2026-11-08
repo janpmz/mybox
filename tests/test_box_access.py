@@ -1,190 +1,174 @@
-"""Check the private service's one-use authentication protocol without displaying UI."""
+"""Exercise the native approval service without root, firewall changes, or UI."""
 from pathlib import Path
 import json
 import os
 import socket
-import sys
+import subprocess
 import tempfile
 import threading
 import time
 import unittest
-from types import SimpleNamespace
-from unittest.mock import patch
+from service_protocol import packet, receive
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'service'))
-import access
-from broker import packet, receive
+ROOT = Path(__file__).resolve().parents[1]
+NATIVE = ROOT / '.build/mybox-service-tests'
 
 
 class BoxAccess(unittest.TestCase):
-    def test_prompt_describes_what_the_requester_receives(self):
-        self.assertIn('shell', access.prompt_for(['enter', 'demo']))
-        reason = access.prompt_for(['enter', 'demo', 'cat', 'a b', 'a\nb', '\u202etest'])
-        self.assertIn('receives output', reason)
-        self.assertIn('"a b" "a\\nb" "\\u202etest"', reason)
-        self.assertIn('copy of', access.prompt_for(['export', 'demo', '/workspace/x']))
-        self.assertIn('write', access.prompt_for(['import', 'demo', 'file']))
-        for args in (['enter', 'fake\nname'], ['shell', 'demo'], ['export', 'demo']):
-            with self.assertRaises(ValueError):
-                access.prompt_for(args)
-
-    def test_missing_authentication_replayed_approval_and_fresh_approval(self):
-        with tempfile.TemporaryDirectory() as directory, socket.socket(socket.AF_UNIX) as listener:
-            path = str(Path(directory) / 'auth')
-            listener.bind(path)
-            listener.listen()
-            challenges = []
-            def server():
-                for index in range(4):
-                    conn, _ = listener.accept()
-                    with conn:
-                        version, challenge, args = receive(conn)
-                        if version != 'access-v2':
-                            return
-                        challenges.append(challenge)
-                        if args != ['enter', 'demo', 'pwd']:
-                            return
-                        answers = [['denied'], ['approved', challenges[0]], ['approved', challenge], ['approved', True]]
-                        packet(conn, answers[index])
-            thread = threading.Thread(target=server, daemon=True)
-            thread.start()
-            with patch.object(access, 'SOCKET', path), patch.object(access, 'peer_uid', return_value=0):
-                for allowed in (False, False, True, False):
-                    if allowed:
-                        access.request(['enter', 'demo', 'pwd'])
-                    else:
-                        with self.assertRaises(PermissionError):
-                            access.request(['enter', 'demo', 'pwd'])
-            thread.join(3)
-            self.assertEqual(len(set(challenges)), 4)
-
-    def test_service_rejects_canceled_authentication_and_stale_helper_output(self):
-        challenge = 'a' * 64
-        with tempfile.TemporaryDirectory() as directory:
-            install = Path(directory)
-            (install / 'owner').write_text('501')
-            for status, output, allowed in [(1, challenge, False), (0, 'old', False), (0, challenge, True)]:
-                conn, caller = socket.socketpair()
-                with self.subTest(status=status, output=output), conn, caller, \
-                     patch.object(access, 'INSTALL', install), patch.object(os, 'geteuid', return_value=0), \
-                     patch.object(access, 'peer_uid', return_value=499), \
-                     patch.object(access.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=499)), \
-                     patch.object(os, 'stat', return_value=SimpleNamespace(st_uid=501)), \
-                     patch.object(access.subprocess, 'run', return_value=SimpleNamespace(
-                         returncode=status, stdout=output.encode())) as authenticate:
-                    packet(caller, ['access-v2', challenge, ['enter', 'demo', 'pwd']])
-                    caller.shutdown(socket.SHUT_WR)
-                    if allowed:
-                        access.serve(conn)
-                        self.assertEqual(receive(caller), ['approved', challenge])
-                    else:
-                        with self.assertRaises(PermissionError):
-                            access.serve(conn)
-                    self.assertIn(b'pwd', authenticate.call_args.kwargs['input'])
-
-    def test_frontend_process_cannot_request_or_forge_approval(self):
-        conn, other = socket.socketpair()
-        with conn, other, patch.object(os, 'geteuid', return_value=0), \
-             patch.object(access, 'peer_uid', return_value=123456), \
-             patch.object(access.pwd, 'getpwnam') as private, patch.object(access.subprocess, 'run') as prompt:
-            private.return_value.pw_uid = 499
-            with self.assertRaises(PermissionError):
-                access.serve(conn)
-            prompt.assert_not_called()
-
-
-class ApprovedPreparation(unittest.TestCase):
     def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.directory = Path(temporary.name)
         self.policy = dict(owner=499, network='mybox-net-demo', subnet4='192.168.65.0/24',
                            subnet6='fd00::/64', gateway='192.168.65.1', ports=[], active=True)
         self.tokens = [f'{index:08d}-1111-4111-8111-111111111111' for index in range(1, 5)]
 
-    def run_preparation(self, actions, messages, effect=None):
-        self.calls = []
+    def prompt(self, args):
+        response = subprocess.run([NATIVE, 'prompt', json.dumps(args)], capture_output=True, text=True)
+        if response.returncode:
+            raise ValueError(response.stderr)
+        return response.stdout
 
-        def helper(command, **kwargs):
-            scope = json.loads(kwargs['input'])
-            index = len(self.calls)
-            self.assertEqual(command, [access.FIREWALL, 'approve-access', self.tokens[index]])
-            self.assertEqual(scope['box'], 'demo')
-            self.assertEqual(scope['policy'], self.policy if index else None)
-            self.assertGreater(scope['expires'], time.time())
-            self.assertLessEqual(kwargs['timeout'], access.PREPARATION_SECONDS)
-            self.assertTrue(kwargs['check'])
-            self.calls.append(scope)
-            if effect:
-                return effect(index)
-            self.assertIn(actions[index], scope['actions'])
-            return SimpleNamespace(stdout=json.dumps(dict(action=actions[index], policy=self.policy)).encode())
+    def test_prompt_describes_what_the_requester_receives(self):
+        self.assertIn('shell', self.prompt(['enter', 'demo']))
+        reason = self.prompt(['enter', 'demo', 'cat', 'a b', 'a\nb', '\u202etest'])
+        self.assertIn('receives output', reason)
+        self.assertIn('"a b" "a\\nb" "\\u202etest"', reason)
+        self.assertIn('copy of', self.prompt(['export', 'demo', '/workspace/x']))
+        self.assertIn('write', self.prompt(['import', 'demo', 'file']))
+        for args in (['enter', 'fake\nname'], ['shell', 'demo'], ['export', 'demo'], ['enter', 'demo', 'a\0b']):
+            with self.assertRaises(ValueError):
+                self.prompt(args)
 
+    def exchange(self, mode, messages, config):
+        log = self.directory / 'calls.json'
+        log.unlink(missing_ok=True)
+        config = dict(config, log=str(log))
         conn, caller = socket.socketpair()
-        with conn, caller, patch.object(access.subprocess, 'run', side_effect=helper):
+        with conn, caller:
+            process = subprocess.Popen([NATIVE, mode, str(conn.fileno()), json.dumps(config)],
+                pass_fds=(conn.fileno(),), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            conn.close()
+            caller.settimeout(10)
             for message in messages:
                 packet(caller, message)
             caller.shutdown(socket.SHUT_WR)
-            access.prepare_box(conn, 'demo')
-            conn.shutdown(socket.SHUT_WR)
             answers = []
             try:
                 while True:
                     answers.append(receive(caller))
-            except EOFError:
-                return answers
+            except (EOFError, ConnectionResetError):
+                pass
+            _, error = process.communicate(timeout=10)
+        self.calls = json.loads(log.read_text())
+        return process.returncode, answers, error.decode()
+
+    def run_preparation(self, actions, messages, responses=None, **config):
+        if responses is None:
+            responses = [dict(confirmation=dict(action=action, policy=self.policy)) for action in actions]
+        status, answers, error = self.exchange('prepare', messages, dict(config, responses=responses))
+        if status:
+            raise ValueError(error)
+        for call in self.calls:
+            self.assertEqual(call['executable'], '/Library/PrivilegedHelperTools/mybox-firewall-manager')
+            self.assertEqual(call['input']['box'], 'demo')
+            self.assertLessEqual(call['timeout'], 300)
+        return answers
+
+    def test_missing_authentication_replayed_approval_and_fresh_approval(self):
+        path = str(self.directory / 'socket')
+        with socket.socket(socket.AF_UNIX) as listener:
+            listener.bind(path); listener.listen(); listener.settimeout(10)
+            challenges, errors = [], []
+            def server():
+                try:
+                    for index in range(4):
+                        conn, _ = listener.accept()
+                        with conn:
+                            version, challenge, args = receive(conn)
+                            self.assertEqual((version, args), ('access-v2', ['enter', 'demo', 'pwd']))
+                            challenges.append(challenge)
+                            replies = [['denied'], ['approved', challenges[0]], ['approved', challenge], ['approved', True]]
+                            packet(conn, replies[index])
+                            self.assertEqual(conn.recv(1), b'')
+                except Exception as error:
+                    errors.append(error)
+            thread = threading.Thread(target=server)
+            thread.start()
+            for allowed in (False, False, True, False):
+                result = subprocess.run([NATIVE, 'request', path, str(os.getuid())], capture_output=True, timeout=10)
+                self.assertEqual(result.returncode == 0, allowed, result.stderr)
+            thread.join(10)
+            self.assertFalse(thread.is_alive())
+            self.assertEqual(errors, [])
+            self.assertEqual(len(set(challenges)), 4)
+
+    def test_service_rejects_canceled_authentication_and_stale_helper_output(self):
+        challenge = 'a' * 64
+        for status, output, allowed in [(1, challenge, False), (0, 'old', False), (0, challenge, True)]:
+            result, answers, error = self.exchange('access', [['access-v2', challenge, ['enter', 'demo', 'pwd']]],
+                dict(auth_status=status, auth_output=output))
+            self.assertEqual(result == 0, allowed, error)
+            self.assertEqual(answers, [['approved', challenge]] if allowed else [])
+            self.assertIn('pwd', self.calls[0]['input'][1])
+
+    def test_wrong_peer_and_console_owner_cannot_authenticate(self):
+        for config in [dict(peer=os.getuid() + 1), dict(console=502), dict(owner=0)]:
+            status, answers, _ = self.exchange('access', [['access-v2', 'a' * 64, ['enter', 'demo']]], config)
+            self.assertNotEqual(status, 0)
+            self.assertEqual(answers, [])
+            self.assertEqual(self.calls, [])
 
     def test_running_stopped_and_recovered_boxes_finish_without_sudo(self):
         for actions in [('verify',), ('apply', 'verify', 'verify'), ('update-ports', 'verify')]:
             with self.subTest(actions=actions):
                 requests = [['firewall', token] for token in self.tokens[:len(actions)]]
-                self.assertEqual(self.run_preparation(actions, requests + [['finish']]),
-                                 requests + [['finished']])
+                self.assertEqual(self.run_preparation(actions, requests + [['finish']]), requests + [['finished']])
+                for index, call in enumerate(self.calls):
+                    self.assertEqual(call['input']['policy'], self.policy if index else None)
+                    self.assertIn(actions[index], call['input']['actions'])
 
     def test_cannot_repeat_requests_change_operations_or_finish_before_checks(self):
         for actions, messages in [
-            ((), [['finish']]),
-            ((), [['firewall', '../request']]),
-            ((), [['enter', 'other-box']]),
+            ((), [['finish']]), ((), [['firewall', '../request']]), ((), [['enter', 'other-box']]),
             (('apply',), [['firewall', self.tokens[0]], ['firewall', self.tokens[0]]]),
             (('apply',), [['firewall', self.tokens[0]], ['finish']]),
             (('verify',), [['firewall', self.tokens[0]], ['firewall', self.tokens[1]]]),
         ]:
-            with self.subTest(messages=messages), self.assertRaises((ValueError, PermissionError)):
+            with self.subTest(messages=messages), self.assertRaises(ValueError):
                 self.run_preparation(actions, messages)
 
     def test_firewall_failure_cannot_confirm_access(self):
-        def failure(_):
-            raise access.subprocess.CalledProcessError(1, access.FIREWALL, stderr=b'The network bridge is missing.')
-        self.assertEqual(self.run_preparation(('verify',), [['firewall', self.tokens[0]]], failure),
-                         [['firewall-error', self.tokens[0], 'The network bridge is missing.']])
+        replies = self.run_preparation((), [['firewall', self.tokens[0]]],
+            [dict(status=1, error='The network bridge is missing.')])
+        self.assertEqual(replies, [['firewall-error', self.tokens[0], 'The network bridge is missing.']])
         self.assertEqual(len(self.calls), 1)
 
     def test_firewall_timeout_and_terminal_controls_are_reported_without_approval(self):
-        def timeout(_):
-            raise access.subprocess.TimeoutExpired(access.FIREWALL, 10)
-        replies = self.run_preparation(('verify',), [['firewall', self.tokens[0]]], timeout)
+        replies = self.run_preparation((), [['firewall', self.tokens[0]]], [dict(timeout=True)])
         self.assertEqual(replies[0][:2], ['firewall-error', self.tokens[0]])
         self.assertIn('timed out', replies[0][2])
-        def unsafe(_):
-            raise access.subprocess.CalledProcessError(1, access.FIREWALL, stderr=b'bad\x1b[2J' + b'x' * 3000)
-        replies = self.run_preparation(('verify',), [['firewall', self.tokens[0]]], unsafe)
+        replies = self.run_preparation((), [['firewall', self.tokens[0]]], [dict(status=1, error='bad\x1b[2J' + 'x' * 3000)])
         self.assertNotIn('\x1b', replies[0][2])
         self.assertEqual(len(replies[0][2]), 2000)
 
     def test_expiration_and_disconnection_do_no_firewall_work(self):
-        with patch.object(access.time, 'monotonic', side_effect=[100, 401]), self.assertRaises(PermissionError):
-            self.run_preparation((), [])
+        with self.assertRaises(ValueError):
+            self.run_preparation((), [], times=[100, 401])
         self.assertEqual(self.calls, [])
         self.assertEqual(self.run_preparation((), []), [])
         self.assertEqual(self.calls, [])
 
     def test_expiration_while_receiving_request_does_no_firewall_work(self):
-        with patch.object(access.time, 'monotonic', side_effect=[100, 101, 401]), self.assertRaises(PermissionError):
-            self.run_preparation((), [['firewall', self.tokens[0]]])
+        with self.assertRaises(ValueError):
+            self.run_preparation((), [['firewall', self.tokens[0]]], times=[100, 101, 401])
         self.assertEqual(self.calls, [])
 
     def test_helper_must_confirm_the_same_policy_and_allowed_action(self):
         for change in [dict(network='mybox-net-other'), dict(ports=[8080])]:
-            def changed(index):
-                policy = dict(self.policy, **change) if index else self.policy
-                return SimpleNamespace(stdout=json.dumps(dict(action='verify' if index else 'apply', policy=policy)).encode())
-            with self.subTest(change=change), self.assertRaises(PermissionError):
-                self.run_preparation(('apply', 'verify'), [['firewall', t] for t in self.tokens[:2]], changed)
+            responses = [dict(confirmation=dict(action='apply', policy=self.policy)),
+                         dict(confirmation=dict(action='verify', policy=dict(self.policy, **change)))]
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                self.run_preparation((), [['firewall', t] for t in self.tokens[:2]], responses)
+        with self.assertRaises(ValueError):
+            self.run_preparation((), [['firewall', self.tokens[0]]], [dict(confirmation=dict(action='remove', policy=self.policy))])

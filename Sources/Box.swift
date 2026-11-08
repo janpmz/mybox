@@ -61,7 +61,7 @@ final class Backend {
     init(startServiceIfNeeded: Bool = true) throws {
         #if MYBOX_SERVICE_WORKER
         guard files.isExecutableFile(atPath: forkBridgeExecutable) else {
-            throw BoxError("Install the shared my-container-box package before using MyBox.")
+            throw BoxError("Install the separate my-container-box runtime package before using MyBox.")
         }
         let candidates = [forkInstallRoot + "/bin/container"]
         #else
@@ -89,7 +89,7 @@ final class Backend {
             }
             guard let root = paths?["installRoot"],
                   URL(fileURLWithPath: root).standardizedFileURL.path == forkInstallRoot else {
-                throw BoxError("The _mybox container service must use the shared installation in /usr/local.")
+                throw BoxError("The _mybox container service must use the MyBox runtime in \(forkInstallRoot).")
             }
             #endif
             return true
@@ -108,10 +108,15 @@ final class Backend {
         note("Starting Apple's container service...")
         #if MYBOX_SERVICE_WORKER
         let kernelOption = "--enable-kernel-install"
+        // Retain the private account's existing disks and images. Only the fork
+        // installed for ordinary Mac accounts gets the new default data root.
+        let roots = ["--app-root", containerStorageRoot.deletingLastPathComponent().path,
+                     "--install-root", forkInstallRoot]
         #else
         let kernelOption = "--disable-kernel-install"
+        let roots: [String] = []
         #endif
-        let result = try capturedCommand(executable, ["system", "start", kernelOption])
+        let result = try capturedCommand(executable, ["system", "start", kernelOption] + roots)
         guard result.status == 0 else {
             throw BoxError("Cannot start Apple's container service. \(result.output.trimmingCharacters(in: .whitespacesAndNewlines))")
         }
@@ -194,28 +199,6 @@ final class Backend {
     }
 }
 
-// macOS labels binary memory sizes and decimal disk sizes in GB.
-let bytesPerMemoryGB: UInt64 = 1 << 30
-let bytesPerDiskGB: UInt64 = 1_000_000_000
-
-func formatSize(_ bytes: UInt64, scale: UInt64, unit: String, decimals: Int = 1) -> String {
-    let value = (Double(bytes) / Double(scale)).formatted(
-        .number.grouping(.never).precision(.fractionLength(0...decimals)))
-    return "\(value) \(unit)"
-}
-
-func memorySize(_ bytes: UInt64) -> String {
-    formatSize(bytes, scale: bytesPerMemoryGB, unit: "GB", decimals: 2)
-}
-
-func diskSize(_ bytes: UInt64) -> String {
-    let units: [(UInt64, String)] = [(1000 * bytesPerDiskGB, "TB"), (bytesPerDiskGB, "GB"), (1_000_000, "MB"), (1000, "kB")]
-    for (scale, unit) in units where bytes >= scale {
-        return formatSize(bytes, scale: scale, unit: unit)
-    }
-    return "\(bytes) B"
-}
-
 struct BoxRecord {
     let id: String
     let configuration: [String: Any]
@@ -243,27 +226,42 @@ struct BoxRecord {
 
     var ports: [[String: Any]] { configuration["publishedPorts"] as? [[String: Any]] ?? [] }
 
-    var coreDescription: String {
+    var coreCount: Int? {
         guard let resources = savedResources,
-              let cores = resources["cpus"] as? Int, cores > 0 else { return "-" }
-        return String(cores)
+              let cores = resources["cpus"] as? Int, cores > 0 else { return nil }
+        return cores
     }
 
-    var memoryDescription: String {
+    var memoryBytes: UInt64? {
         guard let resources = savedResources,
-              let bytes = resources["memoryInBytes"] as? UInt64, bytes > 0 else { return "-" }
-        return memorySize(bytes)
+              let bytes = resources["memoryInBytes"] as? UInt64, bytes > 0 else { return nil }
+        return bytes
     }
 
-    var diskDescriptions: (used: String, capacity: String) {
+    var diskBytes: (used: UInt64, capacity: UInt64)? {
         let directory = containerStorageRoot
         let disk = directory.appendingPathComponent(id, isDirectory: true).appendingPathComponent("rootfs.ext4")
         var metadata = stat()
         // The logical file size gives capacity. Allocated blocks give host usage.
         guard lstat(disk.path, &metadata) == 0,
               metadata.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG),
-              metadata.st_size > 0, metadata.st_blocks >= 0 else { return ("-", "-") }
-        return (diskSize(UInt64(metadata.st_blocks) * 512), diskSize(UInt64(metadata.st_size)))
+              metadata.st_size > 0, metadata.st_blocks >= 0 else { return nil }
+        return (UInt64(metadata.st_blocks) * 512, UInt64(metadata.st_size))
+    }
+
+    var coreDescription: String { coreCount.map(String.init) ?? "-" }
+    var memoryDescription: String { memoryBytes.map(memorySize) ?? "-" }
+    var diskDescriptions: (used: String, capacity: String) {
+        guard let disk = diskBytes else { return ("-", "-") }
+        return (diskSize(disk.used), diskSize(disk.capacity))
+    }
+
+    func listEntry() throws -> BoxListEntry {
+        let disk = diskBytes
+        return BoxListEntry(name: String(id.dropFirst(namePrefix.count)), state: state,
+                            cpus: coreCount, memoryBytes: memoryBytes,
+                            diskUsedBytes: disk?.used, diskCapacityBytes: disk?.capacity,
+                            ports: try allPortMappings())
     }
 
     func checkConfiguration() throws {
@@ -601,8 +599,9 @@ Usage: mybox <command>
   ports remove <name> --outside-port N
                          Remove a MyBox mapping without restarting the box.
   ports list <name>      Show saved mappings and forwarding status.
-  list                   List boxes created by this CLI, including stopped ones.
+  list [--json]          List boxes created by this CLI, including stopped ones.
                          Show CPU cores, memory, disk use, disk capacity, and ports.
+                         --json: structured data with numeric sizes in bytes.
   setup-service          Install the private MyBox account and register its service.
   setup-network          Install the PF helper and automatic Mac startup setup.
   completion zsh         Print the zsh script for Tab completion.
@@ -659,8 +658,15 @@ func mainCommand(_ arguments: [String]) throws {
             try Backend().resize(options)
         }
     case "list":
-        guard rest.isEmpty else { throw BoxError("Usage: mybox list") }
+        guard rest.isEmpty || rest == ["--json"] else { throw BoxError("Usage: mybox list [--json]") }
         let records = try Backend().records(["list", "--all", "--format", "json"]).filter(\.isManaged).sorted { $0.id < $1.id }
+        if rest == ["--json"] {
+            let output = BoxList(schemaVersion: BoxList.currentSchemaVersion, boxes: try records.map { try $0.listEntry() })
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            print(String(decoding: try encoder.encode(output), as: UTF8.self))
+            return
+        }
         if records.isEmpty { print("No MyBox boxes yet. Create one with: mybox create demo"); return }
         let rows = [["NAME", "STATE", "CORES", "MEMORY", "DISK USED", "DISK MAX", "PORTS"]] + (try records.map { record in
             let disk = record.diskDescriptions
@@ -759,22 +765,25 @@ struct MyBoxMain {
         }
         try mainCommand(args)
         #else
-        let checkoutService = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
-            .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("service")
+        let binaryDirectory = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
+            .deletingLastPathComponent()
         if args.first == "setup-service" {
             guard args.count == 1 else {
                 throw BoxError("Usage: mybox setup-service")
             }
-            let installer = checkoutService.appendingPathComponent("install.py")
-            try execTool("/usr/bin/sudo", ["/usr/bin/python3", "-I", "-B", installer.path])
+            let installers = [binaryDirectory.appendingPathComponent("mybox-setup").path, serviceInstall + "/mybox-setup"]
+            guard let installer = installers.first(where: { files.isExecutableFile(atPath: $0) }) else {
+                throw BoxError("The MyBox setup program is missing. Build or reinstall MyBox.")
+            }
+            try execTool("/usr/bin/sudo", [installer])
         }
         if let command = args.first, serviceCommands.contains(command) {
-            // The checkout client can still reach the installed account socket during a software upgrade.
-            let clients = [serviceInstall + "/broker.py", checkoutService.appendingPathComponent("broker.py").path]
-            guard let client = clients.first(where: { files.isReadableFile(atPath: $0) }) else {
+            // The native client keeps the existing wire protocol during upgrades.
+            let clients = [binaryDirectory.appendingPathComponent("mybox-service").path, serviceInstall + "/mybox-service"]
+            guard let client = clients.first(where: { files.isExecutableFile(atPath: $0) }) else {
                 throw BoxError("Run mybox setup-service in your Mac terminal to configure the private account.")
             }
-            try execTool("/usr/bin/python3", ["-I", "-B", client, "client"] + args)
+            try execTool(client, ["client"] + args)
         }
         try mainCommand(args)
         #endif

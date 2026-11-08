@@ -1,6 +1,14 @@
 import Foundation
 import Darwin
 
+private func outsidePortLink(_ port: Int) -> String {
+    let url = "http://localhost:\(port)"
+    guard isatty(STDOUT_FILENO) == 1 else { return url }
+    // OSC 8 sets the hyperlink target. Keep the URL visible for terminals
+    // that only support opening URLs detected in the displayed text.
+    return "\u{1B}]8;;\(url)\u{1B}\\\u{1B}[4m\(url)\u{1B}[24m\u{1B}]8;;\u{1B}\\"
+}
+
 struct PortOptions {
     let action: String
     let name: String
@@ -69,10 +77,14 @@ extension BoxRecord {
         return PortTarget(address: String(address), started: started)
     }
 
-    func allPortDescription() throws -> String {
+    func allPortMappings() throws -> [BoxListEntry.Port] {
         let dynamic = try portConfiguration()?.mappings ?? []
-        let descriptions = ports.map { "inside \($0["containerPort"] as? Int ?? 0) / outside \($0["hostPort"] as? Int ?? 0) (localhost)" }
-            + dynamic.map { "inside \($0.inside) / outside \($0.outside) (localhost)" }
+        return ports.map { BoxListEntry.Port(inside: $0["containerPort"] as? Int ?? 0, outside: $0["hostPort"] as? Int ?? 0) }
+            + dynamic.map { BoxListEntry.Port(inside: $0.inside, outside: $0.outside) }
+    }
+
+    func allPortDescription() throws -> String {
+        let descriptions = try allPortMappings().map { "inside \($0.inside) / outside \(outsidePortLink($0.outside))" }
         return descriptions.isEmpty ? "-" : descriptions.joined(separator: ", ")
     }
 }

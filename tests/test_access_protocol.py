@@ -9,13 +9,9 @@ import tempfile
 import threading
 import time
 import unittest
-from types import SimpleNamespace
-from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / 'service'))
-import access
-from broker import packet, receive
+from service_protocol import packet, receive
 
 
 class AccessProtocol(unittest.TestCase):
@@ -58,6 +54,7 @@ import Foundation
         sources = ['Support.swift', 'HostProcess.swift', 'NetworkPolicy.swift',
                    'ServiceFirewall.swift', 'BoxAccess.swift']
         compiled = subprocess.run(['xcrun', 'swiftc', '-module-cache-path', str(ROOT / '.build/module-cache'),
+                        str(ROOT / 'Shared/RuntimeLocation.swift'),
                         *[str(ROOT / 'Sources' / source) for source in sources], str(harness),
                         '-o', str(cls.program)], capture_output=True, text=True, timeout=120)
         if compiled.returncode:
@@ -120,36 +117,22 @@ import Foundation
                 raise errors[0]
             return response
 
-    def test_swift_worker_and_python_service_share_one_authentication(self):
-        calls = []
-        install = self.directory / 'install'
-        install.mkdir(exist_ok=True)
-        (install / 'owner').write_text('501')
-
-        def helper(command, **kwargs):
-            calls.append(command)
-            if command[0] == '/bin/launchctl':
-                challenge, reason = json.loads(kwargs['input'])
-                self.assertIn('demo', reason)
-                self.assertIn('firewall', reason)
-                return SimpleNamespace(returncode=0, stdout=challenge.encode())
-            self.assertEqual(command, [access.FIREWALL, 'approve-access', '11111111-1111-4111-8111-111111111111'])
-            return SimpleNamespace(stdout=json.dumps(dict(action='verify', policy=self.policy)).encode())
-
-        # Patch only the service thread's dependencies, not subprocess.run used
-        # to launch the real Swift client in exchange().
-        real_run = subprocess.run
-        def run(command, **kwargs):
-            return real_run(command, **kwargs) if command[0] == self.program else helper(command, **kwargs)
-
-        with patch.object(access, 'INSTALL', install), patch.object(access.os, 'geteuid', return_value=0), \
-             patch.object(access, 'peer_uid', return_value=499), \
-             patch.object(access.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=499)), \
-             patch.object(access.os, 'stat', return_value=SimpleNamespace(st_uid=501)), \
-             patch.object(access.subprocess, 'run', side_effect=run):
-            response = self.exchange(access.serve)
+    def test_swift_worker_and_native_service_share_one_authentication(self):
+        log = self.directory / 'native-calls.json'
+        config = dict(log=str(log), responses=[dict(confirmation=dict(action='verify', policy=self.policy))])
+        def serve(conn):
+            conn.setblocking(True)  # launchd supplies a blocking connected socket.
+            process = subprocess.run([ROOT / '.build/mybox-service-tests', 'access', str(conn.fileno()), json.dumps(config)],
+                pass_fds=(conn.fileno(),), capture_output=True, timeout=10)
+            self.assertEqual(process.returncode, 0, process.stderr)
+        response = self.exchange(serve)
         self.assertEqual(response.returncode, 0, response.stderr)
-        self.assertEqual(len(calls), 2, calls)
+        calls = json.loads(log.read_text())
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0]['executable'], '/bin/launchctl')
+        self.assertIn('demo', calls[0]['input'][1])
+        self.assertIn('firewall', calls[0]['input'][1])
+        self.assertEqual(calls[1]['arguments'], ['approve-access', '11111111-1111-4111-8111-111111111111'])
 
     def test_swift_rejects_cancellation_replayed_approval_and_wrong_service_owner(self):
         for reply in [['denied'], ['approved', 'old-challenge']]:

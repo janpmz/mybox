@@ -124,6 +124,7 @@ class Completion(unittest.TestCase):
             "mybox ports add doc": "mybox ports add document-player-box ",
             "mybox ports re": "mybox ports remove ",
             "mybox create new --ins": "mybox create new --inside-port ",
+            "mybox list --j": "mybox list --json ",
             "mybox completion z": "mybox completion zsh ",
         }
         for command, expected in cases.items():

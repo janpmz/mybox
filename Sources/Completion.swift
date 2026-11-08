@@ -88,6 +88,9 @@ _mybox() {
                 esac
             fi
             ;;
+        list)
+            (( CURRENT == 3 )) && compadd -- --json
+            ;;
         completion)
             (( CURRENT == 3 )) && compadd -- zsh
             ;;

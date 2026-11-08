@@ -959,18 +959,51 @@ Other-box checks and reliable automatic rule ownership remain necessary.
 - The current `/opt/homebrew/bin/mybox` link is a development convenience tied to
   this checkout. It is not the release installation method, and Homebrew must
   not become a requirement just because that folder is used on this Mac.
-- Distribute precompiled `mybox` and `mybox-firewall-manager` executables. Initial builds target Apple
+- Distribute precompiled `mybox`, the desktop app, and the Swift service helpers. Initial builds target Apple
   silicon. Define and test the supported macOS versions explicitly before a
   public release.
 - The proposed initial delivery is a Developer ID-signed, notarized `.pkg`
-  installer that installs the CLI in `/usr/local/bin/mybox`, makes
+  installer that always installs both the CLI in `/usr/local/bin/mybox` and the desktop app in `/Applications/MyBox.app`, makes
   the `mybox` command available, and supports upgrades and documented removal.
   Install the firewall manager in `/Library/PrivilegedHelperTools/mybox-firewall-manager`.
   Choose and implement the final packaging workflow when preparing a release.
-- Apple's `container` CLI remains a runtime dependency of the current backend.
-  Setup must check compatible hardware, macOS, and backend versions, and guide
-  installation if the backend is missing. No backend bundling or automatic
-  dependency installation has been implemented.
+- The fork package now installs in `/Library/Application Support/MyBox/Runtime`,
+  with its own package receipt, service names, personal data and configuration
+  directories, registry credential identifier, DNS ports, resolver filenames,
+  and PF anchor. Apple's original package remains in `/usr/local`.
+  Linux kernel and image downloads retain their existing on-demand behavior.
+  A new setup screen is deferred.
+- `my-container` invokes the private fork executable. Direct fork commands run
+  under the calling Mac account; `mybox` continues to use `_mybox` and preserves
+  that account's existing disks and images. The private service disables the
+  runtime's host DNS listeners, leaving the fork's ports available to the
+  signed-in account. The combined release installer must include the launcher.
+- `scripts/migrate-isolated-runtime.sh` backs up program files, switches the
+  private service, and restores Apple's verified 1.6.1 package on development
+  installations that previously used the shared fork. It refuses migration if
+  MyBox boxes are running. The [coexistence test](test-results/runtime-coexistence-latest.json)
+  passed with Apple's 1.6.1 and the fork's `1.6.1-mybox.5`: both services ran with
+  independent temporary stores, and stopping either left the other running.
+  This check did not boot Linux.
+- On 8 November 2026, the development Mac was migrated to those separate
+  installations. Both installed runtimes passed the coexistence check while the
+  private MyBox service remained available. The [migration verification](test-results/runtime-migration-latest.json)
+  confirmed that installed native helpers match the build and both existing
+  boxes retain their CPU, memory, disk usage, capacity, port mappings, and stopped
+  state. Program backups remain at `/private/var/db/mybox-runtime-backup.zlm5xD`.
+- Starting Apple's runtime with the existing personal store later exposed two
+  unused `reserved-on-demand` networks left by the old shared fork. Apple's
+  helper rejects that option and repeatedly exits, leaving startup waiting.
+  The personal container directory was empty. Both network definitions were
+  moved to `~/Library/Application Support/MyBox/MigrationBackups/personal-networks-20261108-124658`.
+  Both personal runtimes then reported running, and the private MyBox inventory
+  remained unchanged. The migration script now checks for incompatible personal
+  networks before replacing the old fork. Temporary empty-store tests alone do
+  not establish compatibility with existing saved configuration.
+- Runtime Python components have been replaced by `mybox-service`, `mybox-access`,
+  and `mybox-setup`, with file transfer code compiled into the service executable.
+  Installed MyBox will require neither Python nor developer tools. Python remains
+  a development dependency for tests and the historical network migration utility.
 - Keep installation, upgrades, and removal of the program separate from box
   storage. Program updates or ordinary uninstallation must not delete project
   containers or their files.

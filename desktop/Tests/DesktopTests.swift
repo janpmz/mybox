@@ -3,7 +3,7 @@ import Foundation
 
 @main
 struct DesktopTests {
-    static func main() throws {
+    static func main() async throws {
         var checks = 0
         func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
             guard condition() else { fatalError(message) }
@@ -13,36 +13,60 @@ struct DesktopTests {
             do { try operation(); fatalError(message) } catch { checks += 1 }
         }
 
-        let table = """
-        NAME              STATE    CORES  MEMORY   DISK USED  DISK MAX  PORTS
-        demo              running  4      4 GB     2.8 GB     20 GB     inside 3000 / outside http://localhost:8766, inside 8080 / outside http://localhost:8080
-        weekend-project   stopped  2      0.25 GB  -          -         -
-
-        CORES and MEMORY are configured limits. DISK USED is the Linux disk's space on your Mac.
-        DISK MAX is virtual capacity. Disk growth needs free space on your Mac.
+        let json = """
+        {"schemaVersion":1,"boxes":[
+          {"name":"demo","state":"running","cpus":4,"memoryBytes":4294967296,
+           "diskUsedBytes":2800000000,"diskCapacityBytes":20000000000,
+           "ports":[{"inside":3000,"outside":8766},{"inside":8080,"outside":8080}]},
+          {"name":"weekend-project","state":"stopped","cpus":2,"memoryBytes":268435456,
+           "diskUsedBytes":null,"diskCapacityBytes":null,"ports":[]}
+        ]}
         """
-        let boxes = try WorkspaceParser.parse(table)
+        let boxes = try WorkspaceParser.parse(json)
         expect(boxes.count == 2, "Expected both rows")
         expect(boxes[0].name == "demo" && boxes[0].isRunning, "Running state")
-        expect(boxes[0].cores == "4" && boxes[0].memory == "4 GB", "Resource units must survive parsing")
-        expect(boxes[0].diskUsed == "2.8 GB" && boxes[0].diskCapacity == "20 GB", "Disk columns")
-        expect(boxes[0].ports == [PortMapping(inside: 3000, outside: 8766), PortMapping(inside: 8080, outside: 8080)], "Multiple current-format ports")
-        expect(boxes[1].memory == "0.25 GB" && boxes[1].diskUsed == "-", "Fractional memory and unavailable disk")
+        expect(boxes[0].cores == "4" && boxes[0].memory == "4 GB", "Memory uses binary GB")
+        expect(boxes[0].diskUsed.replacingOccurrences(of: ",", with: ".") == "2.8 GB" && boxes[0].diskCapacity == "20 GB", "Disk uses decimal GB")
+        expect(boxes[0].ports == [PortMapping(inside: 3000, outside: 8766), PortMapping(inside: 8080, outside: 8080)], "Multiple numeric ports")
+        expect(boxes[1].memory.replacingOccurrences(of: ",", with: ".") == "0.25 GB" && boxes[1].diskUsed == "-", "Fractional memory and unavailable disk")
         expect(!boxes[1].isRunning && boxes[1].ports.isEmpty, "Stopped state without ports")
-        let legacy = try WorkspaceParser.parsePorts("inside 8080 / outside 8766 (localhost)")
-        expect(legacy == [PortMapping(inside: 8080, outside: 8766)], "Installed older CLI port format")
-        let empty = try WorkspaceParser.parse("No MyBox boxes yet. Create one with: mybox create demo\n")
+        let empty = try WorkspaceParser.parse("{\"schemaVersion\":1,\"boxes\":[]}")
         expect(empty.isEmpty, "Empty workspace list")
+        let unknown = try WorkspaceParser.parse(json.replacingOccurrences(of: "\"cpus\":4", with: "\"cpus\":null")
+            .replacingOccurrences(of: "\"memoryBytes\":4294967296", with: "\"memoryBytes\":null"))
+        expect(unknown[0].cores == "-" && unknown[0].memory == "-", "Unknown resources must not become zero")
+        let extended = try WorkspaceParser.parse(json.replacingOccurrences(of: "\"state\":\"running\"", with: "\"futureField\":true,\"state\":\"running\""))
+        expect(extended == boxes, "Additional JSON fields must be tolerated")
         expectFailure("Malformed output must not become an empty list") { _ = try WorkspaceParser.parse("permission denied") }
-        expectFailure("Missing columns") { _ = try WorkspaceParser.parse("NAME  STATE\ndemo  running") }
-        expectFailure("Truncated rows") { _ = try WorkspaceParser.parse("NAME  STATE  CORES  MEMORY  DISK USED  DISK MAX  PORTS\nbad") }
-        expectFailure("Invalid port") { _ = try WorkspaceParser.parsePorts("inside 80 / outside http://localhost:70000") }
-        expectFailure("Unexpected port format") { _ = try WorkspaceParser.parsePorts("inside 80 / outside https://example.com") }
-        expectFailure("Duplicate workspaces") { _ = try WorkspaceParser.parse(table.replacingOccurrences(of: "weekend-project ", with: "demo            ")) }
+        for invalid in ["{}", "[]", "{\"schemaVersion\":1}", "{\"schemaVersion\":2,\"boxes\":[]}",
+                        json.replacingOccurrences(of: "\"name\":\"demo\",", with: ""),
+                        json.replacingOccurrences(of: "\"cpus\":4", with: "\"cpus\":0"),
+                        json.replacingOccurrences(of: "\"memoryBytes\":4294967296", with: "\"memoryBytes\":\"4 GB\""),
+                        json.replacingOccurrences(of: "\"diskUsedBytes\":2800000000", with: "\"diskUsedBytes\":-1"),
+                        json.replacingOccurrences(of: "\"outside\":8766", with: "\"outside\":70000"),
+                        json.replacingOccurrences(of: "\"outside\":8766", with: "\"outside\":8080"),
+                        json.replacingOccurrences(of: "weekend-project", with: "demo")] {
+            expectFailure("Invalid JSON data must be rejected") { _ = try WorkspaceParser.parse(invalid) }
+        }
         for name in ["", "Demo", "a;whoami", "../box", "a\n", "1box", String(repeating: "a", count: 49)] {
             expect(!WorkspaceParser.validName(name), "Invalid name accepted: \(name.debugDescription)")
         }
         expect(WorkspaceParser.validName("my-box-42"), "Valid box name")
+
+        let cliDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("mybox-desktop-test-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: cliDirectory, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: cliDirectory) }
+        let cli = cliDirectory.appendingPathComponent("mybox")
+        let script = "#!/bin/sh\n[ \"$#\" = 2 ] && [ \"$1\" = list ] && [ \"$2\" = --json ] || exit 2\nprintf '%s' " + ShellCommand.quote(json) + "\nprintf diagnostic >&2\n"
+        try script.write(to: cli, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: cli.path)
+        let fetched = try await MyBoxClient.list(executable: cli.path)
+        expect(fetched == boxes, "Desktop must request --json and exclude stderr")
+        try "#!/bin/sh\nprintf 'MyBox: Usage: mybox list\\n' >&2\nexit 1\n".write(to: cli, atomically: false, encoding: .utf8)
+        do {
+            _ = try await MyBoxClient.list(executable: cli.path)
+            fatalError("Older service must not look like an empty list")
+        } catch { expect(error.localizedDescription.contains("mybox setup-service"), "Explain how to update an older service") }
 
         let arguments = ["two words", "quote's", "\"double\"", "$(echo injected)", "`echo injected`", "line\nbreak", "; exit 31", "", "☃"]
         let command = ShellCommand.line(executable: "/usr/bin/printf", arguments: ["%s\\0"] + arguments)
@@ -115,7 +139,7 @@ struct DesktopTests {
         expectFailure("Duplicate port row") { _ = try PortList.parse("INSIDE  OUTSIDE  OWNER   STATE\n80 8080 MyBox active\n81 8080 MyBox active") }
         if CommandLine.arguments.count == 2 {
             let live = try WorkspaceParser.parse(String(contentsOfFile: CommandLine.arguments[1], encoding: .utf8))
-            print("Parsed live CLI output: \(live.count) workspaces, \(live.filter(\.isRunning).count) running.")
+            print("Parsed CLI JSON: \(live.count) workspaces, \(live.filter(\.isRunning).count) running.")
         }
         print("Passed \(checks) checks: CLI parsing, command forms, port status, argument safety, errors, and timeout.")
     }

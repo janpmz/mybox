@@ -11,7 +11,11 @@ enum MyBoxClient {
 
     static func list(executable: String) async throws -> [Workspace] {
         try await Task.detached(priority: .utility) {
-            try WorkspaceParser.parse(capture(executable: executable, arguments: ["list"]))
+            do {
+                return try WorkspaceParser.parse(capture(executable: executable, arguments: ["list", "--json"]))
+            } catch let error as DesktopError where error.message.contains("Usage: mybox list") {
+                throw DesktopError("The installed MyBox service does not support JSON lists yet. Run mybox setup-service in Terminal, then refresh.")
+            }
         }.value
     }
 

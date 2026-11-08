@@ -43,7 +43,7 @@ struct MenuBarView: View {
                     Label("Open MyBox", systemImage: "macwindow")
                 }.buttonStyle(.borderless).help("Open the full MyBox window")
                 Spacer()
-                Menu { AppActions(model: model) } label: { Image(systemName: "ellipsis.circle") }
+                Menu { AppActions(model: model) } label: { Image(systemName: "ellipsis") }
                     .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().accessibilityLabel("MyBox menu")
             }.font(.system(size: 12))
         }.padding(16).frame(width: Self.width).background(AppTheme.background).preferredColorScheme(.dark).tint(AppTheme.accent)

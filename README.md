@@ -2,8 +2,10 @@
 
 MyBox is a command-line tool for running isolated Linux workspaces on your Mac.
 
-The [native macOS app](desktop/README.md) adds a menu bar icon and a compact box
-list. Build it with `make desktop` and open it with `make desktop-run`.
+The [native macOS app](desktop/README.md) adds a menu bar icon and a compact
+box list. The CLI and app share this repository; the CLI works without opening the app.
+The planned release installer will install both.
+Build the app with `make desktop` and open it with `make desktop-run`.
 
 ![Node.js runs inside an isolated Linux box on your Mac. It can reach the public internet. MyBox blocks direct access to Mac files, Mac services, and the local network.](docs/diagrams/mybox-concept-blueprint-v8.png)
 
@@ -22,6 +24,8 @@ flowchart LR
     M --> W["Wi-Fi / Ethernet"]
     W --> I["Internet"]
 ```
+
+[![MyBox terminal demo at 2× speed: create a box, list boxes, approve shell access with Touch ID, and confirm Debian inside the box.](docs/media/mybox-demo.gif)](docs/media/mybox-demo.mp4)
 
 ## Commands
 
@@ -75,8 +79,9 @@ Usage: mybox <command>
   ports remove <name> --outside-port N
                          Remove a MyBox mapping without restarting the box.
   ports list <name>      Show saved mappings and forwarding status.
-  list                   List boxes created by this CLI, including stopped ones.
+  list [--json]          List boxes created by this CLI, including stopped ones.
                          Show CPU cores, memory, disk use, disk capacity, and ports.
+                         --json: structured data with numeric sizes in bytes.
   setup-service          Install the private MyBox account and register its service.
   setup-network          Install the PF helper and automatic Mac startup setup.
   completion zsh         Print the zsh script for Tab completion.
@@ -92,17 +97,31 @@ Run setup-service once in a Mac terminal. PF changes require administrator acces
 
 Installation currently uses this source checkout. Requires an Apple silicon Mac,
 the Swift compiler, and the `janpmz/my-container-box` fork of Apple's `container`
-installed in `/usr/local`.
+installed in `/Library/Application Support/MyBox/Runtime` (version `1.6.1-mybox.5`
+or later). Apple's original `container` can remain installed in `/usr/local`.
 
 Run from this project folder:
 
 ```sh
 make build
 sudo ln -s "$PWD/mybox" /usr/local/bin/mybox
+sudo ln -s "$PWD/my-container" /usr/local/bin/my-container
 mybox setup-service
 ```
 
-Skip the link command if `mybox` is already on your `PATH`. Keep this project
+Skip each link command if that command is already on your `PATH`. Keep this project
 folder in place because the command links to it. Setup asks for your Mac password.
+
+`my-container` invokes the fork's full CLI directly, for example
+`my-container --version` or `my-container list --all`. It runs in your normal
+Mac account. Use `mybox` for boxes owned by the private `_mybox` account.
+The commands use separate runtimes and stores:
+
+- `container`: Apple's original installation and your existing Apple containers.
+- `my-container`: the fork, with its own services and personal container store.
+- `mybox`: the fork running as `_mybox`, with private MyBox disks.
+
+To migrate this development Mac from the older shared fork installation, see
+[runtime migration](docs/guide.md#runtime-migration).
 
 See the [guide](docs/guide.md) for usage details and technical notes.
