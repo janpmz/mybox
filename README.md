@@ -1,13 +1,18 @@
 # MyBox
 
-![MyBox main app showing boxes, resource usage, and port mappings.](docs/screenshots/mybox-main-window.png)
-
 MyBox is a command-line tool for running isolated Linux workspaces on your Mac.
 
 The [native macOS app](desktop/README.md) adds a menu bar icon and a compact
 box list. The CLI and app share this repository; the CLI works without opening the app.
-The planned release installer will install both.
-Build the app with `make desktop` and open it with `make desktop-run`.
+The installer includes both.
+
+![MyBox main app showing boxes, resource usage, and port mappings.](docs/screenshots/mybox-main-window.png)
+
+## Install
+
+[Download MyBox (.pkg)](https://github.com/janpmz/mybox/releases/download/v0.1.0/MyBox-0.1.0-arm64.pkg) · Apple silicon · macOS 26+
+
+## How it works
 
 ![Node.js runs inside an isolated Linux box on your Mac. It can reach the public internet. MyBox blocks direct access to Mac files, Mac services, and the local network.](docs/diagrams/mybox-concept-blueprint-v8.png)
 
@@ -87,13 +92,12 @@ Each box connects to its own virtual network. MyBox checks the firewall rules be
 Run setup-service once in a Mac terminal. PF changes require administrator access.
 ```
 
-## Install
+## Build from source
 
-A local test installer can be built with `make package`; it includes the desktop
-app, CLI, runtime, and native helpers. The resulting
-`dist/MyBox-0.1.0-arm64.pkg` targets Apple silicon and macOS 26 or later. Signing,
-notarization, and testing the actual installation are still pending. See the
-[package build and test instructions](packaging/README.md).
+To build an installer locally, run `make package`.
+See the [package build instructions](packaging/README.md).
+
+Build the desktop app with `make desktop` and open it with `make desktop-run`.
 
 For source-based development, use this checkout. Requires an Apple silicon Mac,
 the Swift compiler, and the `janpmz/my-container-box` fork of Apple's `container`
