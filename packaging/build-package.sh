@@ -6,6 +6,10 @@ project=$(cd "$(dirname "$0")/.." && pwd -P)
 runtime_package=${1:-"$project/../mybox-container/bin/release/my-container-box-installer.pkg"}
 runtime_source=$(cd "$project/../mybox-container" && pwd -P)
 [ -f "$runtime_package" ] || { printf 'Build the fork release package first: %s\n' "$runtime_package" >&2; exit 1; }
+sign=${MYBOX_SIGN:-0}
+notarize=${MYBOX_NOTARIZE:-0}
+[[ "$sign" =~ ^[01]$ && "$notarize" =~ ^[01]$ ]] || { printf 'MYBOX_SIGN and MYBOX_NOTARIZE must be 0 or 1.\n' >&2; exit 1; }
+[[ "$notarize" == 0 || "$sign" == 1 ]] || { printf 'Notarization requires Developer ID signing.\n' >&2; exit 1; }
 mkdir -p "$project/.build" "$project/dist"
 work=$(mktemp -d "$project/.build/package.XXXXXX")
 source="$work/source"
@@ -13,6 +17,13 @@ payload="$work/payload"
 scripts="$work/scripts"
 printf 'Package build directory: %s\n' "$work"
 mkdir -p "$source" "$payload" "$scripts" "$work/components"
+signing_options=(--config "$work/signing.json")
+if [ "$notarize" = 1 ]; then signing_options+=(--notarize); fi
+if [ "$sign" = 1 ]; then
+    # Check both certificates before spending time compiling. Signing errors
+    # must never quietly produce an unsigned release package.
+    python3 "$project/packaging/signing.py" configure "${signing_options[@]}"
+fi
 
 # Snapshot source files so another conversation's UI build cannot overwrite the
 # app that is being packaged. Existing build caches and development media stay out.
@@ -50,6 +61,9 @@ done
 /usr/bin/install -m 755 "$source/packaging/scripts/preinstall" "$scripts/preinstall"
 /usr/bin/install -m 755 "$source/packaging/scripts/postinstall" "$scripts/postinstall"
 /usr/bin/install -m 755 "$source/.build/mybox-setup" "$scripts/mybox-setup"
+if [ "$sign" = 1 ]; then
+    python3 "$source/packaging/signing.py" payload --config "$work/signing.json" --payload "$payload" --scripts "$scripts"
+fi
 
 # pkgbuild records root ownership without requiring sudo for this build.
 /usr/bin/pkgbuild --root "$payload" --identifier io.github.janpmz.mybox --version 0.1.0 \
@@ -57,13 +71,24 @@ done
     --component-plist "$source/packaging/components.plist" "$work/components/MyBox-component.pkg"
 /usr/bin/productbuild --distribution "$source/packaging/Distribution.xml" \
     --resources "$source/packaging/resources" --package-path "$work/components" "$work/MyBox-0.1.0-arm64.pkg"
+if [ "$sign" = 1 ]; then
+    python3 "$source/packaging/signing.py" package "${signing_options[@]}" \
+        --package "$work/MyBox-0.1.0-arm64.pkg"
+fi
 python3 "$project/tests/package_layout.py" "$work/MyBox-0.1.0-arm64.pkg" --report "$work/verification.json"
 
 # Publish only a package that passed inspection; a failed build keeps the prior
-# test package intact. Record the exact source snapshot used for the UI too.
+# package intact. Record the exact source snapshot used for the UI too.
 cp "$work/MyBox-0.1.0-arm64.pkg" "$project/dist/MyBox-0.1.0-arm64.pkg"
 cp "$work/verification.json" "$project/dist/MyBox-0.1.0-verification.json"
 python3 "$project/packaging/write-build-manifest.py" "$project" "$source" "$runtime_package" "$runtime_source" "$work"
 (cd "$project/dist" && /usr/bin/shasum -a 256 MyBox-0.1.0-arm64.pkg > MyBox-0.1.0-arm64.pkg.sha256)
 cp "$source/packaging/TESTING.txt" "$project/dist/TESTING.txt"
-printf '\nReady for testing: %s\n' "$project/dist/MyBox-0.1.0-arm64.pkg"
+for report in notarization-submission.json notarization-log.json; do
+    if [ -f "$work/$report" ]; then
+        cp "$work/$report" "$project/dist/MyBox-0.1.0-$report"
+    else
+        rm -f "$project/dist/MyBox-0.1.0-$report"
+    fi
+done
+printf '\nPackage ready: %s\n' "$project/dist/MyBox-0.1.0-arm64.pkg"

@@ -1,8 +1,8 @@
-MyBox 0.1.0 — local installer test
+MyBox 0.1.0 — installer verification
 
 This package has not been installed or tested on a clean Mac yet. It is built for
-Apple silicon and requires macOS 26 or later. Public signing and notarization
-are intentionally deferred.
+Apple silicon and requires macOS 26 or later. The accompanying build manifest
+and verification report state whether this build is signed and notarized.
 
 Before testing on the development Mac:
 1. Stop your MyBox boxes and quit the MyBox desktop app.

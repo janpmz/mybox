@@ -1,8 +1,62 @@
-# Local MyBox package
+# MyBox package
 
 `make package` produces `dist/MyBox-0.1.0-arm64.pkg` plus a checksum, build
 manifest, verification report, and test instructions. It does not install the
 package or change launchd jobs, accounts, firewall rules, or existing boxes.
+
+## Signing and notarization
+
+Install a **Developer ID Application** certificate and a **Developer ID Installer**
+certificate from your Apple Developer Program account into this Mac's keychain.
+Each certificate must have its matching private key. Create a separate certificate
+signing request on this Mac for each certificate, or import the identity, including its private key,
+from the Mac where it was created. Both certificates must belong to the same team.
+Apple documents [creating Developer ID certificates](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/).
+
+Build a signed installer with:
+
+```sh
+make package-signed
+```
+
+The builder selects the available Developer ID identities automatically when
+there is exactly one of each type. If you have several, set
+`MYBOX_APPLICATION_IDENTITY` and `MYBOX_INSTALLER_IDENTITY` to their full certificate
+names. Missing or ambiguous certificates stop the build before compilation;
+the builder never substitutes an unsigned package for a signed build.
+
+For distribution, also submit the signed package to Apple's notarization service.
+This is Apple's automated check of the software and does not involve a tester
+group. Store the notarization credentials locally using the interactive command:
+
+```sh
+xcrun notarytool store-credentials mybox
+```
+
+For Apple account authentication, press Enter at the API private-key path prompt
+to leave it empty. Enter the Apple account, team ID, and an
+[app-specific password](https://support.apple.com/en-us/102654) when prompted.
+The credentials stay in your keychain; do not put them in repository
+files. Then build, sign, notarize, and attach Apple's approval ticket with:
+
+```sh
+MYBOX_NOTARY_PROFILE=mybox make package-release
+```
+
+`package-release` uploads the compiled installer to Apple. It requires an
+accepted notarization response, attaches the ticket to the package, and checks
+that macOS accepts the installer before replacing the file in `dist`.
+The build directory retains Apple's submission response and diagnostic log.
+Successful releases also copy these reports into `dist`.
+See Apple's [notarization workflow](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow).
+
+Both signed build modes sign the app, CLI, runtime, plugins, and helper executables
+with Developer ID Application, hardened runtime, and secure timestamps. Existing
+runtime entitlements are preserved. The installer itself uses Developer ID
+Installer. The build manifest and verification report record the actual signing
+and notarization status. `make package` remains available for unsigned local builds.
+
+## Building the runtime
 
 The fork's release package must already exist at
 `../mybox-container/bin/release/my-container-box-installer.pkg`. To supply a
@@ -69,13 +123,13 @@ images during installation. Program payloads contain no box disks, owner files,
 or saved account identities.
 
 If installation fails after preinstall has stopped the private service, retry
-the package after correcting the reported error. This test build does not
+the package after correcting the reported error. The installer does not
 implement automatic rollback. The existing data directories are preserved.
 
 ## Verification and current limits
 
 `make package-test` re-extracts the built package and checks its distribution,
-payload, ownership metadata, local executable signatures, architecture, runtime
+payload, ownership metadata, executable signatures, architecture, runtime
 entitlements, dependencies, and basic commands. It asks macOS Installer to
 enumerate supported domains and volumes and verifies that only `LocalSystem` and
 `/` are enabled. `tests/test_package_install.py` checks accepted and rejected
@@ -84,7 +138,7 @@ code without administrator access or changes to real services.
 
 Use [TESTING.txt](TESTING.txt) when reviewing the package on a Mac. Actual fresh
 installation, upgrade, reboot, and guest/network behavior remain manual tests.
-The initial package targets Apple silicon and macOS 26+. The app and binaries
-use local ad-hoc signatures; the installer is unsigned and unnotarized. Public
-signing, notarization, release publication, and a tested removal workflow are
-separate later work.
+The initial package targets Apple silicon and macOS 26+. Signed package checks
+also verify the Apple team, hardened runtime, timestamps, and the notarization
+ticket when present. Release publication and a tested removal workflow are
+separate work.

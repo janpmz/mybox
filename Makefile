@@ -105,9 +105,15 @@ dns-test:
 clean:
 	rm -rf .build
 
-.PHONY: package package-test
+.PHONY: package package-signed package-release package-test
 package:
 	./packaging/build-package.sh
+
+package-signed:
+	MYBOX_SIGN=1 ./packaging/build-package.sh
+
+package-release:
+	MYBOX_SIGN=1 MYBOX_NOTARIZE=1 ./packaging/build-package.sh
 
 package-test:
 	python3 tests/package_layout.py dist/MyBox-0.1.0-arm64.pkg

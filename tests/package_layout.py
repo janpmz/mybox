@@ -7,8 +7,12 @@ import os
 from pathlib import Path
 import plistlib
 import subprocess
+import sys
 import tempfile
 import xml.etree.ElementTree as ET
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'packaging'))
+from signing import verify_code, verify_package
 
 
 def run(*args, **kwargs):
@@ -17,6 +21,13 @@ def run(*args, **kwargs):
 
 def verify(package):
     checks = []
+    signing = verify_package(package)
+    if signing['mode'] == 'developer-id':
+        staple = subprocess.run(['/usr/bin/xcrun', 'stapler', 'validate', str(package)], capture_output=True)
+        signing['notarized'] = staple.returncode == 0
+        if signing['notarized']:
+            run('/usr/sbin/spctl', '--assess', '--type', 'install', str(package))
+        checks.append('Installer has a trusted Developer ID signature and secure timestamp.')
     with tempfile.TemporaryDirectory(prefix='mybox-package-check-') as directory:
         expanded = Path(directory)/'expanded'
         run('/usr/sbin/pkgutil', '--expand-full', str(package), str(expanded))
@@ -98,6 +109,8 @@ def verify(package):
             machos.append(file)
             assert run('/usr/bin/lipo', '-archs', str(file), text=True).stdout.strip() == 'arm64', file
             run('/usr/bin/codesign', '--verify', '--strict', str(file))
+            if signing['mode'] == 'developer-id':
+                verify_code(file, signing['team_id'])
             commands = run('/usr/bin/otool', '-l', str(file), text=True).stdout.splitlines()
             rpaths = [commands[index + 2].strip().removeprefix('path ').rsplit(' (offset ', 1)[0]
                       for index, line in enumerate(commands) if line.strip() == 'cmd LC_RPATH']
@@ -114,6 +127,10 @@ def verify(package):
                 assert library.startswith(('/System/Library/', '/usr/lib/')), (str(file), library)
         assert len(machos) >= 15, len(machos)
         run('/usr/bin/codesign', '--verify', '--strict', str(app))
+        if signing['mode'] == 'developer-id':
+            verify_code(app, signing['team_id'])
+            verify_code(scripts/'mybox-setup', signing['team_id'])
+            checks.append('All executables and the installer setup tool use the same Apple team, hardened runtime, and secure timestamps.')
         for relative, required in [
             ('libexec/container/plugins/container-runtime-linux/bin/container-runtime-linux', ['com.apple.security.virtualization']),
             ('libexec/container/plugins/container-network-vmnet/bin/container-network-vmnet', ['com.apple.security.virtualization']),
@@ -140,7 +157,7 @@ def verify(package):
         checks.append('Extracted CLI and fork report their versions with only macOS system tools on PATH; package setup rejects unprivileged execution.')
     checksum = hashlib.sha256(package.read_bytes()).hexdigest()
     return dict(passed=True, package=str(package.resolve()), sha256=checksum, checks=checks,
-                installation_performed=False, guest_boot_tested=False, signing='local test build; no Developer ID signature or notarization')
+                installation_performed=False, guest_boot_tested=False, signing=signing)
 
 
 if __name__ == '__main__':
