@@ -9,6 +9,8 @@ MyBox is an app for running isolated Linux workspaces, built on a fork of Apple'
 
 ![MyBox main app showing boxes, resource usage, and port mappings.](docs/screenshots/mybox-main-window.png)
 
+![MyBox application window with the first page of the Box My Folder dialog open.](docs/screenshots/mybox-box-my-folder.png)
+
 ## Install
 
 [Download MyBox (.pkg)](https://github.com/janpmz/mybox/releases/download/v0.1.0/MyBox-0.1.0-arm64.pkg) · Apple silicon · macOS 26+
