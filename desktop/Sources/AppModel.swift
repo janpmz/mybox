@@ -2,11 +2,12 @@ import AppKit
 import SwiftUI
 
 enum AppSheet: Identifiable {
-    case create, help
+    case create, createFromFolder, help
     case copy(Workspace), resize(Workspace), ports(Workspace), export(Workspace), command(Workspace)
     var id: String {
         switch self {
         case .create: return "create"
+        case .createFromFolder: return "create-from-folder"
         case .help: return "help"
         case .copy(let box): return "copy-" + box.id
         case .resize(let box): return "resize-" + box.id
@@ -103,7 +104,7 @@ final class AppModel: ObservableObject {
         } catch { connectionError = error.localizedDescription }
     }
     @discardableResult
-    func run(_ arguments: [String]) -> Bool {
+    func run(_ arguments: [String], importing folders: [URL] = []) -> Bool {
         guard !isDemo else { return false }
         // All entry points share this guard, including row menus and double-click.
         if arguments.count > 1, pendingLifecycle[arguments[1]] != nil { return false }
@@ -112,8 +113,19 @@ final class AppModel: ObservableObject {
             return false
         }
         do {
+            if !folders.isEmpty {
+                guard arguments.count >= 2, arguments[0] == "create" else {
+                    throw DesktopError("Choose a new box before copying folders.")
+                }
+            }
+            var selectedFolders: [URL] = []
+            if !folders.isEmpty {
+                selectedFolders = try FolderInput.validate(folders)
+            }
             let lifecycle = arguments.count == 2 && ["start", "stop"].contains(arguments[0])
-            let completion = try MyBoxClient.openTerminal(executable: executable, arguments: arguments, observeCompletion: lifecycle)
+            let completion = try MyBoxClient.openTerminal(executable: executable, arguments: arguments,
+                                                         observeCompletion: lifecycle || !selectedFolders.isEmpty,
+                                                         importing: selectedFolders)
             if let completion {
                 let name = arguments[1], action = arguments[0]
                 pendingLifecycle[name] = action
@@ -123,7 +135,11 @@ final class AppModel: ObservableObject {
                             try? FileManager.default.removeItem(at: completion.deletingLastPathComponent())
                             await self?.refresh()
                             self?.pendingLifecycle[name] = nil
-                            if code != 0 { self?.actionError = "Could not \(action) \(name). See Terminal for the command's error (exit \(code))." }
+                            if code != 0 {
+                                self?.actionError = !folders.isEmpty
+                                    ? "Could not finish setting up \(name). See Terminal for the failed step and instructions to retry (exit \(code))."
+                                    : "Could not \(action) \(name). See Terminal for the command's error (exit \(code))."
+                            }
                             break
                         }
                         do { try await Task.sleep(for: .milliseconds(500)) } catch { break }

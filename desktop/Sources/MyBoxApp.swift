@@ -121,10 +121,16 @@ final class AppController: NSObject, NSWindowDelegate {
         let box = model.workspaces.first ?? Workspace.examples[0]
         switch kind {
         case "menu": replacement = AnyView(MenuBarView(model: model)); size = NSSize(width: MenuBarView.width, height: MenuBarView.height(boxCount: model.workspaces.count))
-        case "create": replacement = AnyView(CreateBoxView(model: model)); size = NSSize(width: 420, height: 270)
+        case "create": replacement = AnyView(CreateBoxView(model: model)); size = NSSize(width: 520, height: 410)
+        case "create-from-folder": replacement = AnyView(CreateBoxView(model: model, fromFolder: true)); size = NSSize(width: 520, height: 400)
+        case "folder-selection", "folder-specs":
+            replacement = AnyView(CreateBoxView(model: model, fromFolder: true,
+                previewFolders: [URL(fileURLWithPath: "/Users/example/Projects/my-project"), URL(fileURLWithPath: "/Users/example/Projects/assets")],
+                previewSelection: kind == "folder-selection"))
+            size = NSSize(width: 520, height: kind == "folder-selection" ? 510 : 430)
         case "help": replacement = AnyView(CLIHelpView(model: model)); size = NSSize(width: 760, height: 560)
         case "copy": replacement = AnyView(CopyBoxView(model: model, box: box)); size = NSSize(width: 420, height: 220)
-        case "resize": replacement = AnyView(ResizeBoxView(model: model, box: box)); size = NSSize(width: 420, height: 280)
+        case "resize": replacement = AnyView(ResizeBoxView(model: model, box: box)); size = NSSize(width: 520, height: 320)
         case "ports": replacement = AnyView(PortsView(model: model, box: box)); size = NSSize(width: 620, height: 300)
         case "export": replacement = AnyView(ExportView(model: model, box: box)); size = NSSize(width: 420, height: 170)
         case "command": replacement = AnyView(RunCommandView(model: model, box: box)); size = NSSize(width: 480, height: 170)

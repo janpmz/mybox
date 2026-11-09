@@ -67,6 +67,9 @@ struct MenuBarView: View {
                 Text("MyBox").font(.system(size: 14, weight: .semibold))
                 if model.showsPreviewLabels { Text("Preview").font(.caption).foregroundStyle(AppTheme.secondary) }
                 Spacer()
+                Button { AppController.shared.showWindow(); model.sheet = .createFromFolder } label: { ActionIcon(symbol: "folder.badge.plus") }
+                    .buttonStyle(FlatActionStyle()).foregroundStyle(AppTheme.accent)
+                    .disabled(!model.canOpenForms).help("New Box from Folder").accessibilityLabel("New Box from Folder")
                 Button { AppController.shared.showWindow(); model.sheet = .create } label: { ActionIcon(symbol: "plus") }
                     .buttonStyle(FlatActionStyle()).foregroundStyle(AppTheme.accent)
                     .disabled(!model.canOpenForms).help("New box").accessibilityLabel("New box")

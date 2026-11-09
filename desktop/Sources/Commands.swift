@@ -1,5 +1,49 @@
 import Foundation
 
+enum FolderInput {
+    static func validate(_ urls: [URL]) throws -> [URL] {
+        guard !urls.isEmpty else {
+            throw DesktopError("Choose or drop folders from your Mac.")
+        }
+        var folders: [URL] = [], paths = Set<String>(), names = Set<String>()
+        for url in urls {
+            guard url.isFileURL else { throw DesktopError("Choose folders from your Mac.") }
+            let folder = url.standardizedFileURL
+            let values = try folder.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey, .isReadableKey])
+            guard values.isDirectory == true, values.isSymbolicLink != true else {
+                throw DesktopError("Choose folders, rather than files or links to folders.")
+            }
+            guard values.isReadable == true else { throw DesktopError("MyBox cannot read \(folder.lastPathComponent). Choose a folder you can open.") }
+            let resolved = folder.resolvingSymlinksInPath()
+            guard resolved.path != "/", resolved != FileManager.default.homeDirectoryForCurrentUser.resolvingSymlinksInPath() else {
+                throw DesktopError("Choose project folders, rather than the entire Mac disk or home folder.")
+            }
+            guard paths.insert(resolved.path).inserted else { continue }
+            guard names.insert(folder.lastPathComponent).inserted else {
+                throw DesktopError("Two folders are named “\(folder.lastPathComponent)”. Rename one before adding both to the same box.")
+            }
+            folders.append(folder)
+        }
+        return folders
+    }
+
+    static func suggestedName(for folder: URL, existing: [String]) -> String {
+        var base = folder.lastPathComponent.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "en_US_POSIX"))
+            .lowercased().replacingOccurrences(of: "[^a-z0-9]+", with: "-", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        if base.isEmpty { base = "folder" }
+        if base.first?.isNumber == true { base = "box-" + base }
+        base = String(base.prefix(48)).trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        var candidate = base, number = 2
+        while existing.contains(candidate) {
+            let suffix = "-\(number)"
+            candidate = String(base.prefix(48 - suffix.count)).trimmingCharacters(in: CharacterSet(charactersIn: "-")) + suffix
+            number += 1
+        }
+        return candidate
+    }
+}
+
 struct PortDraft: Identifiable, Equatable {
     let id = UUID()
     var outside = ""
@@ -14,6 +58,28 @@ struct PortDraft: Identifiable, Equatable {
         }
         return try PortMapping(inside: port(inside), outside: port(outside))
     }
+}
+
+struct PortSelection {
+    private(set) var confirmed: [PortDraft] = []
+    var draft = PortDraft()
+    var hasDraft: Bool { !draft.outside.isEmpty || !draft.inside.isEmpty }
+    var validation: String? {
+        guard confirmed.count < 64 else { return "A box supports up to 64 port mappings." }
+        do {
+            let mapping = try draft.mapping()
+            guard !confirmed.contains(where: { (try? $0.mapping().outside) == mapping.outside }) else {
+                return "That outside port is already mapped."
+            }
+            return nil
+        } catch { return error.localizedDescription }
+    }
+    mutating func add() throws {
+        if let validation { throw DesktopError(validation) }
+        confirmed.append(draft)
+        draft = PortDraft()
+    }
+    mutating func remove(_ id: UUID) { confirmed.removeAll { $0.id == id } }
 }
 
 enum BoxCommand {

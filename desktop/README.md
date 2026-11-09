@@ -41,13 +41,44 @@ an engine or firewall health check. The footer gear opens the existing app menu
 
 Forms have a Cancel button; Port Mappings and CLI Help have a Close
 button. Escape dismisses every sheet. File pickers use the standard macOS controls.
-Memory and disk inputs contain numbers only, with GB beside the field. New Box
+Dialog actions use native SwiftUI buttons at the same control size. Primary actions
+use the prominent blue style; Cancel and Back use the standard bordered style.
+Memory inputs contain numbers only, with “Memory [GB]” as the label on the left.
+Resize also has a numeric “Max Disk [GB]” field.
+Creation and Resize show the Mac’s CPU count and total memory; Resize also shows disk capacity.
+Currently available memory appears on the right, using the same estimate as CLI resize. New Box
 accepts fractional memory values such as 0.5 GB; both decimal points and commas work.
+New Box and New Box from Folder use the runtime’s default disk capacity.
+Disk capacity can be adjusted later with Resize.
+Disk capacity is a limit; the full capacity is not allocated on the Mac immediately.
+
+**New Box from Folder** (Shift-Command-N) opens a two-step dialog. Choose several folders
+with the macOS picker or drop them onto the dialog, then choose the box name, CPU,
+memory, and optional port mappings. The name is suggested from the first folder name
+and remains editable. Further selections and drops add folders to the list;
+individual folders can be removed. The folder list appears only in the selection step.
+Repeated folders are ignored, and different
+folders with the same name are rejected to avoid colliding destinations. Back keeps the settings you entered.
+The app creates the box, then copies each selected folder to
+`/workspace/<folder-name>` using Import. The original folders stay on the Mac.
+The commands run in the same Terminal window with the existing CLI approvals;
+copying runs only if creation succeeds. A failed copy stops further copies and
+leaves the box and any completed copies available. Terminal identifies the folder
+that failed; use the box’s Import action to copy the remaining folders.
+As with Import, symbolic links and special files are skipped and reported in Terminal.
+The menu bar panel also has a dedicated folder button.
+
+Creation forms have explicit Add and Remove buttons for port mappings. Validation
+messages wait until both port fields contain text. Typing
+a mapping does not add it; click Add before creating the box, or clear the inputs.
+Empty port inputs do not prevent creation. Preview mode disables real commands
+and explains that restriction in the form; launch the app normally to create boxes.
 
 | CLI operation | App |
 | --- | --- |
 | `list --json` | Boxes table; refreshes every eight seconds |
 | `create` | New Box, with CPU, memory, and optional port mappings |
+| `create`, then `import` | New Box from Folder, with folder selection or drag and drop followed by specs |
 | `enter` | Dedicated Terminal button in both box lists |
 | `enter … -- …` | Run Command; the shell command runs inside Linux |
 | `start`, `stop` | Start/Stop in the main list, play/stop in the popover, or row menu |
@@ -86,6 +117,8 @@ and broker before using new commands such as Delete or JSON lists.
 Terminal command exit reporting, creation and resize arguments, copy names,
 port status and fixed mappings, export paths, host-shell argument quoting,
 process failures, and timeouts. These tests do not change real boxes.
+Folder creation checks cover folder validation, suggested names, exact path quoting,
+creation-before-import ordering, and failures during either command.
 
 Read-only visual preview:
 
@@ -95,7 +128,7 @@ open -n .build/MyBox.app --args --demo --screenshot /tmp/mybox-boxes.png
 open -n .build/MyBox.app --args --demo --screenshot /tmp/mybox-ports.png --capture-view ports
 ```
 
-Capture views: `window` (including the native title bar), `menu`, `create`, `copy`,
+Capture views: `window` (including the native title bar), `menu`, `create`, `create-from-folder`, `folder-selection`, `folder-specs`, `copy`,
 `resize`, `ports`, `export`, `command`, `help`, and `compact`.
 Add `--demo-scenario stopped`, `many`, `empty`, `unknown`, or `error` to inspect
 edge cases. Scenarios only apply with `--demo`. Each capture process exits after writing its PNG.

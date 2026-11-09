@@ -80,6 +80,11 @@ struct BoxesView: View {
             Button { Task { await model.refresh() } } label: { ActionIcon(symbol: "arrow.clockwise") }
                 .buttonStyle(FlatActionStyle()).disabled(model.isRefreshing || model.isDemo)
                 .help("Refresh boxes").accessibilityLabel("Refresh boxes").keyboardShortcut("r", modifiers: .command)
+            Button { model.sheet = .createFromFolder } label: {
+                Label("New Box from Folder", systemImage: "folder.badge.plus")
+                    .fixedSize()
+            }.buttonStyle(PrimaryActionStyle())
+                .disabled(!model.canOpenForms).keyboardShortcut("n", modifiers: [.command, .shift])
             Button { model.sheet = .create } label: {
                 HStack(spacing: 7) {
                     Image(systemName: "plus")
@@ -209,7 +214,13 @@ struct BoxStatusLabel: View {
     @ObservedObject var model: AppModel
     let box: Workspace
     var body: some View {
-        Text(model.pendingLifecycle[box.id].map { $0 == "start" ? "Start requested…" : "Stop requested…" } ?? box.stateLabel)
+        Text(model.pendingLifecycle[box.id].map {
+            switch $0 {
+            case "start": "Start requested…"
+            case "create": "Creating box…"
+            default: "Stop requested…"
+            }
+        } ?? box.stateLabel)
             .font(AppTheme.secondaryFont)
             .foregroundStyle(box.isRunning ? AppTheme.running : AppTheme.secondary)
             .lineLimit(1)

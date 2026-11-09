@@ -60,14 +60,16 @@ enum MyBoxClient {
     }
 
     @MainActor
-    static func openTerminal(executable: String, arguments: [String], observeCompletion: Bool = false) throws -> URL? {
+    static func openTerminal(executable: String, arguments: [String], observeCompletion: Bool = false,
+                             importing folders: [URL] = []) throws -> URL? {
         // Launch Services opens a private .command file in Terminal without an
         // Apple Events entitlement. Arguments are always POSIX shell quoted.
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("mybox-command-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
         let file = directory.appendingPathComponent("MyBox.command")
         let completion = observeCompletion ? directory.appendingPathComponent("exit-status") : nil
-        let script = terminalScript(executable: executable, arguments: arguments, file: file, completion: completion)
+        let script = terminalScript(executable: executable, arguments: arguments, file: file, completion: completion,
+                                    importing: folders)
         try script.write(to: file, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: file.path)
         let opener = Process()
@@ -82,7 +84,8 @@ enum MyBoxClient {
         return completion
     }
 
-    static func terminalScript(executable: String, arguments: [String], file: URL, completion: URL?) -> String {
+    static func terminalScript(executable: String, arguments: [String], file: URL, completion: URL?,
+                               importing folders: [URL] = []) -> String {
         let directory = file.deletingLastPathComponent()
         let command = ShellCommand.line(executable: executable, arguments: arguments)
         let completionTrap: String
@@ -93,6 +96,32 @@ enum MyBoxClient {
         } else {
             completionTrap = "/bin/rmdir -- " + ShellCommand.quote(directory.path)
         }
+        var importScript = ""
+        if !folders.isEmpty, arguments.count >= 2, arguments[0] == "create" {
+            let name = arguments[1]
+            let copies = folders.map { folder in
+                let copy = ShellCommand.line(executable: executable, arguments: ["import", name, folder.path])
+                let progress = ShellCommand.quote("Copying \(folder.lastPathComponent) into \(name)…")
+                let failure = ShellCommand.quote("The box \(name) was created, but copying \(folder.lastPathComponent) did not finish. Any earlier folders remain in the box; later folders were not copied. Use Import on that box to copy the remaining folders.")
+                return """
+                if [ "$mybox_exit" -eq 0 ]; then
+                    printf '%s\\n' \(progress)
+                    \(copy)
+                    mybox_exit=$?
+                    if [ "$mybox_exit" -ne 0 ]; then
+                        printf '%s\\n' \(failure) >&2
+                    fi
+                fi
+                """
+            }.joined(separator: "\n")
+            importScript = """
+            if [ "$mybox_exit" -eq 0 ]; then
+                \(copies)
+            else
+                printf '%s\\n' 'Box setup did not finish. No folders were copied.' >&2
+            fi
+            """
+        }
         return """
         #!/bin/sh
         export PATH=/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
@@ -101,6 +130,7 @@ enum MyBoxClient {
         printf '\\033]0;MyBox\\007'
         \(command)
         mybox_exit=$?
+        \(importScript)
         printf '\\nMyBox command finished (exit %s). You can close this window.\\n' "$mybox_exit"
         exit "$mybox_exit"
         """

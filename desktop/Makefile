@@ -28,7 +28,7 @@ preview: build
 
 test:
 	mkdir -p .build/module-cache
-	$(SWIFTC) $(FLAGS) $(SHARED) Sources/Models.swift Sources/Commands.swift Sources/MyBoxClient.swift Tests/DesktopTests.swift -o .build/desktop-tests
+	$(SWIFTC) $(FLAGS) $(SHARED) Sources/Models.swift Sources/Commands.swift Sources/ResourceCapacity.swift Sources/MyBoxClient.swift Tests/DesktopTests.swift -o .build/desktop-tests
 	.build/desktop-tests
 
 clean:

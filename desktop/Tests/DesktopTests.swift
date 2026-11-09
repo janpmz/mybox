@@ -113,6 +113,91 @@ struct DesktopTests {
             try FileManager.default.removeItem(at: commandDirectory)
         }
 
+        let folder = cliDirectory.appendingPathComponent("Project's $(echo injected) `echo bad`; files\n雪", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+        let selectedFolder = try FolderInput.validate([folder])[0]
+        expect(selectedFolder.path == folder.path, "Folder selection must preserve spaces, quotes, Unicode, and shell characters")
+        let sourceFile = folder.appendingPathComponent("original.txt")
+        try "Keep the original".write(to: sourceFile, atomically: false, encoding: .utf8)
+        let folderLink = cliDirectory.appendingPathComponent("folder-link")
+        try FileManager.default.createSymbolicLink(at: folderLink, withDestinationURL: folder)
+        for invalid in [[], [sourceFile], [folderLink], [URL(string: "https://example.com/folder")!],
+                        [URL(fileURLWithPath: "/")], [FileManager.default.homeDirectoryForCurrentUser],
+                        [cliDirectory.appendingPathComponent("missing")]] {
+            expectFailure("Only existing project folders may be selected") { _ = try FolderInput.validate(invalid) }
+        }
+        for (label, expected) in [("My Project", "my-project"), ("123 Project", "box-123-project"),
+                                  ("Café", "cafe"), ("☃", "folder"), ("---", "folder")] {
+            let suggestion = FolderInput.suggestedName(for: URL(fileURLWithPath: "/tmp/" + label), existing: [])
+            expect(suggestion == expected, "Folder names must become valid editable box names")
+            try BoxCommand.newName(suggestion, existing: [])
+        }
+        let longFolder = URL(fileURLWithPath: "/tmp/" + String(repeating: "a", count: 60))
+        let firstName = FolderInput.suggestedName(for: longFolder, existing: [])
+        let secondName = FolderInput.suggestedName(for: longFolder, existing: [firstName])
+        let thirdName = FolderInput.suggestedName(for: longFolder, existing: [firstName, secondName])
+        try BoxCommand.newName(thirdName, existing: [firstName, secondName])
+        expect(firstName.count == 48 && secondName.count == 48 && thirdName.hasSuffix("-3"), "Name suggestions must handle collisions within the length limit")
+
+        let secondFolder = cliDirectory.appendingPathComponent("Another folder", isDirectory: true)
+        let thirdFolder = cliDirectory.appendingPathComponent("Third folder", isDirectory: true)
+        try FileManager.default.createDirectory(at: secondFolder, withIntermediateDirectories: false)
+        try FileManager.default.createDirectory(at: thirdFolder, withIntermediateDirectories: false)
+        let selectedFolders = try FolderInput.validate([folder, secondFolder, folder, thirdFolder])
+        expect(selectedFolders == [selectedFolder, secondFolder, thirdFolder], "Multiple folder selection preserves order and ignores repeated drops of the same folder")
+        let sameName = secondFolder.appendingPathComponent(folder.lastPathComponent, isDirectory: true)
+        try FileManager.default.createDirectory(at: sameName, withIntermediateDirectories: false)
+        expectFailure("Distinct folders with the same destination name must be rejected before creation") {
+            _ = try FolderInput.validate([folder, sameName])
+        }
+        expectFailure("A mixed drop cannot silently skip an invalid file") { _ = try FolderInput.validate([folder, sourceFile]) }
+
+        // Run the real multi-folder script against a fake CLI, including failures
+        // in the middle of copying. Never create or modify real boxes.
+        for (createExit, failingIndex, importExit) in [(0, 0, 0), (7, 0, 0), (0, 0, 9), (0, 1, 9), (0, 1, 130), (0, 2, 9)] {
+            let commandDirectory = cliDirectory.appendingPathComponent("folder-command")
+            try FileManager.default.createDirectory(at: commandDirectory, withIntermediateDirectories: false)
+            let commandFile = commandDirectory.appendingPathComponent("MyBox.command")
+            let completion = commandDirectory.appendingPathComponent("exit-status")
+            let calls = cliDirectory.appendingPathComponent("calls")
+            let fakeCLI = """
+            #!/bin/sh
+            printf '%s\\0' "$@" >> \(ShellCommand.quote(calls.path))
+            case "$1" in
+              create) exit \(createExit);;
+              import) if [ "$3" = \(ShellCommand.quote(selectedFolders[failingIndex].path)) ]; then exit \(importExit); fi;;
+              *) exit 99;;
+            esac
+            exit 0
+            """
+            try fakeCLI.write(to: cli, atomically: false, encoding: .utf8)
+            let createArguments = try BoxCommand.create(name: "from-folder", cpus: "4", memory: "0.5", ports: [], existing: [])
+            let terminalScript = MyBoxClient.terminalScript(executable: cli.path, arguments: createArguments,
+                                                           file: commandFile, completion: completion, importing: selectedFolders)
+            try terminalScript.write(to: commandFile, atomically: false, encoding: .utf8)
+            let expectedExit = createExit == 0 ? importExit : createExit
+            do {
+                _ = try MyBoxClient.capture(executable: "/bin/sh", arguments: [commandFile.path])
+                expect(expectedExit == 0, "Folder workflow must preserve command failures")
+            } catch {
+                expect(expectedExit != 0, "Folder workflow must complete when both commands succeed")
+                expect(error.localizedDescription.contains(createExit == 0 ? "Use Import on that box to copy the remaining folders" : "No folders were copied"),
+                       "A failed workflow must explain whether the folder copy was attempted")
+            }
+            let actualCalls = try String(contentsOf: calls, encoding: .utf8).components(separatedBy: "\0").dropLast()
+            let copiedFolders = createExit != 0 ? [] : Array(selectedFolders.prefix(importExit == 0 ? selectedFolders.count : failingIndex + 1))
+            let expectedCalls = createArguments + copiedFolders.flatMap { ["import", "from-folder", $0.path] }
+            expect(Array(actualCalls) == expectedCalls,
+                   "Import must preserve each folder path, wait for creation, and stop after the first failed copy")
+            let exitStatus = try String(contentsOf: completion, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
+            expect(exitStatus == String(expectedExit), "Completion must wait for the folder copy and preserve its failure status")
+            expect(!FileManager.default.fileExists(atPath: commandFile.path), "Folder command script must clean up itself")
+            try FileManager.default.removeItem(at: commandDirectory)
+            try FileManager.default.removeItem(at: calls)
+        }
+        let original = try String(contentsOf: sourceFile, encoding: .utf8)
+        expect(original == "Keep the original", "The desktop workflow must not move or modify the source folder")
+
         let create = try BoxCommand.create(name: "sample", cpus: "4", memory: "0.5",
             ports: [PortDraft(outside: "8766", inside: "3000"), PortDraft(outside: "8767", inside: "8080")], existing: [])
         expect(create == ["create", "sample", "--cpus", "4", "--memory", "512m", "--inside-port", "3000", "--outside-port", "8766", "--inside-port", "8080", "--outside-port", "8767"], "Creation must convert numeric GB to CLI memory units and preserve port pairs")
@@ -136,6 +221,24 @@ struct DesktopTests {
         expect(SizeInput.gigabytesPlaceholder("-").isEmpty, "Unknown sizes must stay blank")
         expectFailure("Invalid port range") { _ = try PortDraft(outside: "0", inside: "3000").mapping() }
         expectFailure("Malformed numeric port") { _ = try PortDraft(outside: "8e3", inside: "3000").mapping() }
+        var portSelection = PortSelection()
+        portSelection.draft = PortDraft(outside: "8766", inside: "3000")
+        expect(portSelection.confirmed.isEmpty && portSelection.hasDraft, "Typing a port mapping must not add it implicitly")
+        try portSelection.add()
+        expect(portSelection.confirmed.count == 1 && !portSelection.hasDraft, "Add confirms the mapping and clears both inputs")
+        portSelection.draft = PortDraft(outside: "8766", inside: "8080")
+        expectFailure("Explicit Add must reject duplicate outside ports") { try portSelection.add() }
+        expect(portSelection.confirmed.count == 1 && portSelection.hasDraft, "Failed Add must preserve confirmed mappings and the user's input")
+        portSelection.draft = PortDraft(outside: "8767", inside: "")
+        expectFailure("Explicit Add requires both ports") { try portSelection.add() }
+        portSelection.remove(portSelection.confirmed[0].id)
+        expect(portSelection.confirmed.isEmpty, "A confirmed port mapping can be removed")
+        let capacity = ResourceCapacity(cpuCount: 12, availableMemory: nil,
+                                        totalMemory: 16 * bytesPerMemoryGB, totalDisk: nil)
+        expect(capacity.cpuHint == "12 CPUs on your Mac", "Show Mac CPU count without VM limits")
+        expect(capacity.memoryHint == "16 GB on your Mac" && capacity.availableMemoryHint == "Available memory unknown",
+               "Separate total RAM from available RAM and preserve unknown availability")
+        expect(capacity.diskHint == "Disk size unavailable", "Unavailable disk capacity must remain unknown")
         let copy = try BoxCommand.copy(source: "demo", name: "demo-copy", existing: ["demo"])
         expect(copy == ["copy", "demo", "demo-copy"], "Copy must target a distinct name")
         expectFailure("Copy onto source") { _ = try BoxCommand.copy(source: "demo", name: "demo", existing: []) }

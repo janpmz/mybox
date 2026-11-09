@@ -105,7 +105,7 @@ struct SheetFrame<Content: View, Actions: View>: View {
                     Button("Close") { dismiss() }.keyboardShortcut(.defaultAction)
                 }
                 actions
-            }.controlSize(.large)
+            }.buttonStyle(.bordered).controlSize(.large).tint(AppTheme.primaryButton)
         }.padding(24).frame(width: width)
             .background(AppTheme.background).tint(AppTheme.accent).preferredColorScheme(.dark)
             .onExitCommand { dismiss() }
