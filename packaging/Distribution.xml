@@ -13,5 +13,5 @@
     <choice id="mybox" title="MyBox" visible="false" start_selected="true">
         <pkg-ref id="io.github.janpmz.mybox"/>
     </choice>
-    <pkg-ref id="io.github.janpmz.mybox" version="0.1.0" onConclusion="none">MyBox-component.pkg</pkg-ref>
+    <pkg-ref id="io.github.janpmz.mybox" version="0.1.1" onConclusion="none">MyBox-component.pkg</pkg-ref>
 </installer-gui-script>

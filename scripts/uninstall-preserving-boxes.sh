@@ -117,4 +117,4 @@ for name in owner identity.plist; do /usr/bin/cmp "$helpers/$name" "$backup/help
 if [ -f "$backup/apple-programs.sha256" ]; then /usr/bin/shasum -a 256 -c "$backup/apple-programs.sha256"; fi
 printf '\nMyBox programs and services are uninstalled. Box files, settings, and the private account were preserved.\n'
 printf 'Program archive: %s\n' "$backup"
-printf 'Ready to install: %s/dist/MyBox-0.1.0-arm64.pkg\n' "$project"
+printf 'Ready to install: %s/dist/MyBox-0.1.1-arm64.pkg\n' "$project"

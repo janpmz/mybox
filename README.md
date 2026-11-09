@@ -31,7 +31,7 @@ MyBox is an app for running isolated Linux workspaces, built on a fork of Apple'
 
 ```text
 $ mybox
-MyBox 0.1.0 — a small Linux workspace on your Mac
+MyBox 0.1.1 — a small Linux workspace on your Mac
 
 Usage: mybox <command>
 

@@ -116,4 +116,4 @@ package-release:
 	MYBOX_SIGN=1 MYBOX_NOTARIZE=1 ./packaging/build-package.sh
 
 package-test:
-	python3 tests/package_layout.py dist/MyBox-0.1.0-arm64.pkg
+	python3 tests/package_layout.py dist/MyBox-0.1.1-arm64.pkg

@@ -66,29 +66,29 @@ if [ "$sign" = 1 ]; then
 fi
 
 # pkgbuild records root ownership without requiring sudo for this build.
-/usr/bin/pkgbuild --root "$payload" --identifier io.github.janpmz.mybox --version 0.1.0 \
+/usr/bin/pkgbuild --root "$payload" --identifier io.github.janpmz.mybox --version 0.1.1 \
     --install-location / --ownership recommended --scripts "$scripts" \
     --component-plist "$source/packaging/components.plist" "$work/components/MyBox-component.pkg"
 /usr/bin/productbuild --distribution "$source/packaging/Distribution.xml" \
-    --resources "$source/packaging/resources" --package-path "$work/components" "$work/MyBox-0.1.0-arm64.pkg"
+    --resources "$source/packaging/resources" --package-path "$work/components" "$work/MyBox-0.1.1-arm64.pkg"
 if [ "$sign" = 1 ]; then
     python3 "$source/packaging/signing.py" package "${signing_options[@]}" \
-        --package "$work/MyBox-0.1.0-arm64.pkg"
+        --package "$work/MyBox-0.1.1-arm64.pkg"
 fi
-python3 "$project/tests/package_layout.py" "$work/MyBox-0.1.0-arm64.pkg" --report "$work/verification.json"
+python3 "$project/tests/package_layout.py" "$work/MyBox-0.1.1-arm64.pkg" --report "$work/verification.json"
 
 # Publish only a package that passed inspection; a failed build keeps the prior
 # package intact. Record the exact source snapshot used for the UI too.
-cp "$work/MyBox-0.1.0-arm64.pkg" "$project/dist/MyBox-0.1.0-arm64.pkg"
-cp "$work/verification.json" "$project/dist/MyBox-0.1.0-verification.json"
+cp "$work/MyBox-0.1.1-arm64.pkg" "$project/dist/MyBox-0.1.1-arm64.pkg"
+cp "$work/verification.json" "$project/dist/MyBox-0.1.1-verification.json"
 python3 "$project/packaging/write-build-manifest.py" "$project" "$source" "$runtime_package" "$runtime_source" "$work"
-(cd "$project/dist" && /usr/bin/shasum -a 256 MyBox-0.1.0-arm64.pkg > MyBox-0.1.0-arm64.pkg.sha256)
+(cd "$project/dist" && /usr/bin/shasum -a 256 MyBox-0.1.1-arm64.pkg > MyBox-0.1.1-arm64.pkg.sha256)
 cp "$source/packaging/TESTING.txt" "$project/dist/TESTING.txt"
 for report in notarization-submission.json notarization-log.json; do
     if [ -f "$work/$report" ]; then
-        cp "$work/$report" "$project/dist/MyBox-0.1.0-$report"
+        cp "$work/$report" "$project/dist/MyBox-0.1.1-$report"
     else
-        rm -f "$project/dist/MyBox-0.1.0-$report"
+        rm -f "$project/dist/MyBox-0.1.1-$report"
     fi
 done
-printf '\nPackage ready: %s\n' "$project/dist/MyBox-0.1.0-arm64.pkg"
+printf '\nPackage ready: %s\n' "$project/dist/MyBox-0.1.1-arm64.pkg"

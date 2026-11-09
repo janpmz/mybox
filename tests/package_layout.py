@@ -57,7 +57,7 @@ def verify(package):
         info = ET.parse(infos[0]).getroot()
         assert info.get('identifier') == 'io.github.janpmz.mybox'
         assert info.get('install-location') == '/'
-        assert info.get('version') == '0.1.0'
+        assert info.get('version') == '0.1.1'
         assert info.find('scripts/preinstall') is not None and info.find('scripts/postinstall') is not None
         checks.append('One mandatory component installs the app, CLI, runtime, and helpers on macOS 26+ arm64.')
         payload = component/'Payload'
@@ -68,7 +68,7 @@ def verify(package):
         assert app.is_dir()
         plist = plistlib.loads((app/'Contents/Info.plist').read_bytes())
         assert plist['LSMinimumSystemVersion'] == '26.0'
-        assert plist['CFBundleShortVersionString'] == '0.1.0'
+        assert plist['CFBundleShortVersionString'] == '0.1.1'
         assert (app/'Contents/Resources/cli-location.txt').read_text().strip() == '/usr/local/bin/mybox'
         assert not (payload/'usr/local/bin/container').exists()
         assert not (runtime/'bin/uninstall-my-container.sh').exists()
@@ -143,7 +143,7 @@ def verify(package):
 
         environment = dict(os.environ, PATH='/usr/bin:/bin:/usr/sbin:/sbin')
         mybox = payload/'usr/local/bin/mybox'
-        assert 'mybox' in run(str(mybox), '--version', env=environment, text=True).stdout.lower()
+        assert run(str(mybox), '--version', env=environment, text=True).stdout.strip() == 'MyBox 0.1.1'
         assert 'Usage: mybox' in run(str(mybox), 'help', env=environment, text=True).stdout
         fork = run(str(runtime/'bin/container'), '--version', env=environment, text=True).stdout.strip()
         assert '1.6.1-mybox.5' in fork, fork

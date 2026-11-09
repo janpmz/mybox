@@ -551,7 +551,7 @@ func exportFiles(_ name: String, path: String, destination: URL, backend: Backen
 }
 
 let help = """
-MyBox 0.1.0 — a small Linux workspace on your Mac
+MyBox 0.1.1 — a small Linux workspace on your Mac
 
 Usage: mybox <command>
 
@@ -617,7 +617,7 @@ func mainCommand(_ arguments: [String]) throws {
     guard let command = arguments.first else { print(help); return }
     let rest = Array(arguments.dropFirst())
     if ["help", "--help", "-h"].contains(command) { print(help); return }
-    if command == "--version" { print("MyBox 0.1.0"); return }
+    if command == "--version" { print("MyBox 0.1.1"); return }
     #if MYBOX_TESTING
     if command == "_test-auth" {
         _ = try hostCommand("/usr/bin/sudo", ["-v"], terminal: true)

@@ -1,4 +1,4 @@
-MyBox 0.1.0 — installer verification
+MyBox 0.1.1 — installer verification
 
 This package has not been installed or tested on a clean Mac yet. It is built for
 Apple silicon and requires macOS 26 or later. The accompanying build manifest
@@ -7,7 +7,7 @@ and verification report state whether this build is signed and notarized.
 Before testing on the development Mac:
 1. Stop your MyBox boxes and quit the MyBox desktop app.
 2. Run: my-container system stop
-3. Open MyBox-0.1.0-arm64.pkg and follow macOS Installer.
+3. Open MyBox-0.1.1-arm64.pkg and follow macOS Installer.
 4. At Destination Select, choose "Install for all users of this computer".
    "Install only for me" and other disks must not be selectable. Check that
    Go Back and Continue preserve the selection. The welcome page explains why

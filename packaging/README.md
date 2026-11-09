@@ -1,6 +1,6 @@
 # MyBox package
 
-`make package` produces `dist/MyBox-0.1.0-arm64.pkg` plus a checksum, build
+`make package` produces `dist/MyBox-0.1.1-arm64.pkg` plus a checksum, build
 manifest, verification report, and test instructions. It does not install the
 package or change launchd jobs, accounts, firewall rules, or existing boxes.
 

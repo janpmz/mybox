@@ -187,7 +187,7 @@ class CLI(unittest.TestCase):
         self.assertEqual(self.calls(), [])
 
     def test_version(self):
-        self.assertEqual(self.run_box("--version").stdout.strip(), "MyBox 0.1.0")
+        self.assertEqual(self.run_box("--version").stdout.strip(), "MyBox 0.1.1")
 
     def test_list_shows_limits_and_sparse_disk_use_without_starting_boxes(self):
         disk = self.container_root / "mybox-demo" / "rootfs.ext4"
