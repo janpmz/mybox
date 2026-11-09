@@ -7,7 +7,7 @@ MyBox is an app for running isolated Linux workspaces, built on a fork of Apple'
 - Node.js inside a box cannot access files or services on your Mac.
 - Apps on your Mac cannot run commands or access files inside the box without your approval.
 
-![MyBox main app showing boxes, resource usage, and port mappings.](docs/screenshots/mybox-main-window.png)
+![MyBox main app showing boxes, resource usage, and port mappings.](docs/screenshots/mybox-main-window-0.1.1.png)
 
 ![MyBox application window with the first page of the Box My Folder dialog open.](docs/screenshots/mybox-box-my-folder.png)
 
