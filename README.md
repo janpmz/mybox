@@ -1,12 +1,11 @@
 # MyBox
 
-MyBox is a command-line tool for running isolated Linux workspaces on your Mac, built on a fork of Apple's `container`.
+MyBox is a Mac app for running isolated Linux workspaces, built on a fork of Apple's `container`.
 
 ## Example
 
-Node.js inside a box cannot access files or services on your Mac.
-
-Apps running under your Mac account cannot access files inside the box.
+- Node.js inside a box cannot access files or services on your Mac.
+- Apps running under your Mac account cannot access files inside the box.
 
 ![MyBox main app showing boxes, resource usage, and port mappings.](docs/screenshots/mybox-main-window.png)
 
