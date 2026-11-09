@@ -1,6 +1,6 @@
 # MyBox
 
-MyBox is a Mac app for running isolated Linux workspaces, built on a fork of Apple's `container`.
+MyBox is an app for running isolated Linux workspaces, built on a fork of Apple's `container`.
 
 ## Example
 
