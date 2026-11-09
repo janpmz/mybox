@@ -52,7 +52,7 @@ struct CreateBoxView: View {
         Result { try BoxCommand.create(name: name, cpus: cpus, memory: memory, ports: ports.confirmed, existing: existingNames) }
     }
     var body: some View {
-        SheetFrame(title: fromFolder ? "New Box from Folder" : "New Box", width: 520) {
+        SheetFrame(title: fromFolder ? "Box My Folder" : "New Box", width: 520) {
             if fromFolder {
                 Text(choosingFolders ? "Step 1 of 2 · Choose folders" : "Step 2 of 2 · Configuration")
                     .font(.callout).foregroundStyle(.secondary)

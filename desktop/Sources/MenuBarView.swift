@@ -69,7 +69,7 @@ struct MenuBarView: View {
                 Spacer()
                 Button { AppController.shared.showWindow(); model.sheet = .createFromFolder } label: { ActionIcon(symbol: "folder.badge.plus") }
                     .buttonStyle(FlatActionStyle()).foregroundStyle(AppTheme.accent)
-                    .disabled(!model.canOpenForms).help("New Box from Folder").accessibilityLabel("New Box from Folder")
+                    .disabled(!model.canOpenForms).help("Box My Folder").accessibilityLabel("Box My Folder")
                 Button { AppController.shared.showWindow(); model.sheet = .create } label: { ActionIcon(symbol: "plus") }
                     .buttonStyle(FlatActionStyle()).foregroundStyle(AppTheme.accent)
                     .disabled(!model.canOpenForms).help("New box").accessibilityLabel("New box")

@@ -48,11 +48,11 @@ Resize also has a numeric “Max Disk [GB]” field.
 Creation and Resize show the Mac’s CPU count and total memory; Resize also shows disk capacity.
 Currently available memory appears on the right, using the same estimate as CLI resize. New Box
 accepts fractional memory values such as 0.5 GB; both decimal points and commas work.
-New Box and New Box from Folder use the runtime’s default disk capacity.
+New Box and Box My Folder use the runtime’s default disk capacity.
 Disk capacity can be adjusted later with Resize.
 Disk capacity is a limit; the full capacity is not allocated on the Mac immediately.
 
-**New Box from Folder** (Shift-Command-N) opens a two-step dialog. Choose several folders
+**Box My Folder** (Shift-Command-N) opens a two-step dialog. Choose several folders
 with the macOS picker or drop them onto the dialog, then choose the box name, CPU,
 memory, and optional port mappings. The name is suggested from the first folder name
 and remains editable. Further selections and drops add folders to the list;
@@ -78,7 +78,7 @@ and explains that restriction in the form; launch the app normally to create box
 | --- | --- |
 | `list --json` | Boxes table; refreshes every eight seconds |
 | `create` | New Box, with CPU, memory, and optional port mappings |
-| `create`, then `import` | New Box from Folder, with folder selection or drag and drop followed by specs |
+| `create`, then `import` | Box My Folder, with folder selection or drag and drop followed by specs |
 | `enter` | Dedicated Terminal button in both box lists |
 | `enter … -- …` | Run Command; the shell command runs inside Linux |
 | `start`, `stop` | Start/Stop in the main list, play/stop in the popover, or row menu |

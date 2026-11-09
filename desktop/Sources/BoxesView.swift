@@ -81,7 +81,7 @@ struct BoxesView: View {
                 .buttonStyle(FlatActionStyle()).disabled(model.isRefreshing || model.isDemo)
                 .help("Refresh boxes").accessibilityLabel("Refresh boxes").keyboardShortcut("r", modifiers: .command)
             Button { model.sheet = .createFromFolder } label: {
-                Label("New Box from Folder", systemImage: "folder.badge.plus")
+                Label("Box My Folder", systemImage: "folder.badge.plus")
                     .fixedSize()
             }.buttonStyle(PrimaryActionStyle())
                 .disabled(!model.canOpenForms).keyboardShortcut("n", modifiers: [.command, .shift])
