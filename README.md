@@ -2,7 +2,7 @@
 
 MyBox is an app for running isolated Linux workspaces, built on a fork of Apple's `container`.
 
-[![Play the 28-second MyBox video with music.](docs/media/mybox-techno-preview.jpg)](docs/media/mybox-techno.mp4 "Play the MyBox video with music")
+[![Download the 26-second MyBox video with music.](docs/media/mybox-techno-preview.jpg)](https://github.com/janpmz/mybox/raw/refs/heads/main/docs/media/mybox-techno-v4.mp4 "Download the MyBox video with music (MP4)")
 
 ## Example
 
